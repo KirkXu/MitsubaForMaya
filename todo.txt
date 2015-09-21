@@ -17,8 +17,9 @@ x branch git repo
 x rename windows_64 to plug-ins
 x remove materials.py, render.py, scriptEditor.py, tempo.py, test.mel, test2.py, champagne.ma
 
+x support colored area lights
+
 support general cameras, not just camera, aim, up combinations
-support colored area lights
 
 move materials into 'materials'
 add __init__.py as appropriate
@@ -37,6 +38,9 @@ support interactive render view / update / cancel
 Note references
 http://knowledge.autodesk.com/support/maya/troubleshooting/caas/sfdcarticles/sfdcarticles/Registering-a-custom-renderer-for-batch-rendering.html
 
+http://help.autodesk.com/view/MAYAUL/2016/ENU/
+
+https://github.com/haggi/OpenMaya/blob/master/src/common/python/Renderer/__init__.py
 
 
 

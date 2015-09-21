@@ -37,7 +37,8 @@ def nodeInitializer():
         nAttr = OpenMaya.MFnNumericAttribute()
 
         try:
-                arealight.mRadiance = nAttr.create("radiance", "rd", OpenMaya.MFnNumericData.kFloat, 1.0)
+                arealight.mRadiance = nAttr.createColor("radiance", "rd")
+                nAttr.setDefault(1.0, 1.0, 1.0)
                 nAttr.setKeyable(1) 
                 nAttr.setStorable(1)
                 nAttr.setReadable(1)

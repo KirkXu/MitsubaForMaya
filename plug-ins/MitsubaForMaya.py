@@ -465,8 +465,11 @@ def writeShader(material, materialName, outFile, tabbedSpace):
     elif matType=="MitsubaObjectAreaLightShader":
         outFile.write(tabbedSpace + " <emitter type=\"area\" id=\"" + materialName + "\">\n")
 
-        radiance = cmds.getAttr(material+".radiance")
-        outFile.write(tabbedSpace + "     <spectrum name=\"radiance\" value=\"" + str(radiance) + "\"/>\n")
+        color = cmds.getAttr(material+".radiance")
+        outFile.write(tabbedSpace + "     <rgb name=\"radiance\" value=\"" + str(color[0][0]) + " " + str(color[0][1]) + " " + str(color[0][2]) + "\"/>\n")
+
+        #radiance = cmds.getAttr(material+".radiance")
+        #outFile.write(tabbedSpace + "     <spectrum name=\"radiance\" value=\"" + str(radiance) + "\"/>\n")
 
         samplingWeight = cmds.getAttr(material+".samplingWeight")
         outFile.write(tabbedSpace + "     <float name=\"samplingWeight\" value=\"" + str(samplingWeight) + "\"/>\n")
