@@ -1,0 +1,47 @@
+global proc mitsubaCreateRenderSettings() {
+	string $python = "";
+	$python += "import MitsubaRenderSettingsUI;";
+	$python += "MitsubaRenderSettingsUI.createRenderSettings()";
+
+	python( $python );
+}
+
+global proc mitsubaUpdateSettingsUpdate() {
+	string $python = "";
+	$python += "import MitsubaRenderSettingsUI;";
+	$python += "MitsubaRenderSettingsUI.updateRenderSettings()";
+
+	python( $python );
+}
+
+global proc mitsubaBatchRenderProcedure(string $options) {
+	string $python = "";
+	$python += "import MitsubaForMaya;";
+	$python += "MitsubaForMaya.batchRenderProcedure(" + $options + ")";
+
+	python( $python );
+}
+
+global proc mitsubaBatchRenderOptionsProcedure() {
+	string $python = "";
+	$python += "import MitsubaForMaya;";
+	$python += "MitsubaForMaya.batchRenderOptionsProcedure()";
+
+	python( $python );
+}
+
+global proc string mitsubaBatchRenderOptionsStringProcedure() {
+	string $python = "";
+	$python += "import MitsubaForMaya;";
+	$python += "MitsubaForMaya.batchRenderOptionsStringProcedure()";
+
+	return `python( $python )`;
+}
+
+global proc mitsubaCancelBatchRenderProcedure() {
+	string $python = "";
+	$python += "import MitsubaForMaya;";
+	$python += "MitsubaForMaya.cancelBatchRenderProcedure()";
+
+	python( $python );
+}

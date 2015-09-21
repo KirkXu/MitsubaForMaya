@@ -1,17 +1,104 @@
-import sys, os
+import getpass
+import inspect
+import os
 import re
-import maya.OpenMaya as OpenMaya
-import maya.OpenMayaMPx as OpenMayaMPx
+import struct
+import sys
+import time
+
 import maya.cmds as cmds
 import maya.mel as mel
-import getpass
-import struct
+import maya.OpenMaya as OpenMaya
+import maya.OpenMayaMPx as OpenMayaMPx
 
+from process import Process
+
+import MitsubaRenderSettingsUI
 kPluginCmdName = "mitsuba"
 
+pluginDir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
+sys.path.append(pluginDir)
+
+# Import modules for material plugins
+import MitsubaRenderSettings
+
+import bump
+import coating
+import conductor
+import dielectric
+import difftrans
+import diffuse
+import mask
+import mixturebsdf
+import phong
+import plastic
+import roughcoating
+import roughconductor
+import roughdielectric
+import roughdiffuse
+import roughplastic
+import thindielectric
+import twosided
+import ward
+import irawan
+import homogeneous
+import envmap
+import sunsky
+import arealight
+
 global materialNodeTypes
+global materialNodeModules
+global generalNodeModules
+
 #The list of possible material types
-materialNodeTypes = ["MitsubaBumpShader", "MitsubaSmoothCoatingShader", "MitsubaConductorShader", "MitsubaDielectricShader", "MitsubaDiffuseTransmitterShader", "MitsubaDiffuseShader", "MitsubaMaskShader", "MitsubaMixtureShader", "MitsubaPhongShader", "MitsubaPlasticShader", "MitsubaRoughCoatingShader", "MitsubaRoughConductorShader", "MitsubaRoughDielectricShader", "MitsubaRoughDiffuseShader", "MitsubaRoughPlasticShader", "MitsubaThinDielectricShader", "MitsubaTwoSidedShader", "MitsubaWardShader"]
+materialNodeTypes = ["MitsubaBumpShader", 
+    "MitsubaSmoothCoatingShader", 
+    "MitsubaConductorShader", 
+    "MitsubaDielectricShader", 
+    "MitsubaDiffuseTransmitterShader", 
+    "MitsubaDiffuseShader", 
+    "MitsubaMaskShader", 
+    "MitsubaMixtureShader", 
+    "MitsubaPhongShader", 
+    "MitsubaPlasticShader", 
+    "MitsubaRoughCoatingShader", 
+    "MitsubaRoughConductorShader", 
+    "MitsubaRoughDielectricShader", 
+    "MitsubaRoughDiffuseShader", 
+    "MitsubaRoughPlasticShader", 
+    "MitsubaThinDielectricShader", 
+    "MitsubaTwoSidedShader", 
+    "MitsubaWardShader",
+    "MitsubaIrawanShader",
+    "MitsubaObjectAreaLightShader"]
+
+materialNodeModules = [
+    bump,
+    coating,
+    conductor,
+    dielectric,
+    difftrans,
+    diffuse,
+    mask,
+    mixturebsdf,
+    phong,
+    plastic,
+    roughcoating,
+    roughconductor,
+    roughdielectric,
+    roughdiffuse,
+    roughplastic,
+    thindielectric,
+    twosided,
+    ward,
+    homogeneous,
+    irawan,
+    envmap,
+    sunsky,
+    arealight]
+
+generalNodeModules = [
+    MitsubaRenderSettings]
 
 '''
 Returns the surfaceShader node for a piece of geometry (geom)
@@ -47,6 +134,30 @@ def writeMedium(medium, outFile, tabbedSpace):
     scale = cmds.getAttr(medium+".scale")    
     outFile.write(tabbedSpace + "      <float name=\"scale\" value=\"" + str(scale) + "\"/>\n")
     outFile.write(tabbedSpace + " </medium>\n")
+
+def getTextureFile(material, connectionAttr):
+    connections = cmds.listConnections(material, connections=True)
+    fileTexture = None
+    for i in range(len(connections)):
+        if i%2==1:
+            connection = connections[i]
+            connectionType = cmds.nodeType(connection)
+            if connectionType == "file" and connections[i-1]==(material+"."+connectionAttr):
+                fileTexture = cmds.getAttr(connection+".fileTextureName")
+                hasFile=True
+                #print( "Found texture : %s" % fileTexture )
+                animatedTexture = cmds.getAttr("%s.%s" % (connection, "useFrameExtension"))
+                if animatedTexture:
+                    textureFrameNumber = cmds.getAttr("%s.%s" % (connection, "frameExtension"))
+                    # Should make this an option at some point
+                    tokens = fileTexture.split('.')
+                    tokens[-2] = str(textureFrameNumber).zfill(4)
+                    fileTexture = '.'.join(tokens)
+                    #print( "Animated texture path : %s" % fileTexture )
+            #else:
+            #    print "Source can only be an image file"
+
+    return fileTexture
 
 '''
 Write a surface material (material) to a Mitsuba scene file (outFile)
@@ -122,18 +233,10 @@ def writeShader(material, materialName, outFile, tabbedSpace):
         outFile.write(tabbedSpace + " <bsdf type=\"diffuse\" id=\"" + materialName + "\">\n")
 
         #texture
-        hasFile = False
-        fileTexture = ""
-        connections = cmds.listConnections(material, connections=True)
-        for i in range(len(connections)):
-            if i%2==1:
-                connection = connections[i]
-                connectionType = cmds.nodeType(connection)
-                if connectionType == "file" and connections[i-1]==material+".reflectance":
-                    fileTexture = cmds.getAttr(connection+".fileTextureName")
-                    hasFile=True
+        connectionAttr = "reflectance"
+        fileTexture = getTextureFile(material, connectionAttr)
 
-        if hasFile:
+        if fileTexture:
             outFile.write(tabbedSpace + "     <texture type=\"bitmap\" name=\"reflectance\">\n")
             outFile.write(tabbedSpace + "         <string name=\"filename\" value=\"" + fileTexture + "\"/>")
             outFile.write(tabbedSpace + "     </texture>\n")
@@ -330,23 +433,67 @@ def writeShader(material, materialName, outFile, tabbedSpace):
         outFile.write(tabbedSpace + "     <srgb name=\"diffuseReflectance\" value=\"" + str(diffuseReflectance[0][0]) + " " + str(diffuseReflectance[0][1]) + " " + str(diffuseReflectance[0][2]) + "\"/>\n")
         outFile.write(tabbedSpace + " </bsdf>\n")
 
+    elif matType=="MitsubaIrawanShader":
+        outFile.write(tabbedSpace + " <bsdf type=\"irawan\" id=\"" + materialName + "\">\n")
+
+        # filename
+        filename = cmds.getAttr(material+".filename", asString=True)
+        outFile.write(tabbedSpace + "     <string name=\"filename\" value=\"" + filename + "\"/>\n")
+
+        # repeat
+        repeatu = cmds.getAttr(material+".repeatu")
+        outFile.write(tabbedSpace + "     <float name=\"repeatU\" value=\"" + str(repeatu) + "\"/>\n")
+
+        repeatv = cmds.getAttr(material+".repeatv")
+        outFile.write(tabbedSpace + "     <float name=\"repeatV\" value=\"" + str(repeatv) + "\"/>\n")
+
+        #warp and weft
+        warpkd = cmds.getAttr(material+".warpkd")
+        outFile.write(tabbedSpace + "     <rgb name=\"warp_kd\" value=\"" + str(warpkd[0][0]) + " " + str(warpkd[0][1]) + " " + str(warpkd[0][2]) + "\"/>\n")
+
+        warpks = cmds.getAttr(material+".warpks")
+        outFile.write(tabbedSpace + "     <rgb name=\"warp_ks\" value=\"" + str(warpks[0][0]) + " " + str(warpks[0][1]) + " " + str(warpks[0][2]) + "\"/>\n")
+
+        weftkd = cmds.getAttr(material+".weftkd")
+        outFile.write(tabbedSpace + "     <rgb name=\"weft_kd\" value=\"" + str(weftkd[0][0]) + " " + str(weftkd[0][1]) + " " + str(weftkd[0][2]) + "\"/>\n")
+
+        weftks = cmds.getAttr(material+".weftks")
+        outFile.write(tabbedSpace + "     <rgb name=\"weft_ks\" value=\"" + str(weftks[0][0]) + " " + str(weftks[0][1]) + " " + str(weftks[0][2]) + "\"/>\n")
+
+        outFile.write(tabbedSpace + " </bsdf>\n")
+
+    elif matType=="MitsubaObjectAreaLightShader":
+        outFile.write(tabbedSpace + " <emitter type=\"area\" id=\"" + materialName + "\">\n")
+
+        radiance = cmds.getAttr(material+".radiance")
+        outFile.write(tabbedSpace + "     <spectrum name=\"radiance\" value=\"" + str(radiance) + "\"/>\n")
+
+        samplingWeight = cmds.getAttr(material+".samplingWeight")
+        outFile.write(tabbedSpace + "     <float name=\"samplingWeight\" value=\"" + str(samplingWeight) + "\"/>\n")
+
+        outFile.write(tabbedSpace + " </emitter>\n")
+
 '''
 Write the appropriate integrator
 '''
 def writeIntegrator(outFile):
     #Write the integrator########################################################################
-    global integrator
-    integratorFromMel = mel.eval("$temp=$children")
-    integrator = integratorFromMel[0]
-    global integratorFrames
-    integratorFrames = mel.eval("$temp=$integratorFrames")
-    activeIntegrator = cmds.optionMenu(integrator, query=True, value=True)
-    activeSettings = integratorFrames[0]
+    integratorMenu = MitsubaRenderSettingsUI.integratorMenu
+    integratorFrames = MitsubaRenderSettingsUI.integratorFrames
+
+    #activeIntegrator = integrator
+    activeIntegrator = cmds.optionMenu(integratorMenu, query=True, value=True)
+
+    #print( "integrator menu : %s" % integratorMenu )
+    #print( "integrator frames : %s" % integratorFrames )
+    #print( "active integrator : %s" % activeIntegrator )
 
     #Find the active integrator's settings frame layout
     for frame in integratorFrames:
         if cmds.frameLayout(frame, query=True, visible=True):
             activeSettings = frame
+
+    #print( "Active Integrator : %s" % activeIntegrator )
 
     if activeIntegrator=="Ambient_Occlusion" or activeIntegrator=="Ambient Occlusion":
         '''
@@ -364,8 +511,8 @@ def writeIntegrator(outFile):
         if cmds.checkBox(integratorSettings[1], query=True, value=True):
             outFile.write("     <integer name=\"rayLength\" value=\"" + str(-1) + "\"/>\n")
         else:
-            rl = cmds.intFieldGrp(integratorSettings[2], query=True, value1=True)
-            outFile.write("     <integer name=\"rayLength\" value=\"" + str(rl) + "\"/>\n")
+            rl = cmds.floatFieldGrp(integratorSettings[2], query=True, value1=True)
+            outFile.write("     <float name=\"rayLength\" value=\"" + str(rl) + "\"/>\n")
     
     #Write DI settings
     elif activeIntegrator=="Direct_Illumination" or activeIntegrator=="Direct Illumination":
@@ -898,15 +1045,19 @@ def writeIntegrator(outFile):
 Write image sample generator
 '''
 def writeSampler(outFile, frameNumber):
-    global samplerFrames
-    global sampler
+    samplerMenu = MitsubaRenderSettingsUI.samplerMenu
+    samplerFrames = MitsubaRenderSettingsUI.samplerFrames
 
-    samplerFromMel = mel.eval("$temp=$children")
-    sampler = samplerFromMel[14]
-    samplerFrames = mel.eval("$temp=$samplerFrames")
+    activeSampler = cmds.optionMenu(samplerMenu, query=True, value=True)
 
-    activeSampler = cmds.optionMenu(sampler, query=True, value=True)
+    #print( "sampler menu : %s" % samplerMenu )
+    #print( "sampler frames : %s" % samplerFrames )
+    #print( "active sampler : %s" % activeSampler )
+
+    #activeSampler = sampler
     activeSettings = samplerFrames[0]
+
+    #print( "Active Sampler : %s" % activeSampler )
 
     for frame in samplerFrames:
         if cmds.frameLayout(frame, query=True, visible=True):
@@ -929,7 +1080,7 @@ def writeSampler(outFile, frameNumber):
         dimension = cmds.intFieldGrp(samplerSettings[1], query=True, value1=True)
         outFile.write("             <integer name=\"dimension\" value=\"" + str(dimension) + "\"/>\n")
 
-    elif activeSampler=="Low_Discrepancy_Sampler" or activeSampler=="Low_Discrepancy Sampler":
+    elif activeSampler=="Low_Discrepancy_Sampler" or activeSampler=="Low Discrepancy Sampler":
         samplerSettings = cmds.frameLayout(activeSettings, query=True, childArray=True)
         outFile.write("         <sampler type=\"ldsampler\">\n")
 
@@ -986,8 +1137,13 @@ def writeSensor(outFile, frameNumber):
     for cam in cams:
         isRenderable = cmds.getAttr(cam+".renderable")
         if isRenderable:
+            print( "Rendering camera : %s" % cam )
             rCamShape = cam
             break
+
+    if rCamShape == "":
+        print( "No renderable camera found. Rendering with first camera : %s" % cams[0] )
+        rCamShape = cams[0]
     
     rGroup = cmds.listConnections(rCamShape)[0]
 
@@ -1035,7 +1191,7 @@ def writeSensor(outFile, frameNumber):
     writeSampler(outFile, frameNumber)
 
     #Film
-    outFile.write("     <film type=\"ldrfilm\">\n")
+    outFile.write("     <film type=\"hdrfilm\">\n")
     
     #Resolution
     imageWidth = cmds.getAttr("defaultResolution.width")
@@ -1044,10 +1200,9 @@ def writeSensor(outFile, frameNumber):
     outFile.write("         <integer name=\"width\" value=\"" + str(imageWidth) + "\"/>\n")
 
     #Filter
-    global rfilter
-    rfilterFromMel = mel.eval("$temp=$children")
-    rfilter = rfilterFromMel[21]
-    rfilterValue = cmds.optionMenu(rfilter, query=True, value=True)
+    rfilterMenu = MitsubaRenderSettingsUI.rfilterMenu
+
+    rfilterValue = cmds.optionMenu(rfilterMenu, query=True, value=True)
     rfilterString = ""
     if rfilterValue=="Box_filter" or rfilterValue=="Box filter":
         rfilterString = "box"
@@ -1074,10 +1229,10 @@ Write lights
 def writeLights(outFile):
     lights = cmds.ls(type="light")
     sunskyLights = cmds.ls(type="MitsubaSunsky")
-    areaLights = cmds.ls(type="MitsubaEnvironmentLight")
+    envLights = cmds.ls(type="MitsubaEnvironmentLight")
 
-    if sunskyLights and areaLights or sunskyLights and len(sunskyLights)>1 or areaLights and len(areaLights)>1:
-        print "Cannot specify more than one area light (MitsubaSunsky and MitsubaEnvironmentLight)"
+    if sunskyLights and envLights or sunskyLights and len(sunskyLights)>1 or envLights and len(envLights)>1:
+        print "Cannot specify more than one environment light (MitsubaSunsky and MitsubaEnvironmentLight)"
         # print "Defaulting to constant environment emitter"
         # outFile.write(" <emitter type=\"constant\"/>\n")
 
@@ -1145,33 +1300,36 @@ def writeLights(outFile):
         outFile.write(" </emitter>\n")
 
     #Area lights
-    if areaLights:
-        envmap = areaLights[0]
+    if envLights:
+        envmap = envLights[0]
         connections = cmds.listConnections(envmap, plugs=False, c=True)
         fileName = ""
         hasFile = False
         correctFormat = True
 
         if connections:
+            connectionAttr = "source"
+            fileName = getTextureFile(envmap, connectionAttr)
+
+            '''
             for i in range(len(connections)):
                 connection = connections[i]
                 if connection == envmap+".source":
                     inConnection = connections[i+1]
                     if cmds.nodeType(inConnection) == "file":
                         fileName = cmds.getAttr(inConnection+".fileTextureName")
-                        if fileName:
-                            extension = fileName[len(fileName)-3:len(fileName)]
-                            if extension == "hdr" or extension == "exr":
-                                hasFile = True
-                            else:
-                                print "file must be hdr or exr"
-                                correctFormat = False
-                        else:
-                            print "Please supply a fileName if you plan to use an environment map"
-                            correctFormat = False
-                    else:
-                        print "Source can only be an image file"
-                        correctFormat = False
+            '''
+
+            if fileName:
+                extension = fileName[len(fileName)-3:len(fileName)]
+                if extension == "hdr" or extension == "exr":
+                    hasFile = True
+                else:
+                    print "file must be hdr or exr"
+                    correctFormat = False
+            else:
+                print "Please supply a fileName if you plan to use an environment map"
+                correctFormat = False
         
         if correctFormat:
             if hasFile:
@@ -1179,6 +1337,7 @@ def writeLights(outFile):
                 gamma = cmds.getAttr(envmap+".gamma")
                 cache = cmds.getAttr(envmap+".cache")
                 samplingWeight = cmds.getAttr(envmap+".samplingWeight")
+                rotate = cmds.getAttr(envmap+".rotate")[0]
 
                 outFile.write(" <emitter type=\"envmap\">\n")
                 outFile.write("     <string name=\"filename\" value=\"" + fileName + "\"/>\n")
@@ -1190,7 +1349,14 @@ def writeLights(outFile):
                     outFile.write("     <boolean name=\"cache\" value=\"false\"/>\n")
 
                 outFile.write("     <float name=\"samplingWeight\" value=\"" + str(samplingWeight) + "\"/>\n")
+
+                outFile.write("     <transform name=\"toWorld\">\n")
+                outFile.write("         <rotate x=\"1\" angle=\"" + str(rotate[0]) + "\"/>\n")
+                outFile.write("         <rotate y=\"1\" angle=\"" + str(rotate[1]) + "\"/>\n")
+                outFile.write("         <rotate z=\"1\" angle=\"" + str(rotate[2]) + "\"/>\n")
+                outFile.write("     </transform>\n")
                 outFile.write(" </emitter>\n")
+
             else:
                 radiance = cmds.getAttr(envmap+".source")
                 samplingWeight = cmds.getAttr(envmap+".samplingWeight")
@@ -1226,14 +1392,16 @@ def writeGeometryAndMaterials(outFile, cwd):
     writtenMaterials = []
     for geom in geoms:
         material = getShader(geom)          #Gets the user define names of the shader
-        if cmds.nodeType(material) in materialNodeTypes:
+        materialType = cmds.nodeType(material)
+        if materialType in materialNodeTypes:
             if material not in writtenMaterials:
                 if "twosided" in cmds.listAttr(material) and cmds.getAttr(material+".twosided"):
                     outFile.write("<bsdf type=\"twosided\" id=\"" + material + "\">\n")
                     writeShader(material, material+"InnerMaterial", outFile, "    ")
                     outFile.write("</bsdf>\n")
                 else:
-                    writeShader(material, material, outFile, "")  #Write the shader to the xml file
+                    if materialType != "MitsubaObjectAreaLightShader":
+                        writeShader(material, material, outFile, "")  #Write the shader to the xml file
                 writtenMaterials.append(material)
         
     outFile.write("\n")
@@ -1246,12 +1414,16 @@ def writeGeometryAndMaterials(outFile, cwd):
     for geom in geoms:
         shader = getShader(geom)
         if cmds.nodeType(shader) in materialNodeTypes:
-            output = cwd+"/scenes/"+geom+".obj"
+            output = os.path.join(cwd, "renderData", geom + ".obj")
             cmds.select(geom)
             objFiles.append(cmds.file(output, op=True, typ="OBJexport", options="groups=1;ptgroups=1;materials=0;smoothing=1;normals=1", exportSelected=True, force=True))
             outFile.write("    <shape type=\"obj\">\n")
             outFile.write("        <string name=\"filename\" value=\"" + geom + ".obj\"/>\n")
-            outFile.write("        <ref id=\"" + shader + "\"/>\n")
+            # Check for area lights
+            if cmds.nodeType(shader) == "MitsubaObjectAreaLightShader":
+                writeShader(shader, shader, outFile, "")
+            else:
+                outFile.write("        <ref id=\"" + shader + "\"/>\n")
             
             #check for a homogeneous material
             #this checks if there is a homogeneous medium, and returns the attribute that it
@@ -1268,7 +1440,7 @@ def writeGeometryAndMaterials(outFile, cwd):
 
             outFile.write("    </shape>\n\n")
         elif cmds.nodeType(shader) == "MitsubaVolume":
-            output = cwd+"/scenes/"+geom+".obj"
+            output = os.path.join(cwd, "renderData", geom + ".obj")
             cmds.select(geom)
             objFiles.append(cmds.file(output, op=True, typ="OBJexport", options="groups=1;ptgroups=1;materials=0;smoothing=1;normals=1", exportSelected=True, force=True))
             outFile.write("    <shape type=\"obj\">\n")
@@ -1407,6 +1579,80 @@ def writeVolume(outFile, cwd, tabbedSpace, material, geom):
     outFile.write(tabbedSpace + "</medium>\n")
 
 
+
+
+def writeScene(outFileName, outDir):
+    outFile = open(outFileName, 'w+')
+
+    #Scene stuff
+    outFile.write("<?xml version=\'1.0\' encoding=\'utf-8\'?>\n")
+    outFile.write("\n")
+    outFile.write("<scene version=\"0.5.0\">\n")
+
+    #Write integrator
+    writeIntegrator(outFile)
+
+    #Write camera, sampler, and film
+    writeSensor(outFile, 0)
+
+    #Write lights
+    writeLights(outFile)
+
+    #Write geom and mats together since theyre inter-dependent
+    geometryFiles = writeGeometryAndMaterials(outFile, outDir)
+        
+    outFile.write("\n")
+    outFile.write("</scene>")
+    outFile.close()
+
+    return geometryFiles
+
+def renderScene(outFileName, projectDir, mitsubaPath, mtsDir, keepTempFiles, geometryFiles, animation=False, frame=1):
+    os.chdir(mtsDir)
+
+    imageName = os.path.join(projectDir, "images")
+    imagePrefix = cmds.getAttr("defaultRenderGlobals.imageFilePrefix")
+    if imagePrefix is None:
+        imagePrefix = "tempRender"
+    if animation:
+        extensionPadding = cmds.getAttr("defaultRenderGlobals.extensionPadding")
+        logName = os.path.join(imageName, imagePrefix + "." + str(frame).zfill(extensionPadding) +".log")
+        imageName = os.path.join(imageName, imagePrefix + "." + str(frame).zfill(extensionPadding) +".exr")
+    else:
+        logName = os.path.join(imageName, imagePrefix + ".log")
+        imageName = os.path.join(imageName, imagePrefix + ".exr")
+
+    args = ['-v',
+        '-o',
+        imageName,
+        outFileName]
+    if ' ' in mtsDir:
+        env = {"LD_LIBRARY_PATH":str("\"%s\"" % mtsDir)}
+    else:
+        env = {"LD_LIBRARY_PATH":str(mtsDir)}
+    mitsubaRender = Process(description='render an image',
+        cmd=mitsubaPath,
+        args=args,
+        env=env)
+    mitsubaRender.execute()
+    mitsubaRender.write_log_to_disk(logName, format='txt')
+
+    print( "Render execution returned : %s" % mitsubaRender.status )
+
+    if not keepTempFiles:
+        #Delete all of the temp file we just made
+        os.chdir(os.path.join(projectDir, "renderData"))
+        for geometryFile in geometryFiles:
+            #print( "Removing geometry : %s" % geometryFile )
+            os.remove(geometryFile)
+        #print( "Removing mitsuba scene description : %s" % outFileName )
+        os.remove(outFileName)
+        os.remove(logName)
+    else:
+        print( "Keeping temporary files" )
+
+    return imageName
+
 '''
 This registers a mel command to render with Mitsuba
 '''
@@ -1421,143 +1667,72 @@ class mitsubaForMaya(OpenMayaMPx.MPxCommand):
         #Save the user's selection
         userSelection = cmds.ls(sl=True)
         
-        #Get the cwd
-        cwd = cmds.workspace(q=True, fn=True)
-        # print cwd
+        renderSettings = MitsubaRenderSettingsUI.renderSettings
+        print( "Render Settings - Node            : %s" % renderSettings )
 
-        ################################################################################
-        #Mitsuba Scene Output###########################################################
-        ################################################################################
-        
-        outFileName = cwd + "/scenes/temporary.xml"
-        
-        #Try to do animation jesus
-        if cmds.getAttr("defaultRenderGlobals.animation"):
+        #Get the directories and other variables
+        projectDir = cmds.workspace(q=True, fn=True)
+        outFileName = os.path.join(projectDir, "renderData", "temporary.xml")
+        pluginDir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
+        version = cmds.about(v=True).replace(" ", "-")
+
+        # Get render settings
+        mitsubaPath = cmds.getAttr("%s.%s" % (renderSettings, "mitsubaPath"))
+        mtsDir = os.path.split(mitsubaPath)[0]
+        integrator = cmds.getAttr("%s.%s" % (renderSettings, "integrator"))
+        sampler = cmds.getAttr("%s.%s" % (renderSettings, "sampler"))
+        sampleCount = cmds.getAttr("%s.%s" % (renderSettings, "sampleCount"))
+        reconstructionFilter = cmds.getAttr("%s.%s" % (renderSettings, "reconstructionFilter"))
+        keepTempFiles = cmds.getAttr("%s.%s" % (renderSettings, "keepTempFiles"))
+        animation = cmds.getAttr("defaultRenderGlobals.animation")
+
+        print( "Render Settings - Mitsuba Path    : %s" % mitsubaPath )
+        print( "Render Settings - Integrator      : %s" % integrator )
+        print( "Render Settings - Sampler         : %s" % sampler )
+        print( "Render Settings - Sample Count    : %s" % sampleCount )
+        print( "Render Settings - Reconstruction  : %s" % reconstructionFilter )
+        print( "Render Settings - Keep Temp Files : %s" % keepTempFiles )
+        print( "Render Settings - Animation       : %s" % animation )
+
+        if not cmds.about(batch=True) and animation:
+            print( "Animation isn't currently supported. Rendering current frame." )
+            animation = False
+
+        # Animation doesn't work
+        if animation:
             startFrame = int(cmds.getAttr("defaultRenderGlobals.startFrame"))
             endFrame = int(cmds.getAttr("defaultRenderGlobals.endFrame"))
             byFrame = int(cmds.getAttr("defaultRenderGlobals.byFrameStep"))
-            
+            print( "Animation frame range : %d to %d, step %d" % (
+                startFrame, endFrame, byFrame) )
+
             for frame in range(startFrame, endFrame+1, byFrame):
+                # Calling this leads to Maya locking up
                 cmds.currentTime(frame)
-                print "Rendering frame " + str(frame)
+                print( "Rendering frame " + str(frame) + " - begin" )
+
+                # Export scene and geometry
+                geometryFiles = writeScene(outFileName, projectDir)
         
-                outFile = open(outFileName, 'w+')
+                # Render scene, delete scene and geometry
+                imageName = renderScene(outFileName, projectDir, mitsubaPath, 
+                    mtsDir, keepTempFiles, geometryFiles, animation, frame)
 
-                #Scene stuff
-                outFile.write("<?xml version=\'1.0\' encoding=\'utf-8\'?>\n")
-                outFile.write("\n")
-                outFile.write("<scene version=\"0.4.0\">\n")
-
-                #Write integrator
-                writeIntegrator(outFile)
-
-                #Write camera, sampler, and film
-                writeSensor(outFile, frame)
-
-                #Write lights
-                writeLights(outFile)
-
-                #Write geom and mats together since theyre inter-dependent
-                objFiles = writeGeometryAndMaterials(outFile, cwd)
-
-                outFile.write("\n")
-                outFile.write("</scene>")
-                outFile.close()
-                ################################################################################
-                ################################################################################
-                ################################################################################
-
-                ################################################################################
-                #Call Mitsuba and delete temp files#############################################
-                ################################################################################
-
-                # os.chdir(cwd)
-                projectDir = cwd
-
-                version = cmds.about(v=True).replace(" ", "-")
-                pluginDir = "C:/Users/"+getpass.getuser()+"/Documents/maya/"+version+"-x64/plug-ins"
-                mtsDir = pluginDir + "/mitsuba"
-
-                print mtsDir
-                os.chdir(mtsDir)
-                imageName = projectDir + "/images/"
-                imagePrefix = cmds.getAttr("defaultRenderGlobals.imageFilePrefix")
-                imageName+=imagePrefix + str(frame).zfill(3) +".png"
-
-                print outFileName
-                print imageName
-
-                os.system(mtsDir+"/mitsuba.exe " + outFileName + " -o " + imageName)
-
-                #Delete all of the temp file we just made
-                #os.chdir(projectDir+"/scenes")
-                #os.remove(outFileName)
-                #for obj in objFiles:
-                #    os.remove(obj)
+                print("Rendering frame " + str(frame) + " - end" )
+                time.sleep(2)
         else:
-            outFile = open(outFileName, 'w+')
+            # Export scene and geometry
+            geometryFiles = writeScene(outFileName, projectDir)
 
-            #Scene stuff
-            outFile.write("<?xml version=\'1.0\' encoding=\'utf-8\'?>\n")
-            outFile.write("\n")
-            outFile.write("<scene version=\"0.4.0\">\n")
+            # Render scene, delete scene and geometry
+            imageName = renderScene(outFileName, projectDir, mitsubaPath, 
+                mtsDir, keepTempFiles, geometryFiles)
 
-            #Write integrator
-            writeIntegrator(outFile)
-
-            #Write camera, sampler, and film
-            writeSensor(outFile, 0)
-
-            #Write lights
-            writeLights(outFile)
-
-            #Write geom and mats together since theyre inter-dependent
-            objFiles = writeGeometryAndMaterials(outFile, cwd)
-                
-            outFile.write("\n")
-            outFile.write("</scene>")
-            outFile.close()
-            ################################################################################
-            ################################################################################
-            ################################################################################
-
-            ################################################################################
-            #Call Mitsuba and delete temp files#############################################
-            ################################################################################
-
-            # os.chdir(cwd)
-            projectDir = cwd
-
-            version = cmds.about(v=True).replace(" ", "-")
-            pluginDir = "C:/Users/"+getpass.getuser()+"/Documents/maya/"+version+"-x64/plug-ins"
-            mtsDir = pluginDir + "/mitsuba/"
-
-            print mtsDir
-            os.chdir(os.getcwd())
-            os.chdir(mtsDir)
-            imageName = projectDir + "/images/"
-            imagePrefix = cmds.getAttr("defaultRenderGlobals.imageFilePrefix")
-            if imagePrefix is None:
-                imagePrefix = "tempRender"
-            imageName+=imagePrefix + ".png"
-
-            os.system(mtsDir+"/mitsuba.exe " + outFileName + " -o " + imageName)
-
-            #Delete all of the temp file we just made
-            os.chdir(projectDir+"/scenes")
-            #os.remove(outFileName)
-            for obj in objFiles:
-                print obj
-                os.remove(obj)
-
-            mel.eval("showRender(\"" + imageName + "\")")
-
-        ################################################################################
-        ################################################################################
-        ################################################################################
+            # Display the render
+            MitsubaRenderSettingsUI.showRender(imageName)
 
         '''
-        Now we need to either select the objects that the user had selected before
+        Select the objects that the user had selected before
         they rendered, or clear the selection
         '''
         if len(userSelection) > 0:
@@ -1565,422 +1740,125 @@ class mitsubaForMaya(OpenMayaMPx.MPxCommand):
         else:
             cmds.select(cl=True)
 
+def batchRenderProcedure(options):
+    print("batchRenderProcedure: options " + str(options))
+
+def batchRenderOptionsProcedure():
+    print("batchRenderOptionsProcedure")
+
+def batchRenderOptionsStringProcedure():
+    print("batchRenderOptionsStringProcedure")
+    return ' -r Mitsuba'
+
+def cancelBatchRenderProcedure():
+    print("cancelBatchRenderProcedure")
+
 # Creator
 def cmdCreator():
     return OpenMayaMPx.asMPxPtr( mitsubaForMaya() )
 
 # Initialize the script plug-in
 def initializePlugin(mobject):
+    global materialNodeModules
+
+    pluginDir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
+
     mplugin = OpenMayaMPx.MFnPlugin(mobject)
-    # cmds.loadPlugin("diffuse.py")
-    # cmds.loadPlugin("dielectric.py")
-    # cmds.loadPlugin("twosided.py")
-    # cmds.loadPlugin("mask.py")
-    # cmds.loadPlugin("mixturebsdf.py")
-    # cmds.loadPlugin("bump.py")
-    # cmds.loadPlugin("roughplastic.py")
-    # cmds.loadPlugin("roughcoating.py")
-    # cmds.loadPlugin("coating.py")
-    # cmds.loadPlugin("difftrans.py")
-    # cmds.loadPlugin("ward.py")
-    # cmds.loadPlugin("phong.py")
-    # cmds.loadPlugin("roughdiffuse.py")
-    # cmds.loadPlugin("roughdielectric.py")
-    # cmds.loadPlugin("roughconductor.py")
-    # cmds.loadPlugin("plastic.py")
-    # cmds.loadPlugin("homogeneous.py")
-    # cmds.loadPlugin("conductor.py")
-    # cmds.loadPlugin("thindielectric.py")
-    # cmds.loadPlugin("sunsky.py")
-    # cmds.loadPlugin("envmap.py")
+
     try:
+        # Load needed plugins
+        if not cmds.pluginInfo( "objExport", query=True, loaded=True ):
+            cmds.loadPlugin( "objExport" )
+
+        # Register general nodes
+        try:
+            for generalNodeModule in generalNodeModules:
+                mplugin.registerNode( generalNodeModule.kPluginNodeName, 
+                    generalNodeModule.kPluginNodeId, 
+                    generalNodeModule.nodeCreator, 
+                    generalNodeModule.nodeInitializer, 
+                    OpenMayaMPx.MPxNode.kDependNode )
+                print( "Registered Mitsuba node     : %s" % generalNodeModule.kPluginNodeName)
+        except:
+                sys.stderr.write( "Failed to register node: %s\n" % generalNodeModule.kPluginNodeName )
+                raise
+
+        # Register Materials
+        try:
+            for materialNodeModule in materialNodeModules:
+                mplugin.registerNode( materialNodeModule.kPluginNodeName, 
+                    materialNodeModule.kPluginNodeId, 
+                    materialNodeModule.nodeCreator, 
+                    materialNodeModule.nodeInitializer, 
+                    OpenMayaMPx.MPxNode.kDependNode, 
+                    materialNodeModule.kPluginNodeClassify )
+                print( "Registered Mitsuba material : %s" % materialNodeModule.kPluginNodeName)
+        except:
+                sys.stderr.write( "Failed to register node: %s\n" % materialNodeModule.kPluginNodeName )
+                raise
+
+        # Register Mitsuba Renderer
         mplugin.registerCommand( kPluginCmdName, cmdCreator )
-        mel.eval('source \"C:/Users/jmn236/Documents/maya/2014-x64/plug-ins/test.mel\";')
+
+        # Mel to call rendering functions
+        renderSettingsMel = os.path.join(pluginDir, "MitsubaForMaya.mel")
+        mel.eval('source \"%s\";' % renderSettingsMel.replace('\\', '/'))
+
         cmds.renderer("Mitsuba", rendererUIName="Mitsuba")
-        cmds.renderer( "Mitsuba", edit=True, addGlobalsNode="defaultRenderGlobals" )
-        cmds.renderer("Mitsuba", edit=True, addGlobalsTab=("Common", "createMayaSoftwareCommonGlobalsTab","updateMayaSoftwareCommonGlobalsTab"))
-        cmds.renderer("Mitsuba", edit=True, addGlobalsTab=("Mitsuba Common", "mtsSettings", "mtsSettingsUpdate"))
-        cmds.renderer("Mitsuba", edit=True, renderProcedure="mitsuba")
-        #mel.eval("mtsSettings()")
+        cmds.renderer("Mitsuba", edit=True, renderProcedure=kPluginCmdName)
+
+        cmds.renderer("Mitsuba", edit=True, batchRenderProcedure="mitsubaBatchRenderProcedure")
+        cmds.renderer("Mitsuba", edit=True, batchRenderOptionsProcedure="mitsubaBatchRenderOptionsProcedure")
+        cmds.renderer("Mitsuba", edit=True, batchRenderOptionsStringProcedure="mitsubaBatchRenderOptionsStringProcedure")
+        cmds.renderer("Mitsuba", edit=True, cancelBatchRenderProcedure="mitsubaCancelBatchRenderProcedure")
+
+        cmds.renderer("Mitsuba", edit=True, addGlobalsTab=("Common", 
+            "createMayaSoftwareCommonGlobalsTab", 
+            "updateMayaSoftwareCommonGlobalsTab"))
+
+        cmds.renderer("Mitsuba", edit=True, addGlobalsTab=("Mitsuba Common", 
+            "mitsubaCreateRenderSettings", 
+            "mitsubaUpdateSettingsUpdate"))
+
+        cmds.renderer("Mitsuba", edit=True, addGlobalsNode="defaultMitsubaRenderGlobals" )
+
+        #mel.eval("mitsubaCreateRenderSettings()")
+
     except:
         sys.stderr.write( "Failed to register command: %s\n" % kPluginCmdName )
         raise
 
 # Uninitialize the script plug-in
 def uninitializePlugin(mobject):
+    global materialNodeModules
+
     mplugin = OpenMayaMPx.MFnPlugin(mobject)
-    # cmds.unloadPlugin("diffuse.py")
-    # cmds.unloadPlugin("dielectric.py")
-    # cmds.unloadPlugin("twosided.py")
-    # cmds.unloadPlugin("mask.py")
-    # cmds.unloadPlugin("mixturebsdf.py")
-    # cmds.unloadPlugin("bump.py")
-    # cmds.unloadPlugin("roughplastic.py")
-    # cmds.unloadPlugin("roughcoating.py")
-    # cmds.unloadPlugin("coating.py")
-    # cmds.unloadPlugin("difftrans.py")
-    # cmds.unloadPlugin("ward.py")
-    # cmds.unloadPlugin("phong.py")
-    # cmds.unloadPlugin("roughdiffuse.py")
-    # cmds.unloadPlugin("roughdielectric.py")
-    # cmds.unloadPlugin("roughconductor.py")
-    # cmds.unloadPlugin("plastic.py")
-    # cmds.unloadPlugin("homogeneous.py")
-    # cmds.unloadPlugin("conductor.py")
-    # cmds.unloadPlugin("thindielectric.py")
-    # cmds.unloadPlugin("sunsky.py")
-    # cmds.unloadPlugin("envmap.py")
-    cmds.renderer("Mitsuba", edit=True, unregisterRenderer=True)
+    try:
+        cmds.renderer("Mitsuba", edit=True, unregisterRenderer=True)
+    except:
+        sys.stderr.write( "Failed to unregister renderer: Mitsuba\n" )
+
     try:
         mplugin.deregisterCommand( kPluginCmdName )
+
+        # Unregister materials
+        try:
+            for materialNodeModule in materialNodeModules:
+                mplugin.deregisterNode( materialNodeModule.kPluginNodeId )
+        except:
+                sys.stderr.write( "Failed to deregister node: %s\n" % materialNodeModule.kPluginNodeName )
+                raise
+
+        # Unregister general nodes
+        try:
+            for generalNodeModule in generalNodeModules:
+                mplugin.deregisterNode( generalNodeModule.kPluginNodeId )
+        except:
+                sys.stderr.write( "Failed to deregister node: %s\n" % generalNodeModule.kPluginNodeName )
+                raise
+
     except:
         sys.stderr.write( "Failed to unregister command: %s\n" % kPluginCmdName )
 
 ##################################################
 
-##################################################
-
-#Main render settings window
-global renderSettingsWindow
-global renderWindow
-global renderedImage
-#Handle to the active integrator
-global integrator
-#List of possible integrators (stored as frameLayouts)
-global integratorFrames
-
-global sampler
-global samplerFrames
-
-global rfilter
-
-global renderButton
-global fileNameField
-global hideEmitters
-
-def createIntegratorFrames():
-    #Make the integrator specific settings
-    global integratorFrames
-    integratorFrames = []
-    aoSettings = cmds.frameLayout(label="Ambient Occlusion", cll=True, visible=False)
-    cmds.intFieldGrp(numberOfFields=1, label="shadingSamples", value1=1)
-    cmds.checkBox(label="Use automatic ray length")
-    cmds.floatFieldGrp(numberOfFields=1, label="rayLength", value1=1)
-    cmds.setParent('..')
-
-    diSettings = cmds.frameLayout(label="Direct Illumination", cll=True, visible=False)
-    cmds.intFieldGrp(numberOfFields=1, label="shadingSamples", value1=1)
-    cmds.checkBox(label="Use emitter and bsdf specific samplers")
-    cmds.intFieldGrp(numberOfFields=1, label="emitterSamples", value1=1)
-    cmds.intFieldGrp(numberOfFields=1, label="bsdfSamples", value1=1)
-    cmds.checkBox(label = "strictNormals")
-    cmds.checkBox(label = "hideEmitters")
-    cmds.setParent('..')
-
-    pSettings = cmds.frameLayout(label="Path Tracer", cll=True)
-    cmds.checkBox("Use infinite depth", value=True)
-    cmds.intFieldGrp(numberOfFields=1, label="maxDepth", value1=1)
-    cmds.intFieldGrp(numberOfFields=1, label="rrDepth", value1=1)
-    cmds.checkBox(label = "strictNormals")
-    cmds.checkBox(label = "hideEmitters")
-    cmds.setParent('..')
-
-    vpsSettings = cmds.frameLayout(label="Simple Volumetric Path Tracer", cll=True, visible=False)
-    cmds.checkBox("Use infinite depth", value=True)
-    cmds.intFieldGrp(numberOfFields=1, label="maxDepth", value1=1)
-    cmds.intFieldGrp(numberOfFields=1, label="rrDepth", value1=1)
-    cmds.checkBox(label = "strictNormals")
-    cmds.checkBox(label = "hideEmitters")
-    cmds.setParent('..')
-
-    vpSettings = cmds.frameLayout(label="Volumetric Path Tracer", cll=True, visible=False)
-    cmds.checkBox("Use infinite depth", value=True)
-    cmds.intFieldGrp(numberOfFields=1, label="maxDepth", value1=1)
-    cmds.intFieldGrp(numberOfFields=1, label="rrDepth", value1=1)
-    cmds.checkBox(label = "strictNormals")
-    cmds.checkBox(label = "hideEmitters")
-    cmds.setParent('..')
-
-    bdptSettings = cmds.frameLayout(label="Bidirectional Path Tracer", cll=True, visible=False)
-    cmds.checkBox(label = "Use infinite depth", value=True)
-    cmds.intFieldGrp(numberOfFields=1, label="maxDepth", value1=1)
-    cmds.checkBox(label = "lightImage")
-    cmds.checkBox(label = "sampleDirect")
-    cmds.intFieldGrp(numberOfFields=1, label="rrDepth", value1=1)
-    cmds.setParent('..')
-
-    pmSettings = cmds.frameLayout(label="Photon Map", cll=True, visible=False)
-    cmds.intFieldGrp(numberOfFields=1, label="directSamples", value1=16)
-    cmds.intFieldGrp(numberOfFields=1, label="glossySamples", value1=32)
-    cmds.checkBox(label = "Use infinite depth", value=True)
-    cmds.intFieldGrp(numberOfFields=1, label="maxDepth", value1=1)
-    cmds.intFieldGrp(numberOfFields=1, label="globalPhotons", value1=250000)
-    cmds.intFieldGrp(numberOfFields=1, label="causticPhotons", value1=250000)
-    cmds.intFieldGrp(numberOfFields=1, label="volumePhotons", value1=250000)
-    cmds.floatFieldGrp(numberOfFields=1, label="globalLookupRadius", value1=0.05)
-    cmds.floatFieldGrp(numberOfFields=1, label="causticLookupRadius", value1=0.05)
-    cmds.intFieldGrp(numberOfFields=1, label="lookupSize", value1=120)
-    cmds.checkBox(label = "Use automatic granularity")
-    cmds.intFieldGrp(numberOfFields=1, label="granularity", value1=0)
-    cmds.checkBox(label = "hideEmitters")
-    cmds.intFieldGrp(numberOfFields=1, label="rrDepth", value1=1)
-    cmds.setParent('..')
-
-    ppmSettings = cmds.frameLayout(label="Progressive Photon Map", cll=True, visible=False)
-    cmds.checkBox(label = "Use infinite depth", value=True)
-    cmds.intFieldGrp(numberOfFields=1, label="maxDepth", value1=1)
-    cmds.intFieldGrp(numberOfFields=1, label="photonCount", value1=250000)
-    cmds.checkBox(label = "Automatically decide initialRadius")
-    cmds.floatFieldGrp(numberOfFields=1, label="initialRadius", value1=0.0)
-    cmds.floatFieldGrp(numberOfFields=1, label="alpha", value1=0.7)
-    cmds.checkBox(label = "Use automatic granularity")
-    cmds.intFieldGrp(numberOfFields=1, label="granularity", value1=0)
-    cmds.checkBox(label = "hideEmitters")
-    cmds.intFieldGrp(numberOfFields=1, label="rrDepth", value1=1)
-    cmds.checkBox(label = "Use infinite maxPasses")
-    cmds.intFieldGrp(numberOfFields=1, label="maxPasses", value1=1)
-    cmds.setParent('..')
-
-    sppmSettings = cmds.frameLayout(label="Stochastic Progressive Photon Map", cll=True, visible=False)
-    cmds.checkBox(label = "Use infinite depth", value=True)
-    cmds.intFieldGrp(numberOfFields=1, label="maxDepth", value1=1)
-    cmds.intFieldGrp(numberOfFields=1, label="photonCount", value1=250000)
-    cmds.checkBox(label = "Automatically decide initialRadius")
-    cmds.floatFieldGrp(numberOfFields=1, label="initialRadius", value1=0.0)
-    cmds.floatFieldGrp(numberOfFields=1, label="alpha", value1=0.7)
-    cmds.checkBox(label = "Use automatic granularity")
-    cmds.intFieldGrp(numberOfFields=1, label="granularity", value1=0)
-    cmds.checkBox(label = "hideEmitters")
-    cmds.intFieldGrp(numberOfFields=1, label="rrDepth", value1=1)
-    cmds.checkBox(label = "Use infinite maxPasses")
-    cmds.intFieldGrp(numberOfFields=1, label="maxPasses", value1=1)
-    cmds.setParent('..')
-
-    pssmltSettings = cmds.frameLayout(label="Primary Sample Space Metropolis Light Transport", cll=True, visible=False)
-    cmds.checkBox(label = "bidirectional")
-    cmds.checkBox(label = "Use infinite depth", value=True)
-    cmds.intFieldGrp(numberOfFields=1, label="maxDepth", value1=1)
-    cmds.checkBox(label = "Use automatic direct samples")
-    cmds.intFieldGrp(numberOfFields=1, label="directSamples", value1=16)
-    cmds.intFieldGrp(numberOfFields=1, label="luminanceSamples", value1=100000)
-    cmds.checkBox(label = "twoStage", value=False)
-    cmds.checkBox(label = "hideEmitters", value=True)
-    cmds.intFieldGrp(numberOfFields=1, label="rrDepth", value1=5)
-    cmds.floatFieldGrp(numberOfFields=1, label="pLarge", value1=0.3)
-    cmds.setParent('..')
-
-    mltSettings = cmds.frameLayout(label="Path Space Metropolis Light Transport", cll=True, visible=False)
-    cmds.checkBox(label = "Use infinite depth", value=True)
-    cmds.intFieldGrp(numberOfFields=1, label="maxDepth", value1=1)
-    cmds.checkBox(label = "Use automatic direct samples")
-    cmds.intFieldGrp(numberOfFields=1, label="directSamples", value1=16)
-    cmds.intFieldGrp(numberOfFields=1, label="luminanceSamples", value1=100000)
-    cmds.checkBox(label = "twoStage", value=False)
-    cmds.checkBox(label = "bidirectionalMutation", value=True)
-    cmds.checkBox(label = "lensPerturbation", value=True)
-    cmds.checkBox(label = "multiChainPerturbation", value=True)
-    cmds.checkBox(label = "causticPerturbation", value=True)
-    cmds.checkBox(label = "manifoldPerturbation", value=False)
-    cmds.checkBox(label = "hideEmitters", value=True)
-    cmds.floatFieldGrp(numberOfFields=1, label="lambda", value1=0.3)
-    cmds.setParent('..')
-
-    erptSettings = cmds.frameLayout(label="Energy Redistribution Path Tracer", cll=True, visible=False)
-    cmds.checkBox(label = "Use infinite depth", value=True)
-    cmds.intFieldGrp(numberOfFields=1, label="maxDepth", value1=1)
-    cmds.floatFieldGrp(numberOfFields=1, label="numChains", value1=1.0)
-    cmds.checkBox(label = "Enable max chains", value=False)
-    cmds.floatFieldGrp(numberOfFields=1, label="maxChains", value1=1.0)
-    cmds.checkBox(label = "Use automatic direct samples", value=False)
-    cmds.intFieldGrp(numberOfFields=1, label="directSamples", value1=16)
-    cmds.checkBox(label = "lensPerturbation", value=True)
-    cmds.checkBox(label = "multiChainPerturbation", value=True)
-    cmds.checkBox(label = "causticPerturbation", value=True)
-    cmds.checkBox(label = "manifoldPerturbation", value=False)
-    cmds.checkBox(label = "hideEmitters", value=True)
-    cmds.floatFieldGrp(numberOfFields=1, label="lambda", value1=50)
-    cmds.setParent('..')
-
-    ptrSettings = cmds.frameLayout(label="Adjoint Particle Tracer", cll=True, visible=False)
-    cmds.checkBox(label = "Use infinite depth", value=True)
-    cmds.intFieldGrp(numberOfFields=1, label="maxDepth", value1=1)
-    cmds.intFieldGrp(numberOfFields=1, label="rrDepth", value1=5)
-    cmds.intFieldGrp(numberOfFields=1, label="granularity", value1=200000)
-    cmds.checkBox(label = "bruteForce", value=False)
-    cmds.checkBox(label = "hideEmitters", value=True)
-    cmds.setParent('..')
-
-    integratorFrames.append(aoSettings)
-    integratorFrames.append(diSettings)
-    integratorFrames.append(pSettings)
-    integratorFrames.append(vpsSettings)
-    integratorFrames.append(vpSettings)
-    integratorFrames.append(bdptSettings)
-    integratorFrames.append(pmSettings)
-    integratorFrames.append(ppmSettings)
-    integratorFrames.append(sppmSettings)
-    integratorFrames.append(pssmltSettings)
-    integratorFrames.append(mltSettings)
-    integratorFrames.append(erptSettings)
-    integratorFrames.append(ptrSettings)
-
-def createSamplerFrames():
-    global samplerFrames
-    samplerFrames = []
-
-    indSettings = cmds.frameLayout(label="Independent Sampler", cll=False, visible=True)
-    cmds.intFieldGrp(numberOfFields=1, label="sampleCount", value1=4)
-    cmds.setParent('..')
-
-    stratSettings = cmds.frameLayout(label="Stratified Sampler", cll=True, visible=False)
-    cmds.intFieldGrp(numberOfFields=1, label="sampleCount", value1=4)
-    cmds.intFieldGrp(numberOfFields=1, label="dimension", value1=4)
-    cmds.setParent('..')
-
-    ldSettings = cmds.frameLayout(label="Low Discrepancy Sampler", cll=True, visible=False)
-    cmds.intFieldGrp(numberOfFields=1, label="sampleCount", value1=4)
-    cmds.intFieldGrp(numberOfFields=1, label="dimension", value1=4)
-    cmds.setParent('..')
-
-    halSettings = cmds.frameLayout(label="Halton QMC Sampler", cll=True, visible=False)
-    cmds.intFieldGrp(numberOfFields=1, label="sampleCount", value1=4)
-    cmds.intFieldGrp(numberOfFields=1, label="scramble", value1=0)
-    cmds.setParent('..')
-
-    hamSettings = cmds.frameLayout(label="Hammersley QMC Sampler", cll=True, visible=False)
-    cmds.intFieldGrp(numberOfFields=1, label="sampleCount", value1=4)
-    cmds.intFieldGrp(numberOfFields=1, label="scramble", value1=0)
-    cmds.setParent('..')
-
-    sobSettings = cmds.frameLayout(label="Sobol QMC Sampler", cll=True, visible=False)
-    cmds.intFieldGrp(numberOfFields=1, label="sampleCount", value1=4)
-    cmds.intFieldGrp(numberOfFields=1, label="scramble", value1=0)
-    cmds.setParent('..')
-
-    samplerFrames.append(indSettings)
-    samplerFrames.append(stratSettings)
-    samplerFrames.append(ldSettings)
-    samplerFrames.append(halSettings)
-    samplerFrames.append(hamSettings)
-    samplerFrames.append(sobSettings)
-
-'''
-This function creates the render settings window.
-This includes the integrator, sample generator, image filter,
-and film type.
-'''
-def createRenderSettings():
-    global renderSettingsWindow
-    renderSettingsWindow = cmds.window(title="Mitsuba Render Settings", iconName="MTS", widthHeight=(100,250), retain=True, resizeToFitChildren=True)
-    cmds.columnLayout(adjustableColumn=True)
-    #Create integrator selection drop down menu
-    global integrator
-    integrator = cmds.optionMenu(label="Integrator", changeCommand=changeIntegrator)
-    cmds.menuItem('Ambient Occlusion')
-    cmds.menuItem('Direct Illumination')
-    cmds.menuItem('Path Tracer')
-    cmds.menuItem('Volumetric Path Tracer')
-    cmds.menuItem('Simple Volumetric Path Tracer')
-    cmds.menuItem('Bidirectional Path Tracer')
-    cmds.menuItem('Photon Map')
-    cmds.menuItem('Progressive Photon Map')
-    cmds.menuItem('Stochastic Progressive Photon Map')
-    cmds.menuItem('Primary Sample Space Metropolis Light Transport')
-    cmds.menuItem('Path Space Metropolis Light Transport')
-    cmds.menuItem('Energy Redistribution Path Tracer')
-    cmds.menuItem('Adjoint Particle Tracer')
-    cmds.menuItem('Virtual Point Lights')
-
-    createIntegratorFrames()
-    cmds.optionMenu(integrator, edit=True, select=3)
-
-
-    global sampler
-    sampler = cmds.optionMenu(label="Image Sampler", changeCommand=changeSampler)
-    cmds.menuItem('Independent Sampler')
-    cmds.menuItem('Stratified Sampler')
-    cmds.menuItem('Low Discrepancy Sampler')
-    cmds.menuItem('Halton QMC Sampler')
-    cmds.menuItem('Hammersley QMC Sampler')
-    cmds.menuItem('Sobol QMC Sampler')
-
-    createSamplerFrames()
-    cmds.optionMenu(sampler, edit=True, select=1)
-
-    global rfilter
-    rfilter = cmds.optionMenu(label="Film Reconstruction Filter")
-    cmds.menuItem("Box filter")
-    cmds.menuItem("Tent filter")
-    cmds.menuItem("Gaussian filter")
-    cmds.menuItem("Mitchell-Netravali filter")
-    cmds.menuItem("Catmull-Rom filter")
-    cmds.menuItem("Lanczos filter")
-
-    global renderButton
-    cmds.columnLayout(adjustableColumn=False)
-    renderButton = cmds.button(label='Render', command=callMitsuba)
-
-def createRenderWindow():
-    global renderWindow
-    global renderedImage
-    renderWindow = cmds.window("Mitsuba Rendered Image", retain=True, resizeToFitChildren=True)
-    cmds.paneLayout()
-    renderedImage = cmds.image()
-
-
-#Make the render settings window visible
-def showRenderSettings(self):
-    global renderSettingsWindow
-    cmds.showWindow(renderSettingsWindow)
-
-#Make the render window visible
-def showRenderWindow():
-    global renderWindow
-    imageWidth = cmds.getAttr("defaultResolution.width")
-    imageHeight = cmds.getAttr("defaultResolution.height")
-    cmds.window(renderWindow, edit=True, widthHeight=(imageWidth, imageHeight))
-    cmds.showWindow(renderWindow)
-
-def showRenderWindowCC(self):
-    global renderWindow
-    imageWidth = cmds.getAttr("defaultResolution.width")
-    imageHeight = cmds.getAttr("defaultResolution.height")
-    cmds.window(renderWindow, edit=True, widthHeight=(imageWidth, imageHeight))
-    cmds.showWindow(renderWindow)
-
-#Mel command to render with Mitsuba
-def callMitsuba(self):
-    cmds.mitsuba()
-
-'''
-Since we have a number of integrators that each have a number of properties,
-we need to have a number of GUI widgets.  However we only want to show
-the settings for the active integrator
-'''
-def changeIntegrator(self):
-    global integrator
-    global integratorFrames
-    #Query the integrator drop down menu to find the active integrator
-    selectedIntegrator = cmds.optionMenu(integrator, query=True, value=True)
-    #Set all other integrator frameLayout to be invisible
-    for frame in integratorFrames:
-        currentIntegrator = cmds.frameLayout(frame, query=True, label=True)
-        currentIntegratorUnderscore = currentIntegrator.replace(" ", "_")
-        if currentIntegrator == selectedIntegrator or currentIntegratorUnderscore == selectedIntegrator:
-            cmds.frameLayout(frame, edit=True, visible=True)
-        else:
-            cmds.frameLayout(frame, edit=True, visible=False) 
-
-def changeSampler(self):
-    global sampler
-    global samplerFrames
-    #Query the sampler drop down menu to find the active sampler
-    selectedSampler = cmds.optionMenu(sampler, query=True, value=True)
-    #Set all other sampler frameLayout to be invisible
-    for frame in samplerFrames:
-        currentSampler = cmds.frameLayout(frame, query=True, label=True)
-        currentSamplerUnderscore = currentSampler.replace(" ", "_")
-        if currentSampler == selectedSampler or currentSamplerUnderscore == selectedSampler:
-            cmds.frameLayout(frame, edit=True, visible=True)
-        else:
-            cmds.frameLayout(frame, edit=True, visible=False) 

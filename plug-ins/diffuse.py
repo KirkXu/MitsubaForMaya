@@ -1,45 +1,55 @@
 import sys
 import maya.OpenMaya as OpenMaya
 import maya.OpenMayaMPx as OpenMayaMPx
-import maya.cmds as cmds
 
-kPluginNodeName = "MitsubaTwoSidedShader"
-kPluginNodeClassify = "/shader/surface"
-kPluginNodeId = OpenMaya.MTypeId(0x870013)
+kPluginNodeName = "MitsubaDiffuseShader"
+kPluginNodeClassify = "shader/surface"
+kPluginNodeId = OpenMaya.MTypeId(0x87003)
 
-class twosided(OpenMayaMPx.MPxNode):
+class diffuse(OpenMayaMPx.MPxNode):
         def __init__(self):
                 OpenMayaMPx.MPxNode.__init__(self)
-                mBSDF = OpenMaya.MObject()
                 mOutColor = OpenMaya.MObject()
+                mReflectance = OpenMaya.MObject()
+                mTwoSided = OpenMaya.MObject()
 
         def compute(self, plug, block):
-                if plug == twosided.mOutColor:
-                        print "out color"
+                if plug == diffuse.mOutColor:
                         resultColor = OpenMaya.MFloatVector(0.0,0.0,0.0)
                         
-                        outColorHandle = block.outputValue( twosided.mOutColor )
+                        color = block.inputValue( diffuse.mReflectance ).asFloatVector()
+
+                        resultColor.x = color.x
+                        resultColor.y = color.y
+                        resultColor.z = color.z
+
+                        outColorHandle = block.outputValue( diffuse.mOutColor )
                         outColorHandle.setMFloatVector(resultColor)
                         outColorHandle.setClean()
                 else:
                         return OpenMaya.kUnknownParameter
 
+
 def nodeCreator():
-        return twosided()
+        return diffuse()
 
 def nodeInitializer():
         nAttr = OpenMaya.MFnNumericAttribute()
 
         try:
-
-                twosided.mBSDF = nAttr.createColor("bsdf", "bsdf")
+                diffuse.mTwoSided = nAttr.create("twosided", "tw", OpenMaya.MFnNumericData.kBoolean, True)
                 nAttr.setKeyable(1) 
                 nAttr.setStorable(1)
                 nAttr.setReadable(1)
                 nAttr.setWritable(1)
-                nAttr.setDefault(0.0,0.0,0.0)
 
-                twosided.mOutColor = nAttr.createColor("outColor", "oc")
+                diffuse.mReflectance = nAttr.createColor("reflectance", "r")
+                nAttr.setKeyable(1) 
+                nAttr.setStorable(1)
+                nAttr.setReadable(1)
+                nAttr.setWritable(1)
+
+                diffuse.mOutColor = nAttr.createColor("outColor", "oc")
                 nAttr.setStorable(0)
                 nAttr.setHidden(0)
                 nAttr.setReadable(1)
@@ -50,14 +60,15 @@ def nodeInitializer():
                 raise
 
         try:
-                twosided.addAttribute(twosided.mBSDF)
-                twosided.addAttribute(twosided.mOutColor)
+                diffuse.addAttribute(diffuse.mTwoSided)
+                diffuse.addAttribute(diffuse.mReflectance)
+                diffuse.addAttribute(diffuse.mOutColor)
         except:
                 sys.stderr.write("Failed to add attributes\n")
                 raise
 
         try:
-                z=1
+                diffuse.attributeAffects (diffuse.mReflectance, diffuse.mOutColor)
         except:
                 sys.stderr.write("Failed in setting attributeAffects\n")
                 raise

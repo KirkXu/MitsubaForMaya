@@ -2,28 +2,28 @@ import sys
 import maya.OpenMaya as OpenMaya
 import maya.OpenMayaMPx as OpenMayaMPx
 
-kPluginNodeName = "MitsubaDiffuseShader"
+kPluginNodeName = "MitsubaObjectAreaLightShader"
 kPluginNodeClassify = "shader/surface"
-kPluginNodeId = OpenMaya.MTypeId(0x87003)
+kPluginNodeId = OpenMaya.MTypeId(0x87024)
 
-class diffuse(OpenMayaMPx.MPxNode):
+class arealight(OpenMayaMPx.MPxNode):
         def __init__(self):
                 OpenMayaMPx.MPxNode.__init__(self)
                 mOutColor = OpenMaya.MObject()
-                mReflectance = OpenMaya.MObject()
-                mTwoSided = OpenMaya.MObject()
+                mRadiance = OpenMaya.MObject()
+                mSamplingWeight = OpenMaya.MObject()
 
         def compute(self, plug, block):
-                if plug == diffuse.mOutColor or plug.parent() == diffuse.mOutColor:
+                if plug == arealight.mOutColor:
                         resultColor = OpenMaya.MFloatVector(0.0,0.0,0.0)
                         
-                        color = block.inputValue( diffuse.mReflectance ).asFloatVector()
+                        radiance = block.inputValue( arealight.mRadiance ).asFloat()
 
-                        resultColor.x = color.x
-                        resultColor.y = color.y
-                        resultColor.z = color.z
+                        resultColor.x = radiance
+                        resultColor.y = radiance
+                        resultColor.z = radiance
 
-                        outColorHandle = block.outputValue( diffuse.mOutColor )
+                        outColorHandle = block.outputValue( arealight.mOutColor )
                         outColorHandle.setMFloatVector(resultColor)
                         outColorHandle.setClean()
                 else:
@@ -31,25 +31,25 @@ class diffuse(OpenMayaMPx.MPxNode):
 
 
 def nodeCreator():
-        return diffuse()
+        return arealight()
 
 def nodeInitializer():
         nAttr = OpenMaya.MFnNumericAttribute()
 
         try:
-                diffuse.mTwoSided = nAttr.create("twosided", "tw", OpenMaya.MFnNumericData.kBoolean, True)
+                arealight.mRadiance = nAttr.create("radiance", "rd", OpenMaya.MFnNumericData.kFloat, 1.0)
                 nAttr.setKeyable(1) 
                 nAttr.setStorable(1)
                 nAttr.setReadable(1)
                 nAttr.setWritable(1)
 
-                diffuse.mReflectance = nAttr.createColor("reflectance", "r")
+                arealight.mSamplingWeight = nAttr.create("samplingWeight", "sw", OpenMaya.MFnNumericData.kInt, 1)
                 nAttr.setKeyable(1) 
                 nAttr.setStorable(1)
                 nAttr.setReadable(1)
                 nAttr.setWritable(1)
 
-                diffuse.mOutColor = nAttr.createColor("outColor", "oc")
+                arealight.mOutColor = nAttr.createColor("outColor", "oc")
                 nAttr.setStorable(0)
                 nAttr.setHidden(0)
                 nAttr.setReadable(1)
@@ -60,15 +60,15 @@ def nodeInitializer():
                 raise
 
         try:
-                diffuse.addAttribute(diffuse.mTwoSided)
-                diffuse.addAttribute(diffuse.mReflectance)
-                diffuse.addAttribute(diffuse.mOutColor)
+                arealight.addAttribute(arealight.mRadiance)
+                arealight.addAttribute(arealight.mSamplingWeight)
+                arealight.addAttribute(arealight.mOutColor)
         except:
                 sys.stderr.write("Failed to add attributes\n")
                 raise
 
         try:
-                diffuse.attributeAffects (diffuse.mReflectance, diffuse.mOutColor)
+                arealight.attributeAffects (arealight.mRadiance, arealight.mOutColor)
         except:
                 sys.stderr.write("Failed in setting attributeAffects\n")
                 raise

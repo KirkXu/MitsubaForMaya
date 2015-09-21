@@ -3,8 +3,8 @@ import maya.OpenMaya as OpenMaya
 import maya.OpenMayaMPx as OpenMayaMPx
 
 kPluginNodeName = "MitsubaEnvironmentLight"
+kPluginNodeClassify = "light/general"
 kPluginNodeId = OpenMaya.MTypeId(0x88A29)
-kPluginClassify = "/light/general"
 
 class envmap(OpenMayaMPx.MPxNode):
         def __init__(self):
@@ -16,9 +16,24 @@ class envmap(OpenMayaMPx.MPxNode):
                 mGamma = OpenMaya.MObject()
                 mCache = OpenMaya.MObject()
                 mSamplingWeight = OpenMaya.MObject()
+                mRotate = OpenMaya.MObject()
+                mOutColor = OpenMaya.MObject()
 
         def compute(self, plug, block):
-                x=1
+                if plug == envmap.mOutColor: # or plug.parent() == envmap.mOutColor:
+                        resultColor = OpenMaya.MFloatVector(0.0,0.0,0.0)
+                        
+                        rotate = block.inputValue( envmap.mRotate ).asFloatVector()
+
+                        resultColor.x = rotate.x
+                        resultColor.y = rotate.y
+                        resultColor.z = rotate.z
+
+                        outColorHandle = block.outputValue( envmap.mOutColor )
+                        outColorHandle.setMFloatVector(resultColor)
+                        outColorHandle.setClean()
+                else:
+                        return OpenMaya.kUnknownParameter
 
 def nodeCreator():
         return envmap()
@@ -69,6 +84,19 @@ def nodeInitializer():
                 nAttr.setReadable(1)
                 nAttr.setWritable(1)
 
+                envmap.mRotate = nAttr.create("rotate", "ro", OpenMaya.MFnNumericData.k3Float)
+                nAttr.default = (0.0, 0.0, 0.0)
+                nAttr.usedAsColor = False
+                nAttr.setKeyable(1) 
+                nAttr.setStorable(1)
+                nAttr.setReadable(1)
+                nAttr.setWritable(1)
+
+                envmap.mOutColor = nAttr.createColor("outColor", "oc")
+                nAttr.setStorable(0)
+                nAttr.setHidden(0)
+                nAttr.setReadable(1)
+                nAttr.setWritable(0)
 
         except:
                 sys.stderr.write("Failed to create attributes\n")
@@ -82,8 +110,16 @@ def nodeInitializer():
                 envmap.addAttribute(envmap.mScale)
                 envmap.addAttribute(envmap.mCache)
                 envmap.addAttribute(envmap.mSamplingWeight)
+                envmap.addAttribute(envmap.mRotate)
+                envmap.addAttribute(envmap.mOutColor)
         except:
                 sys.stderr.write("Failed to add attributes\n")
+                raise
+
+        try:
+                envmap.attributeAffects (envmap.mRotate, envmap.mOutColor)
+        except:
+                sys.stderr.write("Failed in setting attributeAffects\n")
                 raise
 
 # initialize the script plug-in

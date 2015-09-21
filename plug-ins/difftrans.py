@@ -13,7 +13,7 @@ class difftrans(OpenMayaMPx.MPxNode):
                 mReflectance = OpenMaya.MObject()
 
         def compute(self, plug, block):
-                if plug == difftrans.mOutColor or plug.parent() == difftrans.mOutColor:
+                if plug == difftrans.mOutColor:
                         resultColor = OpenMaya.MFloatVector(0.0,0.0,0.0)
                         
                         color = block.inputValue( difftrans.mReflectance ).asFloatVector()

@@ -3,8 +3,8 @@ import maya.OpenMaya as OpenMaya
 import maya.OpenMayaMPx as OpenMayaMPx
 
 kPluginNodeName = "MitsubaSunsky"
+kPluginNodeClassify = "light/general"
 kPluginNodeId = OpenMaya.MTypeId(0x88000)
-kPluginClassify = "/light/general"
 
 class sunsky(OpenMayaMPx.MPxNode):
         def __init__(self):
@@ -23,9 +23,23 @@ class sunsky(OpenMayaMPx.MPxNode):
                 mSunScale = OpenMaya.MObject()
                 mSkyScale = OpenMaya.MObject()
                 mSunRadiusScale = OpenMaya.MObject()
+                mOutColor = OpenMaya.MObject()
 
         def compute(self, plug, block):
-                x=1
+                if plug == sunsky.mOutColor:
+                        resultColor = OpenMaya.MFloatVector(0.0,0.0,0.0)
+                        
+                        time = block.inputValue( sunsky.mTime ).asFloatVector()
+
+                        resultColor.x = time.x
+                        resultColor.y = time.y
+                        resultColor.z = time.z
+
+                        outColorHandle = block.outputValue( sunsky.mOutColor )
+                        outColorHandle.setMFloatVector(resultColor)
+                        outColorHandle.setClean()
+                else:
+                        return OpenMaya.kUnknownParameter
 
 def nodeCreator():
         return sunsky()
@@ -122,6 +136,11 @@ def nodeInitializer():
                 nAttr.setReadable(1)
                 nAttr.setWritable(1)
 
+                sunsky.mOutColor = nAttr.createColor("outColor", "oc")
+                nAttr.setStorable(0)
+                nAttr.setHidden(0)
+                nAttr.setReadable(1)
+                nAttr.setWritable(0)
 
         except:
                 sys.stderr.write("Failed to create attributes\n")
@@ -142,8 +161,15 @@ def nodeInitializer():
                 sunsky.addAttribute(sunsky.mSunScale)
                 sunsky.addAttribute(sunsky.mSkyScale)
                 sunsky.addAttribute(sunsky.mSunRadiusScale)
+                sunsky.addAttribute(sunsky.mOutColor)
         except:
                 sys.stderr.write("Failed to add attributes\n")
+                raise
+
+        try:
+                sunsky.attributeAffects (sunsky.mTime, sunsky.mOutColor)
+        except:
+                sys.stderr.write("Failed in setting attributeAffects\n")
                 raise
 
 # initialize the script plug-in
