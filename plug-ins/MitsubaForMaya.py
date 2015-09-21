@@ -1650,7 +1650,7 @@ def renderScene(outFileName, projectDir, mitsubaPath, mtsDir, keepTempFiles, geo
             os.remove(geometryFile)
         #print( "Removing mitsuba scene description : %s" % outFileName )
         os.remove(outFileName)
-        os.remove(logName)
+        #os.remove(logName)
     else:
         print( "Keeping temporary files" )
 
