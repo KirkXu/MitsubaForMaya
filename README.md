@@ -7,19 +7,22 @@ Installation and Usage
 -
 
 - Load from anywhere using Python command
-cmds.loadPlugin( "/path/where/you/downloaded/MitsubaForMaya.py" )
+	- cmds.loadPlugin( "/path/where/you/downloaded/MitsubaForMaya.py" )
 
 - Unload as appropriate
-cmds.unloadPlugin( "MitsubaForMaya.py" )
+	- cmds.unloadPlugin( "MitsubaForMaya.py" )
 
-- ****VERY IMPORTANT**** Render Settings' Mitsuba tab has to have been displayed before a render can start
+- ****VERY IMPORTANT**** 
+- Render Settings' Mitsuba tab has to have been displayed before a render can start
 
+- ****VERY IMPORTANT**** 
 - The first field in the Render Settings Mituba tab is the path to the 'mitsuba' binary. You must set this to be able to render.
 	- OSX: ex. /path/where/you/downloaded/Mitsuba.app/Contents/MacOS/mitsuba
 	- Linux: ex. /usr/local/mitsuba/mitsuba
 	- Windows: ex. C:/path/where/you/downloaded/Mitsuba 0.5.0 64bit/Mitsuba 0.5.0/mitsuba.exe
 
-- ****VERY IMPORTANT**** Must use Camera, Aim and Up camera group
+- ****VERY IMPORTANT**** 
+- Must use Camera, Aim and Up camera group
 
 - Renders EXRs
 

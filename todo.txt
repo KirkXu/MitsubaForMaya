@@ -9,7 +9,6 @@ x allow user to retain intermediate files (.obj, .xml)
 x force objexport to load
 
 x support animatable, rotating environment maps
-x support general cameras, not just camera, aim, up combinations
 x support animated textures
 x support area lights
 x fix compute method for all materials - if plug == sunsky.mOutColor
@@ -18,12 +17,15 @@ x branch git repo
 x rename windows_64 to plug-ins
 x remove materials.py, render.py, scriptEditor.py, tempo.py, test.mel, test2.py, champagne.ma
 
+support general cameras, not just camera, aim, up combinations
 support colored area lights
 
 move materials into 'materials'
 add __init__.py as appropriate
 indent code to 4 space tabs
 replace all mel functions with automatically generated mel which immediately calls back into Python
+
+make plugin ids consistent
 
 support batch / animated renders
 remove dependence on UI to drive render parameters
