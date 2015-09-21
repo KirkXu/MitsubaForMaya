@@ -1611,19 +1611,19 @@ def writeScene(outFileName, outDir):
     return geometryFiles
 
 def renderScene(outFileName, projectDir, mitsubaPath, mtsDir, keepTempFiles, geometryFiles, animation=False, frame=1):
-    os.chdir(mtsDir)
+    renderDir = os.path.join(projectDir, 'images')
+    os.chdir(renderDir)
 
-    imageName = os.path.join(projectDir, "images")
     imagePrefix = cmds.getAttr("defaultRenderGlobals.imageFilePrefix")
     if imagePrefix is None:
         imagePrefix = "tempRender"
     if animation:
         extensionPadding = cmds.getAttr("defaultRenderGlobals.extensionPadding")
-        logName = os.path.join(imageName, imagePrefix + "." + str(frame).zfill(extensionPadding) +".log")
-        imageName = os.path.join(imageName, imagePrefix + "." + str(frame).zfill(extensionPadding) +".exr")
+        logName = os.path.join(renderDir, imagePrefix + "." + str(frame).zfill(extensionPadding) +".log")
+        imageName = os.path.join(renderDir, imagePrefix + "." + str(frame).zfill(extensionPadding) +".exr")
     else:
-        logName = os.path.join(imageName, imagePrefix + ".log")
-        imageName = os.path.join(imageName, imagePrefix + ".exr")
+        logName = os.path.join(renderDir, imagePrefix + ".log")
+        imageName = os.path.join(renderDir, imagePrefix + ".exr")
 
     args = ['-v',
         '-o',
@@ -1638,7 +1638,7 @@ def renderScene(outFileName, projectDir, mitsubaPath, mtsDir, keepTempFiles, geo
         args=args,
         env=env)
     mitsubaRender.execute()
-    mitsubaRender.write_log_to_disk(logName, format='txt')
+    #mitsubaRender.write_log_to_disk(logName, format='txt')
 
     print( "Render execution returned : %s" % mitsubaRender.status )
 

@@ -18,6 +18,7 @@ x rename windows_64 to plug-ins
 x remove materials.py, render.py, scriptEditor.py, tempo.py, test.mel, test2.py, champagne.ma
 
 x support colored area lights
+x change render working directory to output image directory. keep only one log.
 
 support general cameras, not just camera, aim, up combinations
 
