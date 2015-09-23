@@ -1,10 +1,5 @@
-import getpass
-import inspect
 import os
-import re
 import struct
-import sys
-import time
 
 import maya.cmds as cmds
 import maya.mel as mel

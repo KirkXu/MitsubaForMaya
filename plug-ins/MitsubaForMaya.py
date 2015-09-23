@@ -1,8 +1,5 @@
-import getpass
 import inspect
 import os
-import re
-import struct
 import sys
 import time
 
@@ -10,8 +7,6 @@ import maya.cmds as cmds
 import maya.mel as mel
 import maya.OpenMaya as OpenMaya
 import maya.OpenMayaMPx as OpenMayaMPx
-
-import pymel.core
 
 from process import Process
 

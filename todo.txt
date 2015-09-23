@@ -25,18 +25,17 @@ x support general cameras, not just camera, aim, up combinations
 x move materials into 'materials'
 x add __init__.py as appropriate
 
+remove dependence on UI to drive render parameters
+add support for persisting all render settings
+
 create renderData/mitsuba directory for temporary render files
 
 indent code to 4 space tabs
 replace all mel functions with automatically generated mel which immediately calls back into Python
-
 make plugin ids consistent
 
 support batch / animated renders
-remove dependence on UI to drive render parameters
-add support for persisting all render settings
 replace xml writing with etree
-
 support interactive render view / update / cancel
 
 Note references
