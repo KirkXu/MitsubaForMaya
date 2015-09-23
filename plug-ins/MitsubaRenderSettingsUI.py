@@ -302,7 +302,7 @@ def createRenderSettingsUI():
     global rfilterMenu
     global renderButton
 
-    print( "Mitsuba Renderer - Create render settings" )
+    print( "\n\n\nMitsuba Render Settings - Create UI - Python\n\n\n" )
 
     #renderSettingsWindow = cmds.window(title="Mitsuba Render Settings", iconName="MTS", widthHeight=(100,250), retain=True, resizeToFitChildren=True)
     cmds.columnLayout(adjustableColumn=True)
@@ -391,10 +391,9 @@ def createRenderSettingsUI():
     cmds.checkBox(keepTempFiles, e=1,
         changeCommand=lambda (x): getCheckBox(keepTempFiles, "keepTempFiles", x))
 
-
-def createRenderSettings():
+def createRenderSettingsNode():
     global renderSettings
-    print( "\n\n\nMitsuba Render Settings - Create - Python\n\n\n" )
+    print( "\n\n\nMitsuba Render Settings - Create Node - Python\n\n\n" )
 
     existingSettings = cmds.ls(type='MitsubaRenderSettings')
     if existingSettings != []:
@@ -405,8 +404,8 @@ def createRenderSettings():
         renderSettings = cmds.createNode('MitsubaRenderSettings', name='defaultMitsubaRenderGlobals')
         print( "Creating new Mitsuba settings node : %s" % renderSettings)
 
-    print( "Render Settings node : %s" % renderSettings )
-
+def createRenderSettings():
+    createRenderSettingsNode()
     createRenderSettingsUI()
 
 def updateRenderSettings():
