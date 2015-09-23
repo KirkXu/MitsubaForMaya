@@ -11,6 +11,8 @@ import maya.mel as mel
 import maya.OpenMaya as OpenMaya
 import maya.OpenMayaMPx as OpenMayaMPx
 
+import pymel.core
+
 from process import Process
 
 import MitsubaRenderSettingsUI
@@ -1148,17 +1150,39 @@ def writeSensor(outFile, frameNumber):
         print( "No renderable camera found. Rendering with first camera : %s" % cams[0] )
         rCamShape = cams[0]
     
-    rGroup = cmds.listConnections(rCamShape)[0]
+    camAimUp = False
+    camConnections = cmds.listConnections(rCamShape)
+    if camConnections:
+        rGroup = cmds.listConnections(rCamShape)[0]
 
-    rGroupRels = cmds.listRelatives(rGroup)
+        rGroupRels = cmds.listRelatives(rGroup)
 
-    rCam = rGroupRels[0]
-    rAim = rGroupRels[1]
-    rUp  = rGroupRels[2]
+        rCam = rGroupRels[0]
+        rAim = rGroupRels[1]
+        rUp  = rGroupRels[2]
 
-    camPos = cmds.getAttr(rCam+".translate")[0]
-    camAim = cmds.getAttr(rAim+".translate")[0]
-    camUp  = cmds.getAttr(rUp+".translate")[0]
+        camPos = cmds.getAttr(rCam+".translate")[0]
+        camAim = cmds.getAttr(rAim+".translate")[0]
+        camUp  = cmds.getAttr(rUp+".translate")[0]
+
+        camAimUp = True
+    else:
+        yup = pymel.core.general.upAxis(q=True, ax=True) == 'y'
+
+        def vec(v, yup):
+            if not yup:
+                v = [v[0], v[2], -v[1]]
+            #return ' '.join(str(x) for x in v)
+            return v
+
+        camera = pymel.core.PyNode(rCamShape)
+        camAim = camera.getWorldCenterOfInterest()
+        camPos = camera.getEyePoint('world')
+        camUp = camera.getWorldUp()
+
+        print( "camera position : " + ' '.join(map(str, camPos) ) )
+        print( "camera aim      : " + ' '.join(map(str, camAim) ) )
+        print( "camera up       : " + ' '.join(map(str, camUp) ) )
 
     #Type
     camType="perspective"
@@ -1186,7 +1210,10 @@ def writeSensor(outFile, frameNumber):
     outFile.write("         <string name=\"fovAxis\" value=\"x\"/>\n")
     outFile.write("         <float name=\"nearClip\" value=\"" + str(nearClip) + "\"/>\n")
     outFile.write("         <transform name=\"toWorld\">\n")
-    outFile.write("             <lookat target=\"" + str(camAim[0]) + " " + str(camAim[1]) + " " + str(camAim[2]) + "\" origin=\"" + str(camPos[0]) + " " + str(camPos[1]) + " " + str(camPos[2]) + "\" up=\"" + str(camUp[0]-camPos[0]) + " " + str(camUp[1]-camPos[1]) + " " + str(camUp[2]-camPos[2]) + "\"/>\n")
+    if camAimUp:
+        outFile.write("             <lookat target=\"" + str(camAim[0]) + " " + str(camAim[1]) + " " + str(camAim[2]) + "\" origin=\"" + str(camPos[0]) + " " + str(camPos[1]) + " " + str(camPos[2]) + "\" up=\"" + str(camUp[0]-camPos[0]) + " " + str(camUp[1]-camPos[1]) + " " + str(camUp[2]-camPos[2]) + "\"/>\n")
+    else:
+        outFile.write("             <lookat target=\"" + str(camAim[0]) + " " + str(camAim[1]) + " " + str(camAim[2]) + "\" origin=\"" + str(camPos[0]) + " " + str(camPos[1]) + " " + str(camPos[2]) + "\" up=\"" + str(camUp[0]) + " " + str(camUp[1]) + " " + str(camUp[2]) + "\"/>\n")
     outFile.write("         </transform>\n")
     outFile.write("\n")
     

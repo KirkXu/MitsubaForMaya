@@ -20,10 +20,13 @@ x remove materials.py, render.py, scriptEditor.py, tempo.py, test.mel, test2.py,
 x support colored area lights
 x change render working directory to output image directory. keep only one log.
 
-support general cameras, not just camera, aim, up combinations
+x support general cameras, not just camera, aim, up combinations
 
 move materials into 'materials'
 add __init__.py as appropriate
+
+create renderData/mitsuba directory for temporary render files
+
 indent code to 4 space tabs
 replace all mel functions with automatically generated mel which immediately calls back into Python
 
@@ -42,6 +45,13 @@ http://knowledge.autodesk.com/support/maya/troubleshooting/caas/sfdcarticles/sfd
 http://help.autodesk.com/view/MAYAUL/2016/ENU/
 
 https://github.com/haggi/OpenMaya/blob/master/src/common/python/Renderer/__init__.py
+
+
+Location to copy .mod and .xml files
+- Is there a better place, i.e. in /Users/Shared/Autodesk/.... ?
+/Applications/Autodesk/maya2016/Maya.app/Contents/modules/
+/Applications/Autodesk/maya2016/Maya.app/Contents/bin/rendererDesc/
+
 
 
 

@@ -21,9 +21,6 @@ Installation and Usage
 	- Linux: ex. /usr/local/mitsuba/mitsuba
 	- Windows: ex. C:/path/where/you/downloaded/Mitsuba 0.5.0 64bit/Mitsuba 0.5.0/mitsuba.exe
 
-- ****VERY IMPORTANT**** 
-- Must use Camera, Aim and Up camera group
-
 - Renders EXRs
 
 Testing
@@ -33,8 +30,6 @@ This plugin was tested with Maya 2016 on OSX Yosemite, Windows 7 and CentOS 7 Li
 
 Notes
 -
-
-The first important thing to keep in mind that this plug-in requires a Camera, Aim, Up renderable camera to funciton.  This can found in Creat->Camera.  This type of camera can be controlled normally, but also allows you further control of those three attributes.
 
 The default lighting in Mitsuba is a sunsky, so if you do not use any lighting yourself, that is what this tool will default to as well.  The other lights available are directional, environment maps and object area lights.  Mitsuba supports a variety of other lights, but they have not been ported.  To use a directional light, simply create a normal, Maya directional light and position it as normal.  For an environment map or custom sunsky, see the appropriate nodes in the Hypershader, under Maya/Lights.  Note that you can specify either an environment map or sunsky node (ie you can not have one of each). To use an area light, assign the MitsubaObjectAreaLightShader shader as the Material for the object that you would like to act as an area light.
 
@@ -51,9 +46,9 @@ References
 
 - [Mitsuba Blog](http://www.mitsuba-renderer.org/devblog/)
 
+- [Mitsuba Respository](https://www.mitsuba-renderer.org/repos/)
+
 - [OpenMaya renderer integrations](https://github.com/haggi/OpenMaya)
 
 - [Irawan Cloth Data Sets](http://www.mitsuba-renderer.org/scenes/irawan.zip)
-
-
 
