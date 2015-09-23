@@ -22,8 +22,8 @@ x change render working directory to output image directory. keep only one log.
 
 x support general cameras, not just camera, aim, up combinations
 
-move materials into 'materials'
-add __init__.py as appropriate
+x move materials into 'materials'
+x add __init__.py as appropriate
 
 create renderData/mitsuba directory for temporary render files
 

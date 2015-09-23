@@ -24,29 +24,32 @@ sys.path.append(pluginDir)
 # Import modules for material plugins
 import MitsubaRenderSettings
 
-import bump
-import coating
-import conductor
-import dielectric
-import difftrans
-import diffuse
-import mask
-import mixturebsdf
-import phong
-import plastic
-import roughcoating
-import roughconductor
-import roughdielectric
-import roughdiffuse
-import roughplastic
-import thindielectric
-import twosided
-import ward
-import irawan
-import homogeneous
-import envmap
-import sunsky
-import arealight
+from materials import bump
+from materials import coating
+from materials import conductor
+from materials import dielectric
+from materials import difftrans
+from materials import diffuse
+from materials import mask
+from materials import mixturebsdf
+from materials import phong
+from materials import plastic
+from materials import roughcoating
+from materials import roughconductor
+from materials import roughdielectric
+from materials import roughdiffuse
+from materials import roughplastic
+from materials import thindielectric
+from materials import twosided
+from materials import ward
+from materials import irawan
+
+from volumes import homogeneous
+from volumes import volume
+
+from lights import envmap
+from lights import sunsky
+from lights import arealight
 
 global materialNodeTypes
 global materialNodeModules
@@ -75,6 +78,7 @@ materialNodeTypes = ["MitsubaBumpShader",
     "MitsubaObjectAreaLightShader"]
 
 materialNodeModules = [
+    # materials
     bump,
     coating,
     conductor,
@@ -93,11 +97,14 @@ materialNodeModules = [
     thindielectric,
     twosided,
     ward,
-    homogeneous,
     irawan,
+    # lights
     envmap,
     sunsky,
-    arealight]
+    arealight,
+    # volumes
+    homogeneous,
+    volume]
 
 generalNodeModules = [
     MitsubaRenderSettings]
@@ -1179,10 +1186,6 @@ def writeSensor(outFile, frameNumber):
         camAim = camera.getWorldCenterOfInterest()
         camPos = camera.getEyePoint('world')
         camUp = camera.getWorldUp()
-
-        print( "camera position : " + ' '.join(map(str, camPos) ) )
-        print( "camera aim      : " + ' '.join(map(str, camAim) ) )
-        print( "camera up       : " + ' '.join(map(str, camUp) ) )
 
     #Type
     camType="perspective"
