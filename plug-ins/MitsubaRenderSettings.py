@@ -1,3 +1,4 @@
+import os
 import sys
 import maya.OpenMaya as OpenMaya
 import maya.OpenMayaMPx as OpenMayaMPx
@@ -80,7 +81,10 @@ def nodeInitializer():
 
     try:
         # Path to executable
-        MitsubaRenderSetting.addStringAttribute(sAttr, "mMitsubaPath", "mitsubaPath", "mp")
+        defaultMitsubaPath = os.getenv( "MITSUBA_PATH" )
+        if not defaultMitsubaPath:
+            defaultMitsubaPath = ""
+        MitsubaRenderSetting.addStringAttribute(sAttr, "mMitsubaPath", "mitsubaPath", "mp", defaultMitsubaPath)
 
         # Integrator variables
         MitsubaRenderSetting.addStringAttribute(sAttr, "mIntegrator", "integrator", "ig", "Path Tracer")
