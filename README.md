@@ -13,13 +13,15 @@ Installation and Usage
 	- cmds.unloadPlugin( "MitsubaForMaya.py" )
 
 - ****VERY IMPORTANT**** 
-- Render Settings' Mitsuba tab has to have been displayed before a render can start
-
-- ****VERY IMPORTANT**** 
 - The first field in the Render Settings Mituba tab is the path to the 'mitsuba' binary. You must set this to be able to render.
 	- OSX: ex. /path/where/you/downloaded/Mitsuba.app/Contents/MacOS/mitsuba
 	- Linux: ex. /usr/local/mitsuba/mitsuba
 	- Windows: ex. C:/path/where/you/downloaded/Mitsuba 0.5.0 64bit/Mitsuba 0.5.0/mitsuba.exe
+
+- ****VERY IMPORTANT**** 
+- Render Settings' Mitsuba tab has to have been displayed before a render can start
+	- If you use the 'Path Tracer' Integrator, reloading the scene won't require you to open the Render Settings.
+	- If you use a different integrator, you'll have to click on the Mitsuba tab in Render Settings before you can render.
 
 - Renders EXRs
 
