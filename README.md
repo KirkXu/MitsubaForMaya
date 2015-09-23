@@ -13,14 +13,13 @@ Installation and Usage
 	- cmds.unloadPlugin( "MitsubaForMaya.py" )
 
 - ****VERY IMPORTANT**** 
-- The first field in the Render Settings Mituba tab is the path to the 'mitsuba' binary. You must set this to be able to render.
+- The first field in the Render Settings Mituba tab is the path to the 'mitsuba' binary. You must set this to be able to render. The setting can be specified through an environment variable, as described below, or manually. The path will be retained in a file's Render Settings, so the value only has to be specified the first time you use a scene.
 	- OSX: ex. /path/where/you/downloaded/Mitsuba.app/Contents/MacOS/mitsuba
 	- Linux: ex. /usr/local/mitsuba/mitsuba
 	- Windows: ex. C:/path/where/you/downloaded/Mitsuba 0.5.0 64bit/Mitsuba 0.5.0/mitsuba.exe
 
 - ****VERY IMPORTANT**** 
-- Render Settings' Mitsuba tab has to have been displayed before a render can start
-	- If you use the 'Path Tracer' Integrator, reloading the scene won't require you to open the Render Settings.
+- If you use an Integrator other than Path Tracer, the Render Settings' Mitsuba tab has to have been displayed before a render can start
 	- If you use a different integrator, you'll have to click on the Mitsuba tab in Render Settings before you can render.
 
 - Renders EXRs
@@ -29,6 +28,22 @@ Testing
 -
 
 This plugin was tested with Maya 2016 on OSX Yosemite, Windows 7 and CentOS 7 Linux.
+
+Environment
+- 
+The path to the Mitsuba binary has to be specified, either in the Render Settings manually or by using the Maya.env or other environment setup file.
+
+- The environment variable to set is MITSUBA_PATH 
+
+- Example Maya.env settings follow:
+	- Windows: MITSUBA_PATH = C:\path\to\Mitsuba 0.5.0\mitsuba.exe
+	- Mac: MITSUBA_PATH = /path/to/Mitsuba.app/Contents/MacOS/mitsuba
+	- Linux: MITSUBA_PATH = /path/to/mitsuba
+
+- Maya.env files can be saved in the following folders
+	- Windows: C:\Users\<user>\Documents\maya\<mayaVersion>
+	- Mac: /Users/<user>/Library/Preferences/Autodesk/maya/<mayaVersion>
+	- Linux: /home/<user>/maya/<mayaVersion>
 
 Notes
 -
@@ -53,4 +68,6 @@ References
 - [OpenMaya renderer integrations](https://github.com/haggi/OpenMaya)
 
 - [Irawan Cloth Data Sets](http://www.mitsuba-renderer.org/scenes/irawan.zip)
+
+- [Setting the Maya.env](http://help.autodesk.com/view/MAYAUL/2016/ENU/?guid=GUID-8EFB1AC1-ED7D-4099-9EEE-624097872C04)
 
