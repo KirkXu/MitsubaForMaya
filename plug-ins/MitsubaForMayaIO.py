@@ -11,6 +11,9 @@ import pymel.core
 from MitsubaForMaya import materialNodeTypes
 import MitsubaRenderSettingsUI
 
+#
+# IO functions
+#
 '''
 Returns the surfaceShader node for a piece of geometry (geom)
 '''
@@ -391,6 +394,77 @@ def writeShader(material, materialName, outFile, tabbedSpace):
 Write the appropriate integrator
 '''
 def writeIntegrator(outFile):
+    renderSettings = MitsubaRenderSettingsUI.renderSettings
+    integratorMaya = cmds.getAttr("%s.%s" % (renderSettings, "integrator")).replace('_', ' ')
+
+    mayaUINameToMitsubaName = {
+        "Ambient Occlusion" : "ao",
+        "Direct_Illumination" : "direct",
+        "Path Tracer" : "path",
+        "Volumetric Path Tracer" : "volpath",
+        "Simple Volumetric Path Tracer" : "volpath_simple",
+        "Bidirectional Path Tracer" : "bdpt",
+        "Photon Map" : "photonmapper",
+        "Progressive Photon Map" : "ppm",
+        "Stochastic Progressive Photon Map" : "sppm",
+        "Primary Sample Space Metropolis Light Transport" : "pssmlt",
+        "Path Space Metropolis Light Transport" : "mlt",
+        "Energy Redistribution Path Tracer" : "mlt",
+        "Adjoint Particle Tracer" : "mlt",
+        "Virtual Point Lights" : "vpl"
+    }
+
+    if integratorMaya in mayaUINameToMitsubaName:
+        integratorMitsuba = mayaUINameToMitsubaName[integratorMaya]
+    else:
+        integratorMitsuba = "path"
+
+    #
+    # Integrators that can operate independent of the Render Settings UI
+    #
+    if integratorMaya == "Path Tracer":
+        outFile.write(" <integrator type=\"%s\">\n" % integratorMitsuba)
+
+        iPathTracerUseInfiniteDepth = cmds.getAttr("%s.%s" % (renderSettings, "iPathTracerUseInfiniteDepth"))
+        iPathTracerMaxDepth = cmds.getAttr("%s.%s" % (renderSettings, "iPathTracerMaxDepth"))
+        iPathTracerRRDepth = cmds.getAttr("%s.%s" % (renderSettings, "iPathTracerRRDepth"))
+        iPathTracerStrictNormals = cmds.getAttr("%s.%s" % (renderSettings, "iPathTracerStrictNormals"))
+        iPathTracerHideEmitters = cmds.getAttr("%s.%s" % (renderSettings, "iPathTracerHideEmitters"))
+
+        if iPathTracerUseInfiniteDepth:
+            iPathTracerMaxDepth = -1
+        outFile.write("     <integer name=\"maxDepth\" value=\"" + str(iPathTracerMaxDepth) + "\"/>\n")
+
+        outFile.write("     <integer name=\"rrDepth\" value=\"" + str(iPathTracerRRDepth) + "\"/>\n")            
+
+        if iPathTracerStrictNormals:
+            iPathTracerStrictNormalsText = 'true'
+        else:
+            iPathTracerStrictNormalsText = 'false'
+        outFile.write("     <boolean name=\"strictNormals\" value=\"%s\"/>\n" % iPathTracerStrictNormalsText)
+
+        if iPathTracerHideEmitters:
+            iPathTracerHideEmittersText = 'true'
+        else:
+            iPathTracerHideEmittersText = 'false'
+        outFile.write("     <boolean name=\"hideEmitters\" value=\"%s\"/>\n" % iPathTracerHideEmittersText)
+
+        outFile.write(" </integrator>\n\n\n")
+
+    else:
+        writeIntegrator0(outFile)
+
+def writeIntegrator0(outFile):
+    #
+    # Integrators that still need to pull settings from the UI
+    #
+
+    # To free the export from process from it's ties to the UI
+    # 1. Add attributes to the MitsubaRenderSettings node for each integrator-specific settings
+    # 2. Change this function to query the RenderSettings node rather than the UI elements
+    # 3. Add callbacks to the UI definitions to drive changes from the Render Settings UI to the 
+    #     Render Settings node
+
     #Write the integrator########################################################################
     integratorMenu = MitsubaRenderSettingsUI.integratorMenu
     integratorFrames = MitsubaRenderSettingsUI.integratorFrames
@@ -408,6 +482,9 @@ def writeIntegrator(outFile):
             activeSettings = frame
 
     #print( "Active Integrator : %s" % activeIntegrator )
+
+
+
 
     if activeIntegrator=="Ambient_Occlusion" or activeIntegrator=="Ambient Occlusion":
         '''
@@ -959,83 +1036,45 @@ def writeIntegrator(outFile):
 Write image sample generator
 '''
 def writeSampler(outFile, frameNumber):
-    samplerMenu = MitsubaRenderSettingsUI.samplerMenu
-    samplerFrames = MitsubaRenderSettingsUI.samplerFrames
+    renderSettings = MitsubaRenderSettingsUI.renderSettings
+    samplerMaya = cmds.getAttr("%s.%s" % (renderSettings, "sampler")).replace('_', ' ')
+    sampleCount = cmds.getAttr("%s.%s" % (renderSettings, "sampleCount"))
+    samplerDimension = cmds.getAttr("%s.%s" % (renderSettings, "samplerDimension"))
+    samplerScramble = cmds.getAttr("%s.%s" % (renderSettings, "samplerScramble"))
+    if samplerScramble == -1:
+        samplerScramble = frameNumber
 
-    activeSampler = cmds.optionMenu(samplerMenu, query=True, value=True)
+    mayaUINameToMitsubaName = {
+        "Independent Sampler"  : "independent",
+        "Stratified Sampler" : "stratified",
+        "Low Discrepancy Sampler" : "ldsampler",
+        "Halton QMC Sampler" : "halton",
+        "Hammersley QMC Sampler" : "hammersley",
+        "Sobol QMC Sampler" : "sobol"
+    }
 
-    #print( "sampler menu : %s" % samplerMenu )
-    #print( "sampler frames : %s" % samplerFrames )
-    #print( "active sampler : %s" % activeSampler )
+    if samplerMaya in mayaUINameToMitsubaName:
+        samplerMitsuba = mayaUINameToMitsubaName[samplerMaya]
+    else:
+        samplerMitsuba = "independent"
 
-    #activeSampler = sampler
-    activeSettings = samplerFrames[0]
+    outFile.write("         <sampler type=\"%s\">\n" % samplerMitsuba)
+    outFile.write("             <integer name=\"sampleCount\" value=\"" + str(sampleCount) + "\"/>\n")
 
-    #print( "Active Sampler : %s" % activeSampler )
+    if samplerMaya == "Stratified Sampler":
+        outFile.write("             <integer name=\"dimension\" value=\"" + str(samplerDimension) + "\"/>\n")
 
-    for frame in samplerFrames:
-        if cmds.frameLayout(frame, query=True, visible=True):
-            activeSettings = frame
+    elif samplerMaya == "Low Discrepancy Sampler":
+        outFile.write("             <integer name=\"dimension\" value=\"" + str(samplerDimension) + "\"/>\n")
 
-    if activeSampler=="Independent_Sampler" or activeSampler=="Independent Sampler":
-        samplerSettings = cmds.frameLayout(activeSettings, query=True, childArray=True)
-        outFile.write("         <sampler type=\"independent\">\n")
+    elif samplerMaya == "Halton QMC Sampler":
+        outFile.write("             <integer name=\"scramble\" value=\"" + str(samplerScramble) + "\"/>\n")
 
-        sampleCount = cmds.intFieldGrp(samplerSettings[0], query=True, value1=True)
-        outFile.write("             <integer name=\"sampleCount\" value=\"" + str(sampleCount) + "\"/>\n")
+    elif samplerMaya == "Hammersley QMC Sampler":
+        outFile.write("             <integer name=\"scramble\" value=\"" + str(samplerScramble) + "\"/>\n")
 
-    elif activeSampler=="Stratified_Sampler" or activeSampler=="Stratified Sampler":
-        samplerSettings = cmds.frameLayout(activeSettings, query=True, childArray=True)
-        outFile.write("         <sampler type=\"stratified\">\n")
-
-        sampleCount = cmds.intFieldGrp(samplerSettings[0], query=True, value1=True)
-        outFile.write("             <integer name=\"sampleCount\" value=\"" + str(sampleCount) + "\"/>\n")
-
-        dimension = cmds.intFieldGrp(samplerSettings[1], query=True, value1=True)
-        outFile.write("             <integer name=\"dimension\" value=\"" + str(dimension) + "\"/>\n")
-
-    elif activeSampler=="Low_Discrepancy_Sampler" or activeSampler=="Low Discrepancy Sampler":
-        samplerSettings = cmds.frameLayout(activeSettings, query=True, childArray=True)
-        outFile.write("         <sampler type=\"ldsampler\">\n")
-
-        sampleCount = cmds.intFieldGrp(samplerSettings[0], query=True, value1=True)
-        outFile.write("             <integer name=\"sampleCount\" value=\"" + str(sampleCount) + "\"/>\n")
-
-        dimension = cmds.intFieldGrp(samplerSettings[1], query=True, value1=True)
-        outFile.write("             <integer name=\"dimension\" value=\"" + str(dimension) + "\"/>\n")
-
-    elif activeSampler=="Halton_QMC_Sampler" or activeSampler=="Halton QMC Sampler":
-        samplerSettings = cmds.frameLayout(activeSettings, query=True, childArray=True)
-        outFile.write("         <sampler type=\"halton\">\n")
-
-        sampleCount = cmds.intFieldGrp(samplerSettings[0], query=True, value1=True)
-        outFile.write("             <integer name=\"sampleCount\" value=\"" + str(sampleCount) + "\"/>\n")
-
-        scramble = cmds.intFieldGrp(samplerSettings[1], query=True, value1=True)
-        scramble = frameNumber
-        outFile.write("             <integer name=\"scramble\" value=\"" + str(scramble) + "\"/>\n")
-
-    elif activeSampler=="Hammersley_QMC_Sampler" or activeSampler=="Hammersley QMC Sampler":
-        samplerSettings = cmds.frameLayout(activeSettings, query=True, childArray=True)
-        outFile.write("         <sampler type=\"hammersley\">\n")
-
-        sampleCount = cmds.intFieldGrp(samplerSettings[0], query=True, value1=True)
-        outFile.write("             <integer name=\"sampleCount\" value=\"" + str(sampleCount) + "\"/>\n")
-
-        scramble = cmds.intFieldGrp(samplerSettings[1], query=True, value1=True)
-        scramble = frameNumber
-        outFile.write("             <integer name=\"scramble\" value=\"" + str(scramble) + "\"/>\n")
-
-    elif activeSampler=="Sobol_QMC_Sampler" or activeSampler=="Sobol QMC Sampler":
-        samplerSettings = cmds.frameLayout(activeSettings, query=True, childArray=True)
-        outFile.write("         <sampler type=\"sobol\">\n")
-
-        sampleCount = cmds.intFieldGrp(samplerSettings[0], query=True, value1=True)
-        outFile.write("             <integer name=\"sampleCount\" value=\"" + str(sampleCount) + "\"/>\n")
-
-        scramble = cmds.intFieldGrp(samplerSettings[1], query=True, value1=True)
-        scramble = frameNumber
-        outFile.write("             <integer name=\"scramble\" value=\"" + str(scramble) + "\"/>\n")
+    elif samplerMaya == "Sobol QMC Sampler":
+        outFile.write("             <integer name=\"scramble\" value=\"" + str(samplerScramble) + "\"/>\n")
 
     outFile.write("         </sampler>\n")
     outFile.write("\n")
@@ -1051,7 +1090,7 @@ def writeSensor(outFile, frameNumber):
     for cam in cams:
         isRenderable = cmds.getAttr(cam+".renderable")
         if isRenderable:
-            print( "Rendering camera : %s" % cam )
+            print( "Render Settings - Camera          : %s" % cam )
             rCamShape = cam
             break
 
@@ -1135,24 +1174,25 @@ def writeSensor(outFile, frameNumber):
     outFile.write("         <integer name=\"width\" value=\"" + str(imageWidth) + "\"/>\n")
 
     #Filter
-    rfilterMenu = MitsubaRenderSettingsUI.rfilterMenu
+    renderSettings = MitsubaRenderSettingsUI.renderSettings
+    reconstructionFilterMaya = cmds.getAttr("%s.%s" % (renderSettings, "reconstructionFilter")).replace('_' ,' ')
+    mayaUINameToMitsubaName = {
+        "Box filter"  : "box",
+        "Tent filter" : "tent",
+        "Gaussian filter" : "gaussian",
+        "Catmull-Rom filter" : "catmullrom",
+        "Lanczos filter" : "lanczos",
+        "Mitchell-Netravali filter" : "mitchell"
+    }
 
-    rfilterValue = cmds.optionMenu(rfilterMenu, query=True, value=True)
-    rfilterString = ""
-    if rfilterValue=="Box_filter" or rfilterValue=="Box filter":
-        rfilterString = "box"
-    if rfilterValue=="Tent_filter" or rfilterValue=="Tent filter":
-        rfilterString = "tent"
-    if rfilterValue=="Gaussian_filter" or rfilterValue=="Gaussian filter":
-        rfilterString = "gaussian"
-    if rfilterValue=="Mitchell_Netravali_filter" or rfilterValue=="Mitchell-Netravali filter":
-        rfilterString = "mitchell"
-    if rfilterValue=="Catmull_Rom_filter" or rfilterValue=="Catmull-Rom filter":
-        rfilterString = "catmullrom"
-    if rfilterValue=="Lanczos_filter" or rfilterValue=="Lanczos filter":
-        rfilterString = "lanczos"
+    if reconstructionFilterMaya in mayaUINameToMitsubaName:
+        reconstructionFilterMitsuba = mayaUINameToMitsubaName[reconstructionFilterMaya]
+    else:
+        reconstructionFilterMitsuba = "box"
 
-    outFile.write("         <rfilter type=\"" + rfilterString + "\"/>\n")
+    #print( "Reconstruction Filter : %s" % reconstructionFilterMitsuba )
+
+    outFile.write("         <rfilter type=\"" + reconstructionFilterMitsuba + "\"/>\n")
     outFile.write("         <boolean name=\"banner\" value=\"false\"/>\n")
     outFile.write("     </film>\n")
     outFile.write(" </sensor>\n")
@@ -1528,7 +1568,8 @@ def writeScene(outFileName, outDir):
     writeIntegrator(outFile)
 
     #Write camera, sampler, and film
-    writeSensor(outFile, 0)
+    frameNumber = int(cmds.currentTime(query=True))
+    writeSensor(outFile, frameNumber)
 
     #Write lights
     writeLights(outFile)

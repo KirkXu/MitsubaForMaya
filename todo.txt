@@ -27,7 +27,12 @@ x add __init__.py as appropriate
 
 remove dependence on UI to drive render parameters
 add support for persisting all render settings
+x filters
+x samplers
+x integrators - Path Tracer
+- The rest of the integrators
 
+hookup verbose render setting
 create renderData/mitsuba directory for temporary render files
 
 indent code to 4 space tabs

@@ -42,6 +42,7 @@ def createIntegratorFrames():
     global integratorFrames
 
     integratorFrames = []
+
     aoSettings = cmds.frameLayout(label="Ambient Occlusion", cll=True, visible=False)
     cmds.intFieldGrp(numberOfFields=1, label="shadingSamples", value1=1)
     cmds.checkBox(label="Use automatic ray length")
@@ -58,11 +59,29 @@ def createIntegratorFrames():
     cmds.setParent('..')
 
     pSettings = cmds.frameLayout(label="Path Tracer", cll=True)
-    cmds.checkBox("Use infinite depth", value=True)
-    cmds.intFieldGrp(numberOfFields=1, label="maxDepth", value1=1)
-    cmds.intFieldGrp(numberOfFields=1, label="rrDepth", value1=1)
-    cmds.checkBox(label = "strictNormals")
-    cmds.checkBox(label = "hideEmitters")
+
+    existingUseInfiniteDepth = cmds.getAttr( "%s.%s" % (renderSettings, "iPathTracerUseInfiniteDepth"))
+    existingMaxDepth = cmds.getAttr( "%s.%s" % (renderSettings, "iPathTracerMaxDepth"))
+    existingRRDepth = cmds.getAttr( "%s.%s" % (renderSettings, "iPathTracerRRDepth"))
+    existingStrictNormals = cmds.getAttr( "%s.%s" % (renderSettings, "iPathTracerStrictNormals"))
+    existingHideEmitters = cmds.getAttr( "%s.%s" % (renderSettings, "iPathTracerHideEmitters"))
+
+    uid = cmds.checkBox("Use infinite depth", value=existingUseInfiniteDepth)
+    cmds.checkBox(uid, edit=1, 
+        changeCommand=lambda (x): getCheckBox(None, "iPathTracerUseInfiniteDepth", x))
+
+    md = cmds.intFieldGrp(numberOfFields=1, label="maxDepth", value1=existingMaxDepth)
+    cmds.intFieldGrp(md, edit=1, 
+        changeCommand=lambda (x): getIntFieldGroup(None, "iPathTracerMaxDepth", x))    
+    rrd = cmds.intFieldGrp(numberOfFields=1, label="rrDepth", value1=existingRRDepth)
+    cmds.intFieldGrp(rrd, edit=1, 
+        changeCommand=lambda (x): getIntFieldGroup(None, "iPathTracerRRDepth", x))    
+    sn = cmds.checkBox(label = "strictNormals", value=existingStrictNormals)
+    cmds.checkBox(sn, edit=1, 
+        changeCommand=lambda (x): getCheckBox(None, "iPathTracerStrictNormals", x))    
+    he = cmds.checkBox(label = "hideEmitters", value=existingHideEmitters)
+    cmds.checkBox(he, edit=1, 
+        changeCommand=lambda (x): getCheckBox(None, "iPathTracerHideEmitters", x))    
     cmds.setParent('..')
 
     vpsSettings = cmds.frameLayout(label="Simple Volumetric Path Tracer", cll=True, visible=False)
@@ -209,42 +228,42 @@ def createSamplerFrames():
 
     samplerFrames = []
 
-    indSettings = cmds.frameLayout(label="Independent Sampler", cll=False, visible=True)
-
     existingSampleCount = cmds.getAttr( "%s.%s" % (renderSettings, "sampleCount"))
+    existingSamplerDimension = cmds.getAttr( "%s.%s" % (renderSettings, "samplerDimension"))
+    existingSamplerScramble = cmds.getAttr( "%s.%s" % (renderSettings, "samplerScramble"))
+
+    changeSampleCount = lambda (x): getIntFieldGroup(None, "sampleCount", x)
+    changeSamplerDimension = lambda (x): getIntFieldGroup(None, "samplerDimension", x)
+    changeSamplerScramble = lambda (x): getIntFieldGroup(None, "samplerScramble", x)
+
     #print( "Existing Sample Count : %s" % existingSampleCount)
-    sampleCountGroup = cmds.intFieldGrp(numberOfFields=1, label="sampleCount", value1=existingSampleCount)
-    cmds.intFieldGrp(sampleCountGroup, edit=1, changeCommand=changeSampleCount)    
+
+    indSettings = cmds.frameLayout(label="Independent Sampler", cll=False, visible=True)
     cmds.setParent('..')
 
     stratSettings = cmds.frameLayout(label="Stratified Sampler", cll=True, visible=False)
-    stratSampleCount = cmds.intFieldGrp(numberOfFields=1, label="sampleCount", value1=existingSampleCount)
-    cmds.intFieldGrp(stratSampleCount, edit=1, changeCommand=changeSampleCount)    
-    cmds.intFieldGrp(numberOfFields=1, label="dimension", value1=4)
+    stratSamplerDimension = cmds.intFieldGrp(numberOfFields=1, label="dimension", value1=existingSamplerDimension)
+    cmds.intFieldGrp(stratSamplerDimension, edit=1, changeCommand=changeSamplerDimension)    
     cmds.setParent('..')
 
     ldSettings = cmds.frameLayout(label="Low Discrepancy Sampler", cll=True, visible=False)
-    ldSampleCount = cmds.intFieldGrp(numberOfFields=1, label="sampleCount", value1=existingSampleCount)
-    cmds.intFieldGrp(ldSampleCount, edit=1, changeCommand=changeSampleCount)    
-    cmds.intFieldGrp(numberOfFields=1, label="dimension", value1=4)
+    ldSamplerDimension = cmds.intFieldGrp(numberOfFields=1, label="dimension", value1=existingSamplerDimension)
+    cmds.intFieldGrp(ldSamplerDimension, edit=1, changeCommand=changeSamplerDimension)    
     cmds.setParent('..')
 
     halSettings = cmds.frameLayout(label="Halton QMC Sampler", cll=True, visible=False)
-    halSampleCount = cmds.intFieldGrp(numberOfFields=1, label="sampleCount", value1=existingSampleCount)
-    cmds.intFieldGrp(halSampleCount, edit=1, changeCommand=changeSampleCount)    
-    cmds.intFieldGrp(numberOfFields=1, label="scramble", value1=0)
+    halSamplerScramble = cmds.intFieldGrp(numberOfFields=1, label="scramble", value1=existingSamplerScramble)
+    cmds.intFieldGrp(halSamplerScramble, edit=1, changeCommand=changeSamplerScramble)    
     cmds.setParent('..')
 
     hamSettings = cmds.frameLayout(label="Hammersley QMC Sampler", cll=True, visible=False)
-    hamSampleCount = cmds.intFieldGrp(numberOfFields=1, label="sampleCount", value1=existingSampleCount)
-    cmds.intFieldGrp(hamSampleCount, edit=1, changeCommand=changeSampleCount)    
-    cmds.intFieldGrp(numberOfFields=1, label="scramble", value1=0)
+    hamSamplerScramble = cmds.intFieldGrp(numberOfFields=1, label="scramble", value1=existingSamplerScramble)
+    cmds.intFieldGrp(hamSamplerScramble, edit=1, changeCommand=changeSamplerScramble)    
     cmds.setParent('..')
 
     sobSettings = cmds.frameLayout(label="Sobol QMC Sampler", cll=True, visible=False)
-    sobSampleCount = cmds.intFieldGrp(numberOfFields=1, label="sampleCount", value1=existingSampleCount)
-    cmds.intFieldGrp(sobSampleCount, edit=1, changeCommand=changeSampleCount)    
-    cmds.intFieldGrp(numberOfFields=1, label="scramble", value1=0)
+    sobSamplerScramble = cmds.intFieldGrp(numberOfFields=1, label="scramble", value1=existingSamplerScramble)
+    cmds.intFieldGrp(sobSamplerScramble, edit=1, changeCommand=changeSamplerScramble)    
     cmds.setParent('..')
 
     samplerFrames.append(indSettings)
@@ -368,10 +387,16 @@ def createRenderSettingsUI():
 
     changeSampler(sampler)
 
+    existingSampleCount = cmds.getAttr( "%s.%s" % (renderSettings, "sampleCount"))
+    changeSampleCount = lambda (x): getIntFieldGroup(None, "sampleCount", x)
+    sampleCountGroup = cmds.intFieldGrp(numberOfFields=1, label="sampleCount", value1=existingSampleCount)
+    cmds.intFieldGrp(sampleCountGroup, edit=1, changeCommand=changeSampleCount)    
+
     existingReconstructionFilter = cmds.getAttr( "%s.%s" % (renderSettings, "reconstructionFilter"))
     #print( "Existing Reconstruction Filter : %s" % existingReconstructionFilter)
 
-    rfilterMenu = cmds.optionMenu(label="Film Reconstruction Filter", changeCommand=changeReconstructionFilter)
+    rfilterMenu = cmds.optionMenu(label="Film Reconstruction Filter", 
+        changeCommand=lambda (x): getOptionMenu(None, "reconstructionFilter", x))
     cmds.menuItem("Box filter")
     cmds.menuItem("Tent filter")
     cmds.menuItem("Gaussian filter")
@@ -388,8 +413,14 @@ def createRenderSettingsUI():
 
     existingKeepTempFiles = cmds.getAttr( "%s.%s" % (renderSettings, "keepTempFiles"))
     keepTempFiles = cmds.checkBox(label="keepTempFiles", value=existingKeepTempFiles)
-    cmds.checkBox(keepTempFiles, e=1,
+    cmds.checkBox(keepTempFiles, edit=1,
         changeCommand=lambda (x): getCheckBox(keepTempFiles, "keepTempFiles", x))
+
+    existingVerbose = cmds.getAttr( "%s.%s" % (renderSettings, "verbose"))
+    verbose = cmds.checkBox(label="verbose", value=existingVerbose)
+    cmds.checkBox(verbose, edit=1,
+        changeCommand=lambda (x): getCheckBox(verbose, "verbose", x))
+
 
 def createRenderSettingsNode():
     global renderSettings
@@ -502,20 +533,20 @@ def changeSampler(selectedSampler):
     sampler = selectedSampler
     getOptionMenu(None, "sampler", selectedSampler)
 
-def changeSampleCount(selectedSampleCount):
-    global sampleCount
+#def changeSampleCount(selectedSampleCount):
+#    global sampleCount
+#
+#    print( "selectedSampleCount : %s" % selectedSampleCount )
+#
+#    sampleCount = selectedSampleCount
+#    getIntFieldGroup(None, "sampleCount", selectedSampleCount)
 
-    print( "selectedSampleCount : %s" % selectedSampleCount )
-
-    sampleCount = selectedSampleCount
-    getIntFieldGroup(None, "sampleCount", selectedSampleCount)
-
-def changeReconstructionFilter(selectedReconstructionFilter):
-    global rfilter
-
-    print( "selectedReconstructionFilter : %s" % selectedReconstructionFilter )
-
-    rfilter = selectedReconstructionFilter
-    getOptionMenu(None, "reconstructionFilter", selectedReconstructionFilter)
+#def changeReconstructionFilter(selectedReconstructionFilter):
+#    global rfilter
+#
+#    print( "selectedReconstructionFilter : %s" % selectedReconstructionFilter )
+#
+#    rfilter = selectedReconstructionFilter
+#    getOptionMenu(None, "reconstructionFilter", selectedReconstructionFilter)
 
 

@@ -10,11 +10,24 @@ kPluginNodeId = OpenMaya.MTypeId(0x87021)
 class MitsubaRenderSetting(OpenMayaMPx.MPxNode):
     # Class variables
     mMitsubaPath = OpenMaya.MObject()
+
     mIntegrator = OpenMaya.MObject()
+
+    mPathTracerUseInfiniteDepth = OpenMaya.MObject()
+    mPathTracerMaxDepth = OpenMaya.MObject()
+    mPathTracerRRDepth = OpenMaya.MObject()
+    mPathTracerStrictNormals = OpenMaya.MObject()
+    mPathTracerHideEmitters = OpenMaya.MObject()
+
     mSampler = OpenMaya.MObject()
     mSampleCount = OpenMaya.MObject()
+    mSamplerDimension = OpenMaya.MObject()
+    mSamplerScramble = OpenMaya.MObject()
+
     mReconstructionFilter = OpenMaya.MObject()
+
     mKeepTempFiles = OpenMaya.MObject()
+    mVerbose = OpenMaya.MObject()
 
     def __init__(self):
         OpenMayaMPx.MPxNode.__init__(self)
@@ -72,25 +85,48 @@ def nodeInitializer():
         # Integrator variables
         MitsubaRenderSetting.addStringAttribute(sAttr, "mIntegrator", "integrator", "ig", "Path Tracer")
 
+        # Integrator - Path Tracer variables
+        MitsubaRenderSetting.addBooleanAttribute(nAttr, "mPathTracerUseInfiniteDepth", "iPathTracerUseInfiniteDepth", "iptuid", True)
+        MitsubaRenderSetting.addIntegerAttribute(nAttr, "mPathTracerMaxDepth", "iPathTracerMaxDepth", "iptmd", 1)
+        MitsubaRenderSetting.addIntegerAttribute(nAttr, "mPathTracerRRDepth", "iPathTracerRRDepth", "iptrrd", 1)
+        MitsubaRenderSetting.addBooleanAttribute(nAttr, "mPathTracerStrictNormals", "iPathTracerStrictNormals", "iptsn", False)
+        MitsubaRenderSetting.addBooleanAttribute(nAttr, "mPathTracerHideEmitters", "iPathTracerHideEmitters", "ipthe", False)
+
         # Sampler variables
         MitsubaRenderSetting.addStringAttribute(sAttr, "mSampler", "sampler", "sm", "Independent Sampler")
-        MitsubaRenderSetting.addIntegerAttribute(nAttr, "mSampleCount", "sampleCount", "sc", 6)
+        MitsubaRenderSetting.addIntegerAttribute(nAttr, "mSampleCount", "sampleCount", "sc", 8)
+        MitsubaRenderSetting.addIntegerAttribute(nAttr, "mSamplerDimension", "samplerDimension", "sd", 4)
+        MitsubaRenderSetting.addIntegerAttribute(nAttr, "mSamplerScramble", "samplerScramble", "ss", -1)
 
         # Overall controls
         MitsubaRenderSetting.addStringAttribute(sAttr, "mReconstructionFilter", "reconstructionFilter", "rf", "Box filter")
 
         MitsubaRenderSetting.addBooleanAttribute(nAttr, "mKeepTempFiles", "keepTempFiles", "kt", False)
+        MitsubaRenderSetting.addBooleanAttribute(nAttr, "mVerbose", "verbose", "vb", False)
     except:
         sys.stderr.write("Failed to create and add attributes\n")
         raise
 
     try:
         MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mMitsubaPath)
+
         MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mIntegrator)
+
+        MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mPathTracerUseInfiniteDepth)
+        MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mPathTracerMaxDepth)
+        MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mPathTracerRRDepth)
+        MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mPathTracerStrictNormals)
+        MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mPathTracerHideEmitters)
+
         MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mSampler)
         MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mSampleCount)
+        MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mSamplerDimension)
+        MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mSamplerScramble)
+
         MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mReconstructionFilter)
+
         MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mKeepTempFiles)
+        MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mVerbose)
     except:
         sys.stderr.write("Failed to add attributes\n")
         raise

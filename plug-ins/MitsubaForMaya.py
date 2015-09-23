@@ -10,10 +10,6 @@ import maya.OpenMayaMPx as OpenMayaMPx
 
 from process import Process
 
-# Import UI and IO functions
-import MitsubaRenderSettingsUI
-import MitsubaForMayaIO
-
 kPluginCmdName = "mitsuba"
 
 pluginDir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
@@ -107,6 +103,19 @@ materialNodeModules = [
 generalNodeModules = [
     MitsubaRenderSettings]
 
+#
+# UI functions
+#
+import MitsubaRenderSettingsUI
+
+#
+# IO functions
+#
+import MitsubaForMayaIO
+
+#
+# Renderer functions
+#
 def renderScene(outFileName, projectDir, mitsubaPath, mtsDir, keepTempFiles, geometryFiles, animation=False, frame=1):
     renderDir = os.path.join(projectDir, 'images')
     os.chdir(renderDir)
@@ -153,9 +162,7 @@ def renderScene(outFileName, projectDir, mitsubaPath, mtsDir, keepTempFiles, geo
 
     return imageName
 
-'''
-This registers a mel command to render with Mitsuba
-'''
+# This registers a mel command to render with Maya
 class mitsubaForMaya(OpenMayaMPx.MPxCommand):
     def __init__(self):
         OpenMayaMPx.MPxCommand.__init__(self)
@@ -232,10 +239,7 @@ class mitsubaForMaya(OpenMayaMPx.MPxCommand):
             # Display the render
             MitsubaRenderSettingsUI.showRender(imageName)
 
-        '''
-        Select the objects that the user had selected before
-        they rendered, or clear the selection
-        '''
+        # Select the objects that the user had selected before they rendered, or clear the selection
         if len(userSelection) > 0:
             cmds.select(userSelection)
         else:
@@ -253,6 +257,7 @@ def batchRenderOptionsStringProcedure():
 
 def cancelBatchRenderProcedure():
     print("cancelBatchRenderProcedure")
+
 
 # Creator
 def cmdCreator():
@@ -363,4 +368,3 @@ def uninitializePlugin(mobject):
         sys.stderr.write( "Failed to unregister command: %s\n" % kPluginCmdName )
 
 ##################################################
-
