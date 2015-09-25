@@ -28,7 +28,7 @@
 -->
 <renderer desc="Mitsuba renderer">
     <melheader s='string $opt=""; string $rl=""; string $rp=""; float $resize=-1.; loadPlugin -quiet MitsubaForMaya;'/>
-    <meltrailer s='setMayaSoftwareLayers($rl, $rp); setImageSizePercent($resize);mayaBatchRenderProcedure(0, "", "", "mitsuba", $opt); '/>
+    <meltrailer s='setMayaSoftwareLayers($rl, $rp); setImageSizePercent($resize);mayaBatchRenderProcedure(0, "", "", "Mitsuba", $opt); '/>
     <sep/>
     <!-- ______________________________________________________________ -->
     <sep desc="General purpose flags:"/>

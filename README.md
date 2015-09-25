@@ -13,21 +13,17 @@ Installation and Usage
 	- cmds.unloadPlugin( "MitsubaForMaya.py" )
 
 - ****VERY IMPORTANT**** 
-- The first field in the Render Settings Mituba tab is the path to the 'mitsuba' binary. You must set this to be able to render. The setting can be specified through an environment variable, as described below, or manually. The path will be retained in a file's Render Settings, so the value only has to be specified the first time you use a scene.
+- The first field in the Render Settings Mituba tab is the path to the 'mitsuba' binary. You must set this to be able to render. The setting can be specified using the MITSUBA_PATH environment variable, as described below, or manually from the Render Settings UI. The path will be retained in a file's Render Settings, so the value only has to be specified the first time you use a scene.
+
 	- OSX: ex. /path/where/you/downloaded/Mitsuba.app/Contents/MacOS/mitsuba
+
 	- Linux: ex. /usr/local/mitsuba/mitsuba
+
 	- Windows: ex. C:/path/where/you/downloaded/Mitsuba 0.5.0 64bit/Mitsuba 0.5.0/mitsuba.exe
 
 - ****VERY IMPORTANT**** 
 - If you use an Integrator other than Path Tracer, the Render Settings' Mitsuba tab has to have been displayed before a render can start
 	- If you use a different integrator, you'll have to click on the Mitsuba tab in Render Settings before you can render.
-
-- Renders EXRs
-
-Testing
--
-
-This plugin was tested with Maya 2016 on OSX Yosemite, Windows 7 and CentOS 7 Linux.
 
 Environment
 - 
@@ -35,15 +31,47 @@ The path to the Mitsuba binary has to be specified, either in the Render Setting
 
 - The environment variable to set is MITSUBA_PATH 
 
+- Maya.env files can be saved in the following folders
+
+	- Windows: C:\Users\<user>\Documents\maya\<mayaVersion>
+
+	- Mac: /Users/<user>/Library/Preferences/Autodesk/maya/<mayaVersion>
+
+	- Linux: /home/<user>/maya/<mayaVersion>
+
 - Example Maya.env settings follow:
+
 	- Windows: MITSUBA_PATH = C:\path\to\Mitsuba 0.5.0\mitsuba.exe
+
 	- Mac: MITSUBA_PATH = /path/to/Mitsuba.app/Contents/MacOS/mitsuba
+
 	- Linux: MITSUBA_PATH = /path/to/mitsuba
 
-- Maya.env files can be saved in the following folders
-	- Windows: C:\Users\<user>\Documents\maya\<mayaVersion>
-	- Mac: /Users/<user>/Library/Preferences/Autodesk/maya/<mayaVersion>
-	- Linux: /home/<user>/maya/<mayaVersion>
+Rendering in Batch
+-
+Rendering an animation in Batch mode works, with a couple of caveats
+
+- Batch renders can't be canceled from the UI
+
+- Animated parameters on Mitsuba shading, lighting and volume nodes aren't supported
+
+In order to render in Batch mode, you'll need to set two environment variables
+
+- MAYA_RENDER_DESC_PATH has to point to the folder containing the MitsubaRenderer.xml file.
+
+- MAYA_PLUG_IN_PATH has to point to the MitsubaForMaya plug-ins folder
+
+- Example Maya.env settings for Windows follow:
+
+	- MAYA_RENDER_DESC_PATH = C:\path\to\MitsubaForMaya
+
+	- MAYA_PLUG_IN_PATH = C:\path\to\MitsubaForMaya\plug-ins
+
+- *Autodesk Reference links*
+
+	- [Setting the Maya.env](http://help.autodesk.com/view/MAYAUL/2016/ENU/?guid=GUID-8EFB1AC1-ED7D-4099-9EEE-624097872C04)
+
+	- [Brief description of MAYA_RENDER_DESC_PATH](http://knowledge.autodesk.com/support/maya/learn-explore/caas/CloudHelp/cloudhelp/2016/ENU/Maya/files/GUID-AF8A7EA4-DEEF-49EF-A18C-CDA72B4F9E1E-htm.html)
 
 Notes
 -
@@ -52,7 +80,7 @@ The default lighting in Mitsuba is a sunsky, so if you do not use any lighting y
 
 For a variety of Mitsuba materials, check the Hypershade under Maya/Surface.
 
-Render settings have been set to balance render time vs. quality.  More information can be found here.  The main thing that controls render quality is the sampleCount in the Image Sampler drop down.
+Render settings have been set to balance render time vs. quality. The main thing that controls render quality is the sampleCount in the Image Sampler drop down.
 
 References
 -
@@ -69,5 +97,8 @@ References
 
 - [Irawan Cloth Data Sets](http://www.mitsuba-renderer.org/scenes/irawan.zip)
 
-- [Setting the Maya.env](http://help.autodesk.com/view/MAYAUL/2016/ENU/?guid=GUID-8EFB1AC1-ED7D-4099-9EEE-624097872C04)
+Testing
+-
+
+This plugin was tested with Maya 2016 on OSX Yosemite, Windows 7 and CentOS 7 Linux.
 

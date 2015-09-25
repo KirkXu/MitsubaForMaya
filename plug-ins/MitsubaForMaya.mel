@@ -30,6 +30,14 @@ global proc mitsubaBatchRenderOptionsProcedure() {
 	python( $python );
 }
 
+global proc mitsubaCommandRenderProcedure(string $options) {
+	string $python = "";
+	$python += "import MitsubaForMaya;";
+	$python += "MitsubaForMaya.commandRenderProcedure(\"" + $options + "\")";
+
+	python( $python );
+}
+
 global proc string mitsubaBatchRenderOptionsStringProcedure() {
 	string $python = "";
 	$python += "import MitsubaForMaya;";

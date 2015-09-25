@@ -10,7 +10,7 @@ import maya.OpenMayaMPx as OpenMayaMPx
 
 from process import Process
 
-kPluginCmdName = "mitsuba"
+kPluginCmdName = "Mitsuba"
 
 pluginDir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
 sys.path.append(pluginDir)
@@ -116,7 +116,7 @@ import MitsubaForMayaIO
 #
 # Renderer functions
 #
-def renderScene(outFileName, projectDir, mitsubaPath, mtsDir, keepTempFiles, geometryFiles, animation=False, frame=1):
+def renderScene(outFileName, projectDir, mitsubaPath, mtsDir, keepTempFiles, geometryFiles, animation=False, frame=1, verbose=False):
     renderDir = os.path.join(projectDir, 'images')
     os.chdir(renderDir)
 
@@ -131,10 +131,13 @@ def renderScene(outFileName, projectDir, mitsubaPath, mtsDir, keepTempFiles, geo
         logName = os.path.join(renderDir, imagePrefix + ".log")
         imageName = os.path.join(renderDir, imagePrefix + ".exr")
 
-    args = ['-v',
+    args = []
+    if verbose:
+        args.append('-v')
+    args.extend([
         '-o',
         imageName,
-        outFileName]
+        outFileName])
     if ' ' in mtsDir:
         env = {"LD_LIBRARY_PATH":str("\"%s\"" % mtsDir)}
     else:
@@ -169,6 +172,12 @@ class mitsubaForMaya(OpenMayaMPx.MPxCommand):
 
     # Invoked when the command is run.
     def doIt(self,argList):
+        # Create a render settings node
+        MitsubaRenderSettingsUI.createRenderSettingsNode()
+
+        #existingSettings = cmds.ls(type='MitsubaRenderSettings')
+        #print( "Existing Mitsuba Settings nodes: %s" % existingSettings )
+
         print "Rendering with Mitsuba..."
 
         #Save the user's selection
@@ -191,6 +200,7 @@ class mitsubaForMaya(OpenMayaMPx.MPxCommand):
         sampleCount = cmds.getAttr("%s.%s" % (renderSettings, "sampleCount"))
         reconstructionFilter = cmds.getAttr("%s.%s" % (renderSettings, "reconstructionFilter"))
         keepTempFiles = cmds.getAttr("%s.%s" % (renderSettings, "keepTempFiles"))
+        verbose = cmds.getAttr("%s.%s" % (renderSettings, "verbose"))
         animation = cmds.getAttr("defaultRenderGlobals.animation")
 
         print( "Render Settings - Mitsuba Path    : %s" % mitsubaPath )
@@ -199,10 +209,11 @@ class mitsubaForMaya(OpenMayaMPx.MPxCommand):
         print( "Render Settings - Sample Count    : %s" % sampleCount )
         print( "Render Settings - Reconstruction  : %s" % reconstructionFilter )
         print( "Render Settings - Keep Temp Files : %s" % keepTempFiles )
+        print( "Render Settings - Verbose         : %s" % verbose )
         print( "Render Settings - Animation       : %s" % animation )
 
         if not cmds.about(batch=True) and animation:
-            print( "Animation isn't currently supported. Rendering current frame." )
+            print( "Animation isn't currently supported outside of Batch mode. Rendering current frame." )
             animation = False
 
         # Animation doesn't work
@@ -214,19 +225,23 @@ class mitsubaForMaya(OpenMayaMPx.MPxCommand):
                 startFrame, endFrame, byFrame) )
 
             for frame in range(startFrame, endFrame+1, byFrame):
-                # Calling this leads to Maya locking up
-                cmds.currentTime(frame)
                 print( "Rendering frame " + str(frame) + " - begin" )
+
+                # Calling this leads to Maya locking up
+                cmds.currentTime(float(frame))
+
+                print( "Rendering frame " + str(frame) + " - frame set" )
 
                 # Export scene and geometry
                 geometryFiles = MitsubaForMayaIO.writeScene(outFileName, projectDir)
         
                 # Render scene, delete scene and geometry
                 imageName = renderScene(outFileName, projectDir, mitsubaPath, 
-                    mtsDir, keepTempFiles, geometryFiles, animation, frame)
+                    mtsDir, keepTempFiles, geometryFiles, animation, frame, verbose)
 
-                print("Rendering frame " + str(frame) + " - end" )
-                time.sleep(2)
+                print( "Rendering frame " + str(frame) + " - end" )
+
+            print( "Animation finished" )
         else:
             # Export scene and geometry
             geometryFiles = MitsubaForMayaIO.writeScene(outFileName, projectDir)
@@ -234,10 +249,13 @@ class mitsubaForMaya(OpenMayaMPx.MPxCommand):
             # Render scene
             # Clean up scene and geometry
             imageName = renderScene(outFileName, projectDir, mitsubaPath, 
-                mtsDir, keepTempFiles, geometryFiles)
+                mtsDir, keepTempFiles, geometryFiles, verbose=verbose)
 
             # Display the render
             MitsubaRenderSettingsUI.showRender(imageName)
+
+        if cmds.about(batch=True):
+            print( "End of Batch Render" )
 
         # Select the objects that the user had selected before they rendered, or clear the selection
         if len(userSelection) > 0:
@@ -246,18 +264,26 @@ class mitsubaForMaya(OpenMayaMPx.MPxCommand):
             cmds.select(cl=True)
 
 def batchRenderProcedure(options):
-    print("batchRenderProcedure: options " + str(options))
+    print("\n\n\nbatchRenderProcedure: options " + str(options) + "\n\n\n")
 
 def batchRenderOptionsProcedure():
-    print("batchRenderOptionsProcedure")
+    print("\n\n\nbatchRenderOptionsProcedure\n\n\n")
 
 def batchRenderOptionsStringProcedure():
-    print("batchRenderOptionsStringProcedure")
-    return ' -r Mitsuba'
+    print("\n\n\nbatchRenderOptionsStringProcedure\n\n\n")
+    return ' -r %s' % kPluginCmdName
 
 def cancelBatchRenderProcedure():
-    print("cancelBatchRenderProcedure")
+    print("\n\n\ncancelBatchRenderProcedure\n\n\n")
 
+def commandRenderProcedure(options):
+    print("\n\n\ncommandRenderProcedure - %s\n\n\n" % options)
+
+    kwargs = {}
+    try:
+        cmds.Mitsuba(batch=True, **kwargs)
+    except RuntimeError, err:
+        print err
 
 # Creator
 def cmdCreator():
@@ -265,11 +291,11 @@ def cmdCreator():
 
 # Initialize the script plug-in
 def initializePlugin(mobject):
+    mplugin = OpenMayaMPx.MFnPlugin(mobject)
+
     global materialNodeModules
 
     pluginDir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
-
-    mplugin = OpenMayaMPx.MFnPlugin(mobject)
 
     try:
         # Load needed plugins
@@ -317,6 +343,7 @@ def initializePlugin(mobject):
         cmds.renderer("Mitsuba", edit=True, batchRenderOptionsProcedure="mitsubaBatchRenderOptionsProcedure")
         cmds.renderer("Mitsuba", edit=True, batchRenderOptionsStringProcedure="mitsubaBatchRenderOptionsStringProcedure")
         cmds.renderer("Mitsuba", edit=True, cancelBatchRenderProcedure="mitsubaCancelBatchRenderProcedure")
+        cmds.renderer("Mitsuba", edit=True, commandRenderProcedure="mitsubaCommandRenderProcedure")
 
         cmds.renderer("Mitsuba", edit=True, addGlobalsTab=("Common", 
             "createMayaSoftwareCommonGlobalsTab", 
@@ -327,9 +354,6 @@ def initializePlugin(mobject):
             "mitsubaUpdateSettingsUpdate"))
 
         cmds.renderer("Mitsuba", edit=True, addGlobalsNode="defaultMitsubaRenderGlobals" )
-
-        # Create a render settings node
-        MitsubaRenderSettingsUI.createRenderSettingsNode()
 
     except:
         sys.stderr.write( "Failed to register command: %s\n" % kPluginCmdName )

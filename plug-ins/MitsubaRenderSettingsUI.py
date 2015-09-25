@@ -496,7 +496,7 @@ def changeIntegrator(selectedIntegrator):
     global integratorFrames
     global integrator
 
-    print( "selectedIntegrator : %s" % selectedIntegrator )
+    #print( "selectedIntegrator : %s" % selectedIntegrator )
 
     #Query the integrator drop down menu to find the active integrator
     selectedIntegrator = cmds.optionMenu(integratorMenu, query=True, value=True)
@@ -517,7 +517,7 @@ def changeSampler(selectedSampler):
     global samplerFrames
     global sample
 
-    print( "selectedSampler : %s" % selectedSampler )
+    #print( "selectedSampler : %s" % selectedSampler )
 
     #Query the sampler drop down menu to find the active sampler
     selectedSampler = cmds.optionMenu(samplerMenu, query=True, value=True)

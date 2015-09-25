@@ -24,12 +24,18 @@ x support general cameras, not just camera, aim, up combinations
 
 x move materials into 'materials'
 x add __init__.py as appropriate
+x support batch / animated renders
+
+x remove dependence on UI to drive render parameters
+x add support for persisting render settings
+ x filters
+ x samplers
+ x integrators - Path Tracer
+
+support animated parameters in batch mode
 
 remove dependence on UI to drive render parameters
-add support for persisting all render settings
-x filters
-x samplers
-x integrators - Path Tracer
+add support for persisting render settings
 - The rest of the integrators
 
 hookup verbose render setting
@@ -39,7 +45,6 @@ indent code to 4 space tabs
 replace all mel functions with automatically generated mel which immediately calls back into Python
 make plugin ids consistent
 
-support batch / animated renders
 replace xml writing with etree
 support interactive render view / update / cancel
 

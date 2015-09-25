@@ -349,9 +349,11 @@ class Process:
              Return value description.
         """
 
-        self.log.append(line.rstrip())
-        if self.echo:
-            print('%s' % line.rstrip())
+        line = line.rstrip()
+        if line != "":
+            self.log.append(line.rstrip())
+            if self.echo:
+                print('%s' % line.rstrip())
 
     def execute(self):
         """
