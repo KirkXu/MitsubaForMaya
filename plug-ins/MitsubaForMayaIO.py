@@ -314,7 +314,7 @@ def writeShader(material, materialName, outFile, tabbedSpace):
         extIOR = cmds.getAttr(material+".extIOR")
 
         #Write material
-        outFile.write(tabbedSpace + " <bsdf type=\"thindielectric\">\n id=\"" + materialName + "\">\n")
+        outFile.write(tabbedSpace + " <bsdf type=\"thindielectric\" id=\"" + materialName + "\">\n")
         outFile.write(tabbedSpace + "     <float name=\"intIOR\" value=\"" + str(intIOR) + "\"/>\n")
         outFile.write(tabbedSpace + "     <float name=\"extIOR\" value=\"" + str(extIOR) + "\"/>\n")
         outFile.write(tabbedSpace + " </bsdf>\n\n")
@@ -437,24 +437,41 @@ def writeIntegrator(outFile):
 
         outFile.write("     <integer name=\"rrDepth\" value=\"" + str(iPathTracerRRDepth) + "\"/>\n")            
 
-        if iPathTracerStrictNormals:
-            iPathTracerStrictNormalsText = 'true'
-        else:
-            iPathTracerStrictNormalsText = 'false'
+        iPathTracerStrictNormalsText = 'true' if iPathTracerStrictNormals else 'false'
         outFile.write("     <boolean name=\"strictNormals\" value=\"%s\"/>\n" % iPathTracerStrictNormalsText)
 
-        if iPathTracerHideEmitters:
-            iPathTracerHideEmittersText = 'true'
-        else:
-            iPathTracerHideEmittersText = 'false'
+        iPathTracerHideEmittersText = 'true' if iPathTracerHideEmitters else 'false'
         outFile.write("     <boolean name=\"hideEmitters\" value=\"%s\"/>\n" % iPathTracerHideEmittersText)
 
         outFile.write(" </integrator>\n\n\n")
 
-    else:
-        writeIntegrator0(outFile)
+    elif integratorMaya == "Bidirectional Path Tracer":
+        outFile.write(" <integrator type=\"%s\">\n" % integratorMitsuba)
 
-def writeIntegrator0(outFile):
+        iBidrectionalPathTracerUseInfiniteDepth = cmds.getAttr("%s.%s" % (renderSettings, "iBidrectionalPathTracerUseInfiniteDepth"))
+        iBidrectionalPathTracerMaxDepth = cmds.getAttr("%s.%s" % (renderSettings, "iBidrectionalPathTracerMaxDepth"))
+        iBidrectionalPathTracerRRDepth = cmds.getAttr("%s.%s" % (renderSettings, "iBidrectionalPathTracerRRDepth"))
+        iBidrectionalPathTracerLightImage = cmds.getAttr("%s.%s" % (renderSettings, "iBidrectionalPathTracerLightImage"))
+        iBidrectionalPathTracerSampleDirect = cmds.getAttr("%s.%s" % (renderSettings, "iBidrectionalPathTracerSampleDirect"))
+
+        if iBidrectionalPathTracerUseInfiniteDepth:
+            iBidrectionalPathTracerMaxDepth = -1
+        outFile.write("     <integer name=\"maxDepth\" value=\"" + str(iBidrectionalPathTracerMaxDepth) + "\"/>\n")
+
+        outFile.write("     <integer name=\"rrDepth\" value=\"" + str(iBidrectionalPathTracerRRDepth) + "\"/>\n")            
+
+        iBidrectionalPathTracerLightImageText = 'true' if iBidrectionalPathTracerLightImage else 'false'
+        outFile.write("     <boolean name=\"lightImage\" value=\"%s\"/>\n" % iBidrectionalPathTracerLightImageText)
+
+        iBidrectionalPathTracerSampleDirectText = 'true' if iBidrectionalPathTracerSampleDirect else 'false'
+        outFile.write("     <boolean name=\"sampleDirect\" value=\"%s\"/>\n" % iBidrectionalPathTracerSampleDirectText)
+
+        outFile.write(" </integrator>\n\n\n")
+
+    else:
+        writeIntegratorUsingUI(outFile)
+
+def writeIntegratorUsingUI(outFile):
     #
     # Integrators that still need to pull settings from the UI
     #
@@ -538,8 +555,8 @@ def writeIntegrator0(outFile):
             outFile.write("     <boolean name=\"hideEmitters\" value=\"false\"/>\n")
 
     #Write path tracer, volpaths settings
-    elif activeIntegrator=="Path_Tracer" or activeIntegrator=="Volumetric_Path_Tracer" or activeIntegrator=="Simple_Volumetric_Path_Tracer" \
-    or   activeIntegrator=="Path Tracer" or activeIntegrator=="Volumetric Path Tracer" or activeIntegrator=="Simple Volumetric Path Tracer":
+    elif activeIntegrator=="Volumetric_Path_Tracer" or activeIntegrator=="Simple_Volumetric_Path_Tracer" \
+    or   activeIntegrator=="Volumetric Path Tracer" or activeIntegrator=="Simple Volumetric Path Tracer":
         '''
         The order for this integrator is:
         0. checkBox to use infinite samples
@@ -575,39 +592,6 @@ def writeIntegrator0(outFile):
             outFile.write("     <boolean name=\"hideEmitters\" value=\"true\"/>\n")
         else:
             outFile.write("     <boolean name=\"hideEmitters\" value=\"false\"/>\n")
-
-    #Write bdpt
-    elif activeIntegrator=="Bidirectional_Path_Tracer" or activeIntegrator=="Bidirectional Path Tracer":
-        '''
-        The order for this integrator is:
-        0. checkBox to use infinite samples
-        1. intFieldGrp maxDepth
-        2. checkBox lightImage
-        3. checkBox sampleDirect
-        4. intFieldGrp rrDepth
-        '''
-        outFile.write(" <integrator type=\"bdpt\">\n")
-        integratorSettings = cmds.frameLayout(activeSettings, query=True, childArray=True)
-
-        if cmds.checkBox(integratorSettings[0], query=True, value=True):
-            outFile.write("     <integer name=\"maxDepth\" value=\"-1\"/>\n")
-        else:
-            maxDepth = cmds.intFieldGrp(integratorSettings[1], query=True, value1=True)
-            outFile.write("     <integer name=\"maxDepth\" value=\"" + str(maxDepth) + "\"/>\n")
-
-        if cmds.checkBox(integratorSettings[2], query=True, value=True):
-            outFile.write("     <boolean name=\"lightImage\" value=\"true\"/>\n")
-        else:
-            outFile.write("     <boolean name=\"lightImage\" value=\"false\"/>\n")
-
-        if cmds.checkBox(integratorSettings[3], query=True, value=True):
-            outFile.write("     <boolean name=\"sampleDirect\" value=\"true\"/>\n")
-        else:
-            outFile.write("     <boolean name=\"sampleDirect\" value=\"false\"/>\n")
-
-        rrDepth = cmds.intFieldGrp(integratorSettings[4], query=True, value1=True)
-        outFile.write("     <integer name=\"emitterSamples\" value=\"" + str(rrDepth) + "\"/>\n")    
-
 
     #Write photon mapper
     elif activeIntegrator=="Photon_Map" or activeIntegrator=="Photon Map":
@@ -1311,8 +1295,13 @@ def writeLights(outFile):
                 scale = cmds.getAttr(envmap+".scale")
                 gamma = cmds.getAttr(envmap+".gamma")
                 cache = cmds.getAttr(envmap+".cache")
+
                 samplingWeight = cmds.getAttr(envmap+".samplingWeight")
                 rotate = cmds.getAttr(envmap+".rotate")[0]
+
+                #print( "\n\n\n\n")
+                #print( "envmap::rotate : %3.3f %3.3f %3.3f" % (rotate[0], rotate[1], rotate[2]))
+                #print( "\n\n\n\n")
 
                 outFile.write(" <emitter type=\"envmap\">\n")
                 outFile.write("     <string name=\"filename\" value=\"" + fileName + "\"/>\n")

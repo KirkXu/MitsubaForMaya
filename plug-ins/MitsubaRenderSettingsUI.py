@@ -58,6 +58,7 @@ def createIntegratorFrames():
     cmds.checkBox(label = "hideEmitters")
     cmds.setParent('..')
 
+    # Path Tracer settings
     pSettings = cmds.frameLayout(label="Path Tracer", cll=True)
 
     existingUseInfiniteDepth = cmds.getAttr( "%s.%s" % (renderSettings, "iPathTracerUseInfiniteDepth"))
@@ -66,22 +67,21 @@ def createIntegratorFrames():
     existingStrictNormals = cmds.getAttr( "%s.%s" % (renderSettings, "iPathTracerStrictNormals"))
     existingHideEmitters = cmds.getAttr( "%s.%s" % (renderSettings, "iPathTracerHideEmitters"))
 
-    uid = cmds.checkBox("Use infinite depth", value=existingUseInfiniteDepth)
-    cmds.checkBox(uid, edit=1, 
+    uid = cmds.checkBox("Use Infinite Depth", value=existingUseInfiniteDepth, 
         changeCommand=lambda (x): getCheckBox(None, "iPathTracerUseInfiniteDepth", x))
 
-    md = cmds.intFieldGrp(numberOfFields=1, label="maxDepth", value1=existingMaxDepth)
-    cmds.intFieldGrp(md, edit=1, 
-        changeCommand=lambda (x): getIntFieldGroup(None, "iPathTracerMaxDepth", x))    
-    rrd = cmds.intFieldGrp(numberOfFields=1, label="rrDepth", value1=existingRRDepth)
-    cmds.intFieldGrp(rrd, edit=1, 
-        changeCommand=lambda (x): getIntFieldGroup(None, "iPathTracerRRDepth", x))    
-    sn = cmds.checkBox(label = "strictNormals", value=existingStrictNormals)
-    cmds.checkBox(sn, edit=1, 
-        changeCommand=lambda (x): getCheckBox(None, "iPathTracerStrictNormals", x))    
-    he = cmds.checkBox(label = "hideEmitters", value=existingHideEmitters)
-    cmds.checkBox(he, edit=1, 
+    md = cmds.intFieldGrp(numberOfFields=1, label="Max Depth", value1=existingMaxDepth, 
+        changeCommand=lambda (x): getIntFieldGroup(None, "iPathTracerMaxDepth", x))
+
+    rrd = cmds.intFieldGrp(numberOfFields=1, label="Russian Roulette Depth", value1=existingRRDepth, 
+        changeCommand=lambda (x): getIntFieldGroup(None, "iPathTracerRRDepth", x))
+
+    sn = cmds.checkBox(label = "Strict Normals", value=existingStrictNormals, 
+        changeCommand=lambda (x): getCheckBox(None, "iPathTracerStrictNormals", x))
+
+    he = cmds.checkBox(label = "Hide Visible Emitters", value=existingHideEmitters, 
         changeCommand=lambda (x): getCheckBox(None, "iPathTracerHideEmitters", x))    
+
     cmds.setParent('..')
 
     vpsSettings = cmds.frameLayout(label="Simple Volumetric Path Tracer", cll=True, visible=False)
@@ -100,12 +100,30 @@ def createIntegratorFrames():
     cmds.checkBox(label = "hideEmitters")
     cmds.setParent('..')
 
+    # Bidirection Path Tracer Settings
     bdptSettings = cmds.frameLayout(label="Bidirectional Path Tracer", cll=True, visible=False)
-    cmds.checkBox(label = "Use infinite depth", value=True)
-    cmds.intFieldGrp(numberOfFields=1, label="maxDepth", value1=1)
-    cmds.checkBox(label = "lightImage")
-    cmds.checkBox(label = "sampleDirect")
-    cmds.intFieldGrp(numberOfFields=1, label="rrDepth", value1=1)
+
+    existingUseInfiniteDepth = cmds.getAttr( "%s.%s" % (renderSettings, "iBidrectionalPathTracerUseInfiniteDepth"))
+    existingMaxDepth = cmds.getAttr( "%s.%s" % (renderSettings, "iBidrectionalPathTracerMaxDepth"))
+    existingRRDepth = cmds.getAttr( "%s.%s" % (renderSettings, "iBidrectionalPathTracerRRDepth"))
+    existingLightImage = cmds.getAttr( "%s.%s" % (renderSettings, "iBidrectionalPathTracerLightImage"))
+    existingSampleDirect = cmds.getAttr( "%s.%s" % (renderSettings, "iBidrectionalPathTracerSampleDirect"))
+
+    uid = cmds.checkBox("Use Infinite Depth", value=existingUseInfiniteDepth,
+        changeCommand=lambda (x): getCheckBox(None, "iBidrectionalPathTracerUseInfiniteDepth", x))
+
+    md = cmds.intFieldGrp(numberOfFields=1, label="Max Depth", value1=existingMaxDepth,
+        changeCommand=lambda (x): getIntFieldGroup(None, "iBidrectionalPathTracerMaxDepth", x))
+
+    sn = cmds.checkBox(label = "Use Light Images", value=existingLightImage,
+        changeCommand=lambda (x): getCheckBox(None, "iBidrectionalPathTracerLightImage", x))  
+
+    he = cmds.checkBox(label = "Enable direct sampling strategies", value=existingSampleDirect,
+        changeCommand=lambda (x): getCheckBox(None, "iBidrectionalPathTracerSampleDirect", x))   
+
+    rrd = cmds.intFieldGrp(numberOfFields=1, label="Russian Roulette Depth", value1=existingRRDepth,
+        changeCommand=lambda (x): getIntFieldGroup(None, "iBidrectionalPathTracerRRDepth", x))
+
     cmds.setParent('..')
 
     pmSettings = cmds.frameLayout(label="Photon Map", cll=True, visible=False)
@@ -532,21 +550,5 @@ def changeSampler(selectedSampler):
 
     sampler = selectedSampler
     getOptionMenu(None, "sampler", selectedSampler)
-
-#def changeSampleCount(selectedSampleCount):
-#    global sampleCount
-#
-#    print( "selectedSampleCount : %s" % selectedSampleCount )
-#
-#    sampleCount = selectedSampleCount
-#    getIntFieldGroup(None, "sampleCount", selectedSampleCount)
-
-#def changeReconstructionFilter(selectedReconstructionFilter):
-#    global rfilter
-#
-#    print( "selectedReconstructionFilter : %s" % selectedReconstructionFilter )
-#
-#    rfilter = selectedReconstructionFilter
-#    getOptionMenu(None, "reconstructionFilter", selectedReconstructionFilter)
 
 

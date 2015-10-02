@@ -33,11 +33,11 @@ The path to the Mitsuba binary has to be specified, either in the Render Setting
 
 - Maya.env files can be saved in the following folders
 
-	- Windows: C:\Users\<user>\Documents\maya\<mayaVersion>
+	- Windows: C:\Users\username\Documents\maya\<mayaVersion>
 
-	- Mac: /Users/<user>/Library/Preferences/Autodesk/maya/<mayaVersion>
+	- Mac: /Users/username/Library/Preferences/Autodesk/maya/<mayaVersion>
 
-	- Linux: /home/<user>/maya/<mayaVersion>
+	- Linux: /home/username/maya/<mayaVersion>
 
 - Example Maya.env settings follow:
 

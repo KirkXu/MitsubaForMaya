@@ -12,21 +12,33 @@ class MitsubaRenderSetting(OpenMayaMPx.MPxNode):
     # Class variables
     mMitsubaPath = OpenMaya.MObject()
 
+    # Integrator variables
     mIntegrator = OpenMaya.MObject()
 
+    # Integrator - Path Tracer variables
     mPathTracerUseInfiniteDepth = OpenMaya.MObject()
     mPathTracerMaxDepth = OpenMaya.MObject()
     mPathTracerRRDepth = OpenMaya.MObject()
     mPathTracerStrictNormals = OpenMaya.MObject()
     mPathTracerHideEmitters = OpenMaya.MObject()
 
+    # Integrator - Bidirectional Path Tracer variables
+    mBidrectionalPathTracerUseInfiniteDepth = OpenMaya.MObject()
+    mBidrectionalPathTracerMaxDepth = OpenMaya.MObject()
+    mBidrectionalPathTracerRRDepth = OpenMaya.MObject()
+    mBidrectionalPathTracerLightImage = OpenMaya.MObject()
+    mBidrectionalPathTracerSampleDirect = OpenMaya.MObject()
+
+    # Sampler variables
     mSampler = OpenMaya.MObject()
     mSampleCount = OpenMaya.MObject()
     mSamplerDimension = OpenMaya.MObject()
     mSamplerScramble = OpenMaya.MObject()
 
+    # Reconstruction Filter variables
     mReconstructionFilter = OpenMaya.MObject()
 
+    # Overall controls
     mKeepTempFiles = OpenMaya.MObject()
     mVerbose = OpenMaya.MObject()
 
@@ -42,26 +54,26 @@ class MitsubaRenderSetting(OpenMayaMPx.MPxNode):
     def addBooleanAttribute(nAttr, attribute, longName, shortName, defaultBoolean=True):
         setattr(MitsubaRenderSetting, attribute, nAttr.create(longName, shortName, OpenMaya.MFnNumericData.kBoolean, defaultBoolean) )
         nAttr.setStorable(1)
-        nAttr.setReadable(1)
-
+        nAttr.setWritable(1)
+ 
     @staticmethod
     def addIntegerAttribute(nAttr, attribute, longName, shortName, defaultInt=0):
         setattr(MitsubaRenderSetting, attribute, nAttr.create(longName, shortName, OpenMaya.MFnNumericData.kInt, defaultInt) )
         nAttr.setStorable(1)
-        nAttr.setReadable(1)
+        nAttr.setWritable(1)
 
     @staticmethod
     def addFloatAttribute(nAttr, attribute, longName, shortName, defaultFloat=0.0):
         setattr(MitsubaRenderSetting, attribute, nAttr.create(longName, shortName, OpenMaya.MFnNumericData.kFloat, defaultFloat) )
         nAttr.setStorable(1)
-        nAttr.setReadable(1)
+        nAttr.setWritable(1)
 
     @staticmethod
     def addColorAttribute(nAttr, attribute, longName, shortName, defaultRGB):
         setattr(MitsubaRenderSetting, attribute, nAttr.createColor(longName, shortName) )
         nAttr.setDefault(defaultRGB[0], defaultRGB[1], defaultRGB[2])
         nAttr.setStorable(1)
-        nAttr.setReadable(1)
+        nAttr.setWritable(1)
 
     @staticmethod
     def addStringAttribute(sAttr, attribute, longName, shortName, defaultString=""):
@@ -69,7 +81,7 @@ class MitsubaRenderSetting(OpenMayaMPx.MPxNode):
         defaultText = stringFn.create(defaultString)
         setattr(MitsubaRenderSetting, attribute, sAttr.create(longName, shortName, OpenMaya.MFnData.kString, defaultText) )
         sAttr.setStorable(1)
-        sAttr.setReadable(1)
+        sAttr.setWritable(1)
 
 def nodeCreator():
     return MitsubaRenderSetting()
@@ -91,10 +103,17 @@ def nodeInitializer():
 
         # Integrator - Path Tracer variables
         MitsubaRenderSetting.addBooleanAttribute(nAttr, "mPathTracerUseInfiniteDepth", "iPathTracerUseInfiniteDepth", "iptuid", True)
-        MitsubaRenderSetting.addIntegerAttribute(nAttr, "mPathTracerMaxDepth", "iPathTracerMaxDepth", "iptmd", 1)
-        MitsubaRenderSetting.addIntegerAttribute(nAttr, "mPathTracerRRDepth", "iPathTracerRRDepth", "iptrrd", 1)
+        MitsubaRenderSetting.addIntegerAttribute(nAttr, "mPathTracerMaxDepth", "iPathTracerMaxDepth", "iptmd", -1)
+        MitsubaRenderSetting.addIntegerAttribute(nAttr, "mPathTracerRRDepth", "iPathTracerRRDepth", "iptrrd", 5)
         MitsubaRenderSetting.addBooleanAttribute(nAttr, "mPathTracerStrictNormals", "iPathTracerStrictNormals", "iptsn", False)
         MitsubaRenderSetting.addBooleanAttribute(nAttr, "mPathTracerHideEmitters", "iPathTracerHideEmitters", "ipthe", False)
+
+        # Integrator - Bidirectional Path Tracer variables
+        MitsubaRenderSetting.addBooleanAttribute(nAttr, "mBidrectionalPathTracerUseInfiniteDepth", "iBidrectionalPathTracerUseInfiniteDepth", "ibdptuid", True)
+        MitsubaRenderSetting.addIntegerAttribute(nAttr, "mBidrectionalPathTracerMaxDepth", "iBidrectionalPathTracerMaxDepth", "ibdptmd", -1)
+        MitsubaRenderSetting.addIntegerAttribute(nAttr, "mBidrectionalPathTracerRRDepth", "iBidrectionalPathTracerRRDepth", "ibdptrrd", 5)
+        MitsubaRenderSetting.addBooleanAttribute(nAttr, "mBidrectionalPathTracerLightImage", "iBidrectionalPathTracerLightImage", "ibdptli", True)
+        MitsubaRenderSetting.addBooleanAttribute(nAttr, "mBidrectionalPathTracerSampleDirect", "iBidrectionalPathTracerSampleDirect", "ibdptsd", True)
 
         # Sampler variables
         MitsubaRenderSetting.addStringAttribute(sAttr, "mSampler", "sampler", "sm", "Independent Sampler")
@@ -102,9 +121,10 @@ def nodeInitializer():
         MitsubaRenderSetting.addIntegerAttribute(nAttr, "mSamplerDimension", "samplerDimension", "sd", 4)
         MitsubaRenderSetting.addIntegerAttribute(nAttr, "mSamplerScramble", "samplerScramble", "ss", -1)
 
-        # Overall controls
+        # Reconstruction Filter variables
         MitsubaRenderSetting.addStringAttribute(sAttr, "mReconstructionFilter", "reconstructionFilter", "rf", "Box filter")
 
+        # Overall controls
         MitsubaRenderSetting.addBooleanAttribute(nAttr, "mKeepTempFiles", "keepTempFiles", "kt", False)
         MitsubaRenderSetting.addBooleanAttribute(nAttr, "mVerbose", "verbose", "vb", False)
     except:
@@ -121,6 +141,12 @@ def nodeInitializer():
         MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mPathTracerRRDepth)
         MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mPathTracerStrictNormals)
         MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mPathTracerHideEmitters)
+
+        MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mBidrectionalPathTracerUseInfiniteDepth)
+        MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mBidrectionalPathTracerMaxDepth)
+        MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mBidrectionalPathTracerRRDepth)
+        MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mBidrectionalPathTracerLightImage)
+        MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mBidrectionalPathTracerSampleDirect)
 
         MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mSampler)
         MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mSampleCount)
