@@ -29,6 +29,11 @@ class MitsubaRenderSetting(OpenMayaMPx.MPxNode):
     mBidrectionalPathTracerLightImage = OpenMaya.MObject()
     mBidrectionalPathTracerSampleDirect = OpenMaya.MObject()
 
+    # Integrator - Ambient Occlusion variables
+    mAmbientOcclusionShadingSamples = OpenMaya.MObject()
+    mAmbientOcclusionUseAutomaticRayLength = OpenMaya.MObject()
+    mAmbientOcclusionRayLength = OpenMaya.MObject()
+
     # Sampler variables
     mSampler = OpenMaya.MObject()
     mSampleCount = OpenMaya.MObject()
@@ -115,6 +120,11 @@ def nodeInitializer():
         MitsubaRenderSetting.addBooleanAttribute(nAttr, "mBidrectionalPathTracerLightImage", "iBidrectionalPathTracerLightImage", "ibdptli", True)
         MitsubaRenderSetting.addBooleanAttribute(nAttr, "mBidrectionalPathTracerSampleDirect", "iBidrectionalPathTracerSampleDirect", "ibdptsd", True)
 
+        # Integrator - Ambient Occlusion variables
+        MitsubaRenderSetting.addIntegerAttribute(nAttr, "mAmbientOcclusionShadingSamples", "iAmbientOcclusionShadingSamples", "iaoss", 1)
+        MitsubaRenderSetting.addBooleanAttribute(nAttr, "mAmbientOcclusionUseAutomaticRayLength", "iAmbientOcclusionUseAutomaticRayLength", "iaouarl", True)
+        MitsubaRenderSetting.addFloatAttribute(nAttr, "mAmbientOcclusionRayLength", "iAmbientOcclusionRayLength", "iaorl", -1)
+
         # Sampler variables
         MitsubaRenderSetting.addStringAttribute(sAttr, "mSampler", "sampler", "sm", "Independent Sampler")
         MitsubaRenderSetting.addIntegerAttribute(nAttr, "mSampleCount", "sampleCount", "sc", 8)
@@ -132,29 +142,41 @@ def nodeInitializer():
         raise
 
     try:
+        # Path to executable
         MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mMitsubaPath)
 
+        # Integrator variables
         MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mIntegrator)
 
+        # Integrator - Bidirectional Path Tracer variables
         MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mPathTracerUseInfiniteDepth)
         MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mPathTracerMaxDepth)
         MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mPathTracerRRDepth)
         MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mPathTracerStrictNormals)
         MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mPathTracerHideEmitters)
 
+        # Integrator - Bidirectional Path Tracer variables
         MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mBidrectionalPathTracerUseInfiniteDepth)
         MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mBidrectionalPathTracerMaxDepth)
         MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mBidrectionalPathTracerRRDepth)
         MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mBidrectionalPathTracerLightImage)
         MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mBidrectionalPathTracerSampleDirect)
 
+        # Integrator - Ambient Occlusion variables
+        MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mAmbientOcclusionShadingSamples)
+        MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mAmbientOcclusionUseAutomaticRayLength)
+        MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mAmbientOcclusionRayLength)
+
+        # Sampler variables
         MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mSampler)
         MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mSampleCount)
         MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mSamplerDimension)
         MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mSamplerScramble)
 
+        # Reconstruction Filter variables
         MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mReconstructionFilter)
 
+        # Overall controls
         MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mKeepTempFiles)
         MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mVerbose)
     except:

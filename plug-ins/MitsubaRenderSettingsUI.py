@@ -43,11 +43,31 @@ def createIntegratorFrames():
 
     integratorFrames = []
 
+    # Bidirection Path Tracer Settings
+    aoSettings = cmds.frameLayout(label="Ambient Occlusion", cll=True, visible=False)
+
+    existingShadingSamples = cmds.getAttr( "%s.%s" % (renderSettings, "iAmbientOcclusionShadingSamples"))
+    existingUseAutomaticRayLength = cmds.getAttr( "%s.%s" % (renderSettings, "iAmbientOcclusionUseAutomaticRayLength"))
+    existingRayLength = cmds.getAttr( "%s.%s" % (renderSettings, "iAmbientOcclusionRayLength"))
+
+    ss = cmds.intFieldGrp(numberOfFields=1, label="Shading Samples", value1=existingShadingSamples,
+        changeCommand=lambda (x): getIntFieldGroup(None, "iAmbientOcclusionShadingSamples", x))
+
+    uarl = cmds.checkBox("Use Automatic Ray Length", value=existingUseAutomaticRayLength, 
+        changeCommand=lambda (x): getCheckBox(None, "iAmbientOcclusionUseAutomaticRayLength", x))
+
+    rl = cmds.floatFieldGrp(numberOfFields=1, label="Ray Length", value1=existingRayLength,
+        changeCommand=lambda (x): getIntFieldGroup(None, "iAmbientOcclusionRayLength", x))
+
+    cmds.setParent('..')
+
+    '''
     aoSettings = cmds.frameLayout(label="Ambient Occlusion", cll=True, visible=False)
     cmds.intFieldGrp(numberOfFields=1, label="shadingSamples", value1=1)
     cmds.checkBox(label="Use automatic ray length")
     cmds.floatFieldGrp(numberOfFields=1, label="rayLength", value1=1)
     cmds.setParent('..')
+    '''
 
     diSettings = cmds.frameLayout(label="Direct Illumination", cll=True, visible=False)
     cmds.intFieldGrp(numberOfFields=1, label="shadingSamples", value1=1)

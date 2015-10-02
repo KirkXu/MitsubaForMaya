@@ -431,8 +431,7 @@ def writeIntegrator(outFile):
         iPathTracerStrictNormals = cmds.getAttr("%s.%s" % (renderSettings, "iPathTracerStrictNormals"))
         iPathTracerHideEmitters = cmds.getAttr("%s.%s" % (renderSettings, "iPathTracerHideEmitters"))
 
-        if iPathTracerUseInfiniteDepth:
-            iPathTracerMaxDepth = -1
+        iPathTracerMaxDepth = -1 if iPathTracerUseInfiniteDepth else iPathTracerMaxDepth
         outFile.write("     <integer name=\"maxDepth\" value=\"" + str(iPathTracerMaxDepth) + "\"/>\n")
 
         outFile.write("     <integer name=\"rrDepth\" value=\"" + str(iPathTracerRRDepth) + "\"/>\n")            
@@ -454,8 +453,7 @@ def writeIntegrator(outFile):
         iBidrectionalPathTracerLightImage = cmds.getAttr("%s.%s" % (renderSettings, "iBidrectionalPathTracerLightImage"))
         iBidrectionalPathTracerSampleDirect = cmds.getAttr("%s.%s" % (renderSettings, "iBidrectionalPathTracerSampleDirect"))
 
-        if iBidrectionalPathTracerUseInfiniteDepth:
-            iBidrectionalPathTracerMaxDepth = -1
+        iBidrectionalPathTracerMaxDepth = -1 if iBidrectionalPathTracerUseInfiniteDepth else iBidrectionalPathTracerMaxDepth
         outFile.write("     <integer name=\"maxDepth\" value=\"" + str(iBidrectionalPathTracerMaxDepth) + "\"/>\n")
 
         outFile.write("     <integer name=\"rrDepth\" value=\"" + str(iBidrectionalPathTracerRRDepth) + "\"/>\n")            
@@ -468,6 +466,42 @@ def writeIntegrator(outFile):
 
         outFile.write(" </integrator>\n\n\n")
 
+    elif integratorMaya == "Bidirectional Path Tracer":
+        outFile.write(" <integrator type=\"%s\">\n" % integratorMitsuba)
+
+        iBidrectionalPathTracerUseInfiniteDepth = cmds.getAttr("%s.%s" % (renderSettings, "iBidrectionalPathTracerUseInfiniteDepth"))
+        iBidrectionalPathTracerMaxDepth = cmds.getAttr("%s.%s" % (renderSettings, "iBidrectionalPathTracerMaxDepth"))
+        iBidrectionalPathTracerRRDepth = cmds.getAttr("%s.%s" % (renderSettings, "iBidrectionalPathTracerRRDepth"))
+        iBidrectionalPathTracerLightImage = cmds.getAttr("%s.%s" % (renderSettings, "iBidrectionalPathTracerLightImage"))
+        iBidrectionalPathTracerSampleDirect = cmds.getAttr("%s.%s" % (renderSettings, "iBidrectionalPathTracerSampleDirect"))
+
+        iBidrectionalPathTracerMaxDepth = -1 if iBidrectionalPathTracerUseInfiniteDepth else iBidrectionalPathTracerMaxDepth
+        outFile.write("     <integer name=\"maxDepth\" value=\"" + str(iBidrectionalPathTracerMaxDepth) + "\"/>\n")
+
+        outFile.write("     <integer name=\"rrDepth\" value=\"" + str(iBidrectionalPathTracerRRDepth) + "\"/>\n")            
+
+        iBidrectionalPathTracerLightImageText = 'true' if iBidrectionalPathTracerLightImage else 'false'
+        outFile.write("     <boolean name=\"lightImage\" value=\"%s\"/>\n" % iBidrectionalPathTracerLightImageText)
+
+        iBidrectionalPathTracerSampleDirectText = 'true' if iBidrectionalPathTracerSampleDirect else 'false'
+        outFile.write("     <boolean name=\"sampleDirect\" value=\"%s\"/>\n" % iBidrectionalPathTracerSampleDirectText)
+
+        outFile.write(" </integrator>\n\n\n")
+
+    elif integratorMaya == "Ambient Occlusion":
+
+        outFile.write(" <integrator type=\"ao\">\n")
+
+        iAmbientOcclusionShadingSamples = cmds.getAttr("%s.%s" % (renderSettings, "iAmbientOcclusionShadingSamples"))
+        iAmbientOcclusionUseAutomaticRayLength = cmds.getAttr("%s.%s" % (renderSettings, "iAmbientOcclusionUseAutomaticRayLength"))
+        iAmbientOcclusionRayLength = cmds.getAttr("%s.%s" % (renderSettings, "iAmbientOcclusionRayLength"))
+
+        outFile.write("     <integer name=\"shadingSamples\" value=\"" + str(iAmbientOcclusionShadingSamples) + "\"/>\n")
+
+        iAmbientOcclusionRayLength = -1 if iAmbientOcclusionUseAutomaticRayLength else iAmbientOcclusionRayLength
+        outFile.write("     <float name=\"rayLength\" value=\"" + str(-1) + "\"/>\n")
+
+        outFile.write(" </integrator>\n\n\n")
     else:
         writeIntegratorUsingUI(outFile)
 
@@ -500,30 +534,8 @@ def writeIntegratorUsingUI(outFile):
 
     #print( "Active Integrator : %s" % activeIntegrator )
 
-
-
-
-    if activeIntegrator=="Ambient_Occlusion" or activeIntegrator=="Ambient Occlusion":
-        '''
-        The order for this integrator is:
-        0. intFieldGrp shadingSamples
-        1. checkBox to use automatic ray length
-        2. intFieldGrp rayLength (for manual rayLength)
-        '''
-        outFile.write(" <integrator type=\"ao\">\n")
-        integratorSettings = cmds.frameLayout(activeSettings, query=True, childArray=True)
-
-        sSamples = cmds.intFieldGrp(integratorSettings[0], query=True, value1=True)
-        outFile.write("     <integer name=\"shadingSamples\" value=\"" + str(sSamples) + "\"/>\n")
-
-        if cmds.checkBox(integratorSettings[1], query=True, value=True):
-            outFile.write("     <integer name=\"rayLength\" value=\"" + str(-1) + "\"/>\n")
-        else:
-            rl = cmds.floatFieldGrp(integratorSettings[2], query=True, value1=True)
-            outFile.write("     <float name=\"rayLength\" value=\"" + str(rl) + "\"/>\n")
-    
     #Write DI settings
-    elif activeIntegrator=="Direct_Illumination" or activeIntegrator=="Direct Illumination":
+    if activeIntegrator=="Direct_Illumination" or activeIntegrator=="Direct Illumination":
         '''
         The order for this integrator is:
         0. intFieldGrp shadingSamples
