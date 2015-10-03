@@ -42,6 +42,20 @@ class MitsubaRenderSetting(OpenMayaMPx.MPxNode):
     mDirectIlluminationStrictNormals = OpenMaya.MObject()
     mDirectIlluminationHideEmitters = OpenMaya.MObject()
 
+    # Integrator - Simple Volumetric Path Tracer variables
+    mSimpleVolumetricPathTracerUseInfiniteDepth = OpenMaya.MObject()
+    mSimpleVolumetricPathTracerMaxDepth = OpenMaya.MObject()
+    mSimpleVolumetricPathTracerRRDepth = OpenMaya.MObject()
+    mSimpleVolumetricPathTracerStrictNormals = OpenMaya.MObject()
+    mSimpleVolumetricPathTracerHideEmitters = OpenMaya.MObject()
+
+    # Integrator - Volumetric Path Tracer variables
+    mVolumetricPathTracerUseInfiniteDepth = OpenMaya.MObject()
+    mVolumetricPathTracerMaxDepth = OpenMaya.MObject()
+    mVolumetricPathTracerRRDepth = OpenMaya.MObject()
+    mVolumetricPathTracerStrictNormals = OpenMaya.MObject()
+    mVolumetricPathTracerHideEmitters = OpenMaya.MObject()
+
     # Sampler variables
     mSampler = OpenMaya.MObject()
     mSampleCount = OpenMaya.MObject()
@@ -141,6 +155,20 @@ def nodeInitializer():
         MitsubaRenderSetting.addBooleanAttribute(nAttr, "mDirectIlluminationStrictNormals", "iDirectIlluminationStrictNormals", "idisn", False)
         MitsubaRenderSetting.addBooleanAttribute(nAttr, "mDirectIlluminationHideEmitters", "iDirectIlluminationHideEmitters", "idihe", False)
 
+        # Integrator - Simple Volumetric Path Tracer variables
+        MitsubaRenderSetting.addBooleanAttribute(nAttr, "mSimpleVolumetricPathTracerUseInfiniteDepth", "iSimpleVolumetricPathTracerUseInfiniteDepth", "isvptuid", True)
+        MitsubaRenderSetting.addIntegerAttribute(nAttr, "mSimpleVolumetricPathTracerMaxDepth", "iSimpleVolumetricPathTracerMaxDepth", "isvptmd", -1)
+        MitsubaRenderSetting.addIntegerAttribute(nAttr, "mSimpleVolumetricPathTracerRRDepth", "iSimpleVolumetricPathTracerRRDepth", "isvptrrd", 5)
+        MitsubaRenderSetting.addBooleanAttribute(nAttr, "mSimpleVolumetricPathTracerStrictNormals", "iSimpleVolumetricPathTracerStrictNormals", "isvptsn", False)
+        MitsubaRenderSetting.addBooleanAttribute(nAttr, "mSimpleVolumetricPathTracerHideEmitters", "iSimpleVolumetricPathTracerHideEmitters", "isvpthe", False)
+
+        # Integrator - Volumetric Path Tracer variables
+        MitsubaRenderSetting.addBooleanAttribute(nAttr, "mVolumetricPathTracerUseInfiniteDepth", "iVolumetricPathTracerUseInfiniteDepth", "ivptuid", True)
+        MitsubaRenderSetting.addIntegerAttribute(nAttr, "mVolumetricPathTracerMaxDepth", "iVolumetricPathTracerMaxDepth", "ivptmd", -1)
+        MitsubaRenderSetting.addIntegerAttribute(nAttr, "mVolumetricPathTracerRRDepth", "iVolumetricPathTracerRRDepth", "ivptrrd", 5)
+        MitsubaRenderSetting.addBooleanAttribute(nAttr, "mVolumetricPathTracerStrictNormals", "iVolumetricPathTracerStrictNormals", "ivptsn", False)
+        MitsubaRenderSetting.addBooleanAttribute(nAttr, "mVolumetricPathTracerHideEmitters", "iVolumetricPathTracerHideEmitters", "ivpthe", False)
+
         # Sampler variables
         MitsubaRenderSetting.addStringAttribute(sAttr, "mSampler", "sampler", "sm", "Independent Sampler")
         MitsubaRenderSetting.addIntegerAttribute(nAttr, "mSampleCount", "sampleCount", "sc", 8)
@@ -164,7 +192,7 @@ def nodeInitializer():
         # Integrator variables
         MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mIntegrator)
 
-        # Integrator - Bidirectional Path Tracer variables
+        # Integrator - Path Tracer variables
         MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mPathTracerUseInfiniteDepth)
         MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mPathTracerMaxDepth)
         MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mPathTracerRRDepth)
@@ -190,6 +218,20 @@ def nodeInitializer():
         MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mDirectIlluminationBSDFSamples)
         MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mDirectIlluminationStrictNormals)
         MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mDirectIlluminationHideEmitters)
+
+        # Integrator - Simple Volumetric Path Tracer variables
+        MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mSimpleVolumetricPathTracerUseInfiniteDepth)
+        MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mSimpleVolumetricPathTracerMaxDepth)
+        MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mSimpleVolumetricPathTracerRRDepth)
+        MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mSimpleVolumetricPathTracerStrictNormals)
+        MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mSimpleVolumetricPathTracerHideEmitters)
+
+        # Integrator - Volumetric Path Tracer variables
+        MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mVolumetricPathTracerUseInfiniteDepth)
+        MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mVolumetricPathTracerMaxDepth)
+        MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mVolumetricPathTracerRRDepth)
+        MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mVolumetricPathTracerStrictNormals)
+        MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mVolumetricPathTracerHideEmitters)
 
         # Sampler variables
         MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mSampler)

@@ -422,14 +422,24 @@ def writeIntegrator(outFile):
     #
     # Integrators that can operate independent of the Render Settings UI
     #
-    if integratorMaya == "Path Tracer":
+    if( integratorMaya == "Path Tracer" or 
+        integratorMaya == "Volumetric Path Tracer" or 
+        integratorMaya == "Simple Volumetric Path Tracer" ):
+
         outFile.write(" <integrator type=\"%s\">\n" % integratorMitsuba)
 
-        iPathTracerUseInfiniteDepth = cmds.getAttr("%s.%s" % (renderSettings, "iPathTracerUseInfiniteDepth"))
-        iPathTracerMaxDepth = cmds.getAttr("%s.%s" % (renderSettings, "iPathTracerMaxDepth"))
-        iPathTracerRRDepth = cmds.getAttr("%s.%s" % (renderSettings, "iPathTracerRRDepth"))
-        iPathTracerStrictNormals = cmds.getAttr("%s.%s" % (renderSettings, "iPathTracerStrictNormals"))
-        iPathTracerHideEmitters = cmds.getAttr("%s.%s" % (renderSettings, "iPathTracerHideEmitters"))
+        attrPrefixes = { 
+            "Path Tracer" : "", 
+            "Volumetric Path Tracer" : "Volumetric", 
+            "Simple Volumetric Path Tracer" : "SimpleVolumetric"
+        }
+        attrPrefix = attrPrefixes[integratorMaya]
+
+        iPathTracerUseInfiniteDepth = cmds.getAttr("%s.%s" % (renderSettings, "i%sPathTracerUseInfiniteDepth" % attrPrefix))
+        iPathTracerMaxDepth = cmds.getAttr("%s.%s" % (renderSettings, "i%sPathTracerMaxDepth" % attrPrefix))
+        iPathTracerRRDepth = cmds.getAttr("%s.%s" % (renderSettings, "i%sPathTracerRRDepth" % attrPrefix))
+        iPathTracerStrictNormals = cmds.getAttr("%s.%s" % (renderSettings, "i%sPathTracerStrictNormals" % attrPrefix))
+        iPathTracerHideEmitters = cmds.getAttr("%s.%s" % (renderSettings, "i%sPathTracerHideEmitters" % attrPrefix))
 
         iPathTracerMaxDepth = -1 if iPathTracerUseInfiniteDepth else iPathTracerMaxDepth
         outFile.write("     <integer name=\"maxDepth\" value=\"" + str(iPathTracerMaxDepth) + "\"/>\n")

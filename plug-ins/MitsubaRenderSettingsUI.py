@@ -91,16 +91,6 @@ def createIntegratorFrames():
 
     cmds.setParent('..')
 
-    '''
-    diSettings = cmds.frameLayout(label="Direct Illumination", cll=True, visible=False)
-    cmds.intFieldGrp(numberOfFields=1, label="shadingSamples", value1=1)
-    cmds.checkBox(label="Use emitter and bsdf specific samplers")
-    cmds.intFieldGrp(numberOfFields=1, label="emitterSamples", value1=1)
-    cmds.intFieldGrp(numberOfFields=1, label="bsdfSamples", value1=1)
-    cmds.checkBox(label = "strictNormals")
-    cmds.checkBox(label = "hideEmitters")
-    '''
-
     # Path Tracer settings
     pSettings = cmds.frameLayout(label="Path Tracer", cll=True)
 
@@ -127,20 +117,56 @@ def createIntegratorFrames():
 
     cmds.setParent('..')
 
+    # Simple Volumetric Path Tracer settings
     vpsSettings = cmds.frameLayout(label="Simple Volumetric Path Tracer", cll=True, visible=False)
-    cmds.checkBox("Use infinite depth", value=True)
-    cmds.intFieldGrp(numberOfFields=1, label="maxDepth", value1=1)
-    cmds.intFieldGrp(numberOfFields=1, label="rrDepth", value1=1)
-    cmds.checkBox(label = "strictNormals")
-    cmds.checkBox(label = "hideEmitters")
+
+    existingUseInfiniteDepth = cmds.getAttr( "%s.%s" % (renderSettings, "iSimpleVolumetricPathTracerUseInfiniteDepth"))
+    existingMaxDepth = cmds.getAttr( "%s.%s" % (renderSettings, "iSimpleVolumetricPathTracerMaxDepth"))
+    existingRRDepth = cmds.getAttr( "%s.%s" % (renderSettings, "iSimpleVolumetricPathTracerRRDepth"))
+    existingStrictNormals = cmds.getAttr( "%s.%s" % (renderSettings, "iSimpleVolumetricPathTracerStrictNormals"))
+    existingHideEmitters = cmds.getAttr( "%s.%s" % (renderSettings, "iSimpleVolumetricPathTracerHideEmitters"))
+
+    uid = cmds.checkBox("Use Infinite Depth", value=existingUseInfiniteDepth, 
+        changeCommand=lambda (x): getCheckBox(None, "iSimpleVolumetricPathTracerUseInfiniteDepth", x))
+
+    md = cmds.intFieldGrp(numberOfFields=1, label="Max Depth", value1=existingMaxDepth, 
+        changeCommand=lambda (x): getIntFieldGroup(None, "iSimpleVolumetricPathTracerMaxDepth", x))
+
+    rrd = cmds.intFieldGrp(numberOfFields=1, label="Russian Roulette Depth", value1=existingRRDepth, 
+        changeCommand=lambda (x): getIntFieldGroup(None, "iSimpleVolumetricPathTracerRRDepth", x))
+
+    sn = cmds.checkBox(label = "Strict Normals", value=existingStrictNormals, 
+        changeCommand=lambda (x): getCheckBox(None, "iSimpleVolumetricPathTracerStrictNormals", x))
+
+    he = cmds.checkBox(label = "Hide Visible Emitters", value=existingHideEmitters, 
+        changeCommand=lambda (x): getCheckBox(None, "iSimpleVolumetricPathTracerHideEmitters", x))    
+
     cmds.setParent('..')
 
+    # Volumetric Path Tracer settings
     vpSettings = cmds.frameLayout(label="Volumetric Path Tracer", cll=True, visible=False)
-    cmds.checkBox("Use infinite depth", value=True)
-    cmds.intFieldGrp(numberOfFields=1, label="maxDepth", value1=1)
-    cmds.intFieldGrp(numberOfFields=1, label="rrDepth", value1=1)
-    cmds.checkBox(label = "strictNormals")
-    cmds.checkBox(label = "hideEmitters")
+
+    existingUseInfiniteDepth = cmds.getAttr( "%s.%s" % (renderSettings, "iVolumetricPathTracerUseInfiniteDepth"))
+    existingMaxDepth = cmds.getAttr( "%s.%s" % (renderSettings, "iVolumetricPathTracerMaxDepth"))
+    existingRRDepth = cmds.getAttr( "%s.%s" % (renderSettings, "iVolumetricPathTracerRRDepth"))
+    existingStrictNormals = cmds.getAttr( "%s.%s" % (renderSettings, "iVolumetricPathTracerStrictNormals"))
+    existingHideEmitters = cmds.getAttr( "%s.%s" % (renderSettings, "iVolumetricPathTracerHideEmitters"))
+
+    uid = cmds.checkBox("Use Infinite Depth", value=existingUseInfiniteDepth, 
+        changeCommand=lambda (x): getCheckBox(None, "iVolumetricPathTracerUseInfiniteDepth", x))
+
+    md = cmds.intFieldGrp(numberOfFields=1, label="Max Depth", value1=existingMaxDepth, 
+        changeCommand=lambda (x): getIntFieldGroup(None, "iVolumetricPathTracerMaxDepth", x))
+
+    rrd = cmds.intFieldGrp(numberOfFields=1, label="Russian Roulette Depth", value1=existingRRDepth, 
+        changeCommand=lambda (x): getIntFieldGroup(None, "iVolumetricPathTracerRRDepth", x))
+
+    sn = cmds.checkBox(label = "Strict Normals", value=existingStrictNormals, 
+        changeCommand=lambda (x): getCheckBox(None, "iVolumetricPathTracerStrictNormals", x))
+
+    he = cmds.checkBox(label = "Hide Visible Emitters", value=existingHideEmitters, 
+        changeCommand=lambda (x): getCheckBox(None, "iVolumetricPathTracerHideEmitters", x))    
+
     cmds.setParent('..')
 
     # Bidirection Path Tracer Settings
