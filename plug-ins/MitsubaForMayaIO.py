@@ -502,6 +502,32 @@ def writeIntegrator(outFile):
         outFile.write("     <float name=\"rayLength\" value=\"" + str(-1) + "\"/>\n")
 
         outFile.write(" </integrator>\n\n\n")
+
+    elif integratorMaya == "Direct Illumination":
+        outFile.write(" <integrator type=\"direct\">\n")
+
+        iDirectIlluminationShadingSamples = cmds.getAttr("%s.%s" % (renderSettings, "iDirectIlluminationShadingSamples"))
+        iDirectIlluminationUseEmitterAndBSDFSamples = cmds.getAttr("%s.%s" % (renderSettings, "iDirectIlluminationUseEmitterAndBSDFSamples"))
+        iDirectIlluminationEmitterSamples = cmds.getAttr("%s.%s" % (renderSettings, "iDirectIlluminationEmitterSamples"))
+        iDirectIlluminationBSDFSamples = cmds.getAttr("%s.%s" % (renderSettings, "iDirectIlluminationBSDFSamples"))
+        iDirectIlluminationStrictNormals = cmds.getAttr("%s.%s" % (renderSettings, "iDirectIlluminationStrictNormals"))
+        iDirectIlluminationHideEmitters = cmds.getAttr("%s.%s" % (renderSettings, "iDirectIlluminationHideEmitters"))
+
+        if iDirectIlluminationUseEmitterAndBSDFSamples:
+            outFile.write("     <integer name=\"emitterSamples\" value=\"" + str(iDirectIlluminationEmitterSamples) + "\"/>\n")
+            outFile.write("     <integer name=\"bsdfSamples\" value=\"" + str(iDirectIlluminationBSDFSamples) + "\"/>\n")
+
+        else:
+            outFile.write("     <integer name=\"shadingSamples\" value=\"" + str(iDirectIlluminationShadingSamples) + "\"/>\n")
+
+        iDirectIlluminationStrictNormalsText = 'true' if iDirectIlluminationStrictNormals else 'false'
+        outFile.write("     <boolean name=\"strictNormals\" value=\"%s\"/>\n" % iDirectIlluminationStrictNormalsText)
+
+        iDirectIlluminationHideEmittersText = 'true' if iDirectIlluminationHideEmitters else 'false'
+        outFile.write("     <boolean name=\"hideEmitters\" value=\"%s\"/>\n" % iDirectIlluminationHideEmittersText)
+
+        outFile.write(" </integrator>\n\n\n")
+
     else:
         writeIntegratorUsingUI(outFile)
 
@@ -534,40 +560,8 @@ def writeIntegratorUsingUI(outFile):
 
     #print( "Active Integrator : %s" % activeIntegrator )
 
-    #Write DI settings
-    if activeIntegrator=="Direct_Illumination" or activeIntegrator=="Direct Illumination":
-        '''
-        The order for this integrator is:
-        0. intFieldGrp shadingSamples
-        1. checkBox to use separate samples for emitters and bsdfs
-        2. intFieldGrp emitterSamples
-        3. intFieldGrp bsdfSamples
-        4. checkBox strictNormals
-        5. checkBox hideEmitters
-        '''
-        outFile.write(" <integrator type=\"direct\">\n")
-        integratorSettings = cmds.frameLayout(activeSettings, query=True, childArray=True)
-        if cmds.checkBox(integratorSettings[1], query=True, value=True):
-            eSamples = cmds.intFieldGrp(integratorSettings[2], query=True, value1=True)
-            bSamples = cmds.intFieldGrp(integratorSettings[3], query=True, value1=True)
-            outFile.write("     <integer name=\"emitterSamples\" value=\"" + str(eSamples) + "\"/>\n")
-            outFile.write("     <integer name=\"bsdfSamples\" value=\"" + str(bSamples) + "\"/>\n")
-        else:
-            sSamples = cmds.intFieldGrp(integratorSettings[0], query=True, value1=True)
-            outFile.write("     <integer name=\"shadingSamples\" value=\"" + str(sSamples) + "\"/>\n")
-
-        if cmds.checkBox(integratorSettings[4], query=True, value=True):
-            outFile.write("     <boolean name=\"strictNormals\" value=\"true\"/>\n")
-        else:
-            outFile.write("     <boolean name=\"strictNormals\" value=\"false\"/>\n")
-
-        if cmds.checkBox(integratorSettings[5], query=True, value=True):
-            outFile.write("     <boolean name=\"hideEmitters\" value=\"true\"/>\n")
-        else:
-            outFile.write("     <boolean name=\"hideEmitters\" value=\"false\"/>\n")
-
     #Write path tracer, volpaths settings
-    elif activeIntegrator=="Volumetric_Path_Tracer" or activeIntegrator=="Simple_Volumetric_Path_Tracer" \
+    if activeIntegrator=="Volumetric_Path_Tracer" or activeIntegrator=="Simple_Volumetric_Path_Tracer" \
     or   activeIntegrator=="Volumetric Path Tracer" or activeIntegrator=="Simple Volumetric Path Tracer":
         '''
         The order for this integrator is:

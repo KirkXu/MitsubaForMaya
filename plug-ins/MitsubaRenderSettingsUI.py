@@ -43,7 +43,7 @@ def createIntegratorFrames():
 
     integratorFrames = []
 
-    # Bidirection Path Tracer Settings
+    # Ambient Occlusion Settings
     aoSettings = cmds.frameLayout(label="Ambient Occlusion", cll=True, visible=False)
 
     existingShadingSamples = cmds.getAttr( "%s.%s" % (renderSettings, "iAmbientOcclusionShadingSamples"))
@@ -61,14 +61,37 @@ def createIntegratorFrames():
 
     cmds.setParent('..')
 
-    '''
-    aoSettings = cmds.frameLayout(label="Ambient Occlusion", cll=True, visible=False)
-    cmds.intFieldGrp(numberOfFields=1, label="shadingSamples", value1=1)
-    cmds.checkBox(label="Use automatic ray length")
-    cmds.floatFieldGrp(numberOfFields=1, label="rayLength", value1=1)
-    cmds.setParent('..')
-    '''
+    # Direct Illumination Settings
+    diSettings = cmds.frameLayout(label="Direct Illumination", cll=True, visible=False)
 
+    iDirectIlluminationShadingSamples = cmds.getAttr("%s.%s" % (renderSettings, "iDirectIlluminationShadingSamples"))
+    iDirectIlluminationUseEmitterAndBSDFSamples = cmds.getAttr("%s.%s" % (renderSettings, "iDirectIlluminationUseEmitterAndBSDFSamples"))
+    iDirectIlluminationEmitterSamples = cmds.getAttr("%s.%s" % (renderSettings, "iDirectIlluminationEmitterSamples"))
+    iDirectIlluminationBSDFSamples = cmds.getAttr("%s.%s" % (renderSettings, "iDirectIlluminationBSDFSamples"))
+    iDirectIlluminationStrictNormals = cmds.getAttr("%s.%s" % (renderSettings, "iDirectIlluminationStrictNormals"))
+    iDirectIlluminationHideEmitters = cmds.getAttr("%s.%s" % (renderSettings, "iDirectIlluminationHideEmitters"))
+
+    ss = cmds.intFieldGrp(numberOfFields=1, label="Shading Samples", value1=iDirectIlluminationShadingSamples, 
+        changeCommand=lambda (x): getIntFieldGroup(None, "iDirectIlluminationShadingSamples", x))
+
+    uebs = cmds.checkBox(label = "Use Emitter and BSDF Samples", value=iDirectIlluminationUseEmitterAndBSDFSamples, 
+        changeCommand=lambda (x): getCheckBox(None, "iDirectIlluminationUseEmitterAndBSDFSamples", x))
+
+    es = cmds.intFieldGrp(numberOfFields=1, label="Emitter Samples", value1=iDirectIlluminationEmitterSamples, 
+        changeCommand=lambda (x): getIntFieldGroup(None, "iDirectIlluminationEmitterSamples", x))
+
+    bs = cmds.intFieldGrp(numberOfFields=1, label="BSDF Samples", value1=iDirectIlluminationBSDFSamples, 
+        changeCommand=lambda (x): getIntFieldGroup(None, "iDirectIlluminationBSDFSamples", x))
+
+    sn = cmds.checkBox(label = "Strict Normals", value=iDirectIlluminationStrictNormals, 
+        changeCommand=lambda (x): getCheckBox(None, "iDirectIlluminationStrictNormals", x))
+
+    he = cmds.checkBox(label = "Hide Visible Emitters", value=iDirectIlluminationStrictNormals, 
+        changeCommand=lambda (x): getCheckBox(None, "iDirectIlluminationStrictNormals", x))    
+
+    cmds.setParent('..')
+
+    '''
     diSettings = cmds.frameLayout(label="Direct Illumination", cll=True, visible=False)
     cmds.intFieldGrp(numberOfFields=1, label="shadingSamples", value1=1)
     cmds.checkBox(label="Use emitter and bsdf specific samplers")
@@ -76,7 +99,7 @@ def createIntegratorFrames():
     cmds.intFieldGrp(numberOfFields=1, label="bsdfSamples", value1=1)
     cmds.checkBox(label = "strictNormals")
     cmds.checkBox(label = "hideEmitters")
-    cmds.setParent('..')
+    '''
 
     # Path Tracer settings
     pSettings = cmds.frameLayout(label="Path Tracer", cll=True)

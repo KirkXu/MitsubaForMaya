@@ -34,6 +34,14 @@ class MitsubaRenderSetting(OpenMayaMPx.MPxNode):
     mAmbientOcclusionUseAutomaticRayLength = OpenMaya.MObject()
     mAmbientOcclusionRayLength = OpenMaya.MObject()
 
+    # Integrator - Direct Illumination variables
+    mDirectIlluminationShadingSamples = OpenMaya.MObject()
+    mDirectIlluminationUseEmitterAndBSDFSamples = OpenMaya.MObject()
+    mDirectIlluminationEmitterSamples = OpenMaya.MObject()
+    mDirectIlluminationBSDFSamples = OpenMaya.MObject()
+    mDirectIlluminationStrictNormals = OpenMaya.MObject()
+    mDirectIlluminationHideEmitters = OpenMaya.MObject()
+
     # Sampler variables
     mSampler = OpenMaya.MObject()
     mSampleCount = OpenMaya.MObject()
@@ -125,6 +133,14 @@ def nodeInitializer():
         MitsubaRenderSetting.addBooleanAttribute(nAttr, "mAmbientOcclusionUseAutomaticRayLength", "iAmbientOcclusionUseAutomaticRayLength", "iaouarl", True)
         MitsubaRenderSetting.addFloatAttribute(nAttr, "mAmbientOcclusionRayLength", "iAmbientOcclusionRayLength", "iaorl", -1)
 
+        # Integrator - Direct Illumination variables
+        MitsubaRenderSetting.addIntegerAttribute(nAttr, "mDirectIlluminationShadingSamples", "iDirectIlluminationShadingSamples", "idiss", 1)
+        MitsubaRenderSetting.addBooleanAttribute(nAttr, "mDirectIlluminationUseEmitterAndBSDFSamples", "iDirectIlluminationUseEmitterAndBSDFSamples", "idiuebs", False)
+        MitsubaRenderSetting.addIntegerAttribute(nAttr, "mDirectIlluminationEmitterSamples", "iDirectIlluminationEmitterSamples", "idies", 1)
+        MitsubaRenderSetting.addIntegerAttribute(nAttr, "mDirectIlluminationBSDFSamples", "iDirectIlluminationBSDFSamples", "idibs", 1)
+        MitsubaRenderSetting.addBooleanAttribute(nAttr, "mDirectIlluminationStrictNormals", "iDirectIlluminationStrictNormals", "idisn", False)
+        MitsubaRenderSetting.addBooleanAttribute(nAttr, "mDirectIlluminationHideEmitters", "iDirectIlluminationHideEmitters", "idihe", False)
+
         # Sampler variables
         MitsubaRenderSetting.addStringAttribute(sAttr, "mSampler", "sampler", "sm", "Independent Sampler")
         MitsubaRenderSetting.addIntegerAttribute(nAttr, "mSampleCount", "sampleCount", "sc", 8)
@@ -166,6 +182,14 @@ def nodeInitializer():
         MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mAmbientOcclusionShadingSamples)
         MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mAmbientOcclusionUseAutomaticRayLength)
         MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mAmbientOcclusionRayLength)
+
+        # Integrator - Direct Illumination variables
+        MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mDirectIlluminationShadingSamples)
+        MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mDirectIlluminationUseEmitterAndBSDFSamples)
+        MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mDirectIlluminationEmitterSamples)
+        MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mDirectIlluminationBSDFSamples)
+        MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mDirectIlluminationStrictNormals)
+        MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mDirectIlluminationHideEmitters)
 
         # Sampler variables
         MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mSampler)
