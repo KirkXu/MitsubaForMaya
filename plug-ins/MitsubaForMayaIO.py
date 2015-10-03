@@ -393,6 +393,136 @@ def writeShader(material, materialName, outFile, tabbedSpace):
 '''
 Write the appropriate integrator
 '''
+def writeIntegratorPathTracer(outFile, renderSettings, integratorMitsuba):
+    outFile.write(" <integrator type=\"%s\">\n" % integratorMitsuba)
+
+    attrPrefixes = { 
+        "path" : "", 
+        "volpath" : "Volumetric", 
+        "volpath_simple" : "SimpleVolumetric"
+    }
+    attrPrefix = attrPrefixes[integratorMitsuba]
+
+    iPathTracerUseInfiniteDepth = cmds.getAttr("%s.%s" % (renderSettings, "i%sPathTracerUseInfiniteDepth" % attrPrefix))
+    iPathTracerMaxDepth = cmds.getAttr("%s.%s" % (renderSettings, "i%sPathTracerMaxDepth" % attrPrefix))
+    iPathTracerRRDepth = cmds.getAttr("%s.%s" % (renderSettings, "i%sPathTracerRRDepth" % attrPrefix))
+    iPathTracerStrictNormals = cmds.getAttr("%s.%s" % (renderSettings, "i%sPathTracerStrictNormals" % attrPrefix))
+    iPathTracerHideEmitters = cmds.getAttr("%s.%s" % (renderSettings, "i%sPathTracerHideEmitters" % attrPrefix))
+
+    iPathTracerMaxDepth = -1 if iPathTracerUseInfiniteDepth else iPathTracerMaxDepth
+    outFile.write("     <integer name=\"maxDepth\" value=\"" + str(iPathTracerMaxDepth) + "\"/>\n")
+
+    outFile.write("     <integer name=\"rrDepth\" value=\"" + str(iPathTracerRRDepth) + "\"/>\n")            
+
+    iPathTracerStrictNormalsText = 'true' if iPathTracerStrictNormals else 'false'
+    outFile.write("     <boolean name=\"strictNormals\" value=\"%s\"/>\n" % iPathTracerStrictNormalsText)
+
+    iPathTracerHideEmittersText = 'true' if iPathTracerHideEmitters else 'false'
+    outFile.write("     <boolean name=\"hideEmitters\" value=\"%s\"/>\n" % iPathTracerHideEmittersText)
+
+    outFile.write(" </integrator>\n\n\n")
+
+def writeIntegratorBidirectionalPathTracer(outFile, renderSettings, integratorMitsuba):
+    outFile.write(" <integrator type=\"%s\">\n" % integratorMitsuba)
+
+    iBidrectionalPathTracerUseInfiniteDepth = cmds.getAttr("%s.%s" % (renderSettings, "iBidrectionalPathTracerUseInfiniteDepth"))
+    iBidrectionalPathTracerMaxDepth = cmds.getAttr("%s.%s" % (renderSettings, "iBidrectionalPathTracerMaxDepth"))
+    iBidrectionalPathTracerRRDepth = cmds.getAttr("%s.%s" % (renderSettings, "iBidrectionalPathTracerRRDepth"))
+    iBidrectionalPathTracerLightImage = cmds.getAttr("%s.%s" % (renderSettings, "iBidrectionalPathTracerLightImage"))
+    iBidrectionalPathTracerSampleDirect = cmds.getAttr("%s.%s" % (renderSettings, "iBidrectionalPathTracerSampleDirect"))
+
+    iBidrectionalPathTracerMaxDepth = -1 if iBidrectionalPathTracerUseInfiniteDepth else iBidrectionalPathTracerMaxDepth
+    outFile.write("     <integer name=\"maxDepth\" value=\"" + str(iBidrectionalPathTracerMaxDepth) + "\"/>\n")
+
+    outFile.write("     <integer name=\"rrDepth\" value=\"" + str(iBidrectionalPathTracerRRDepth) + "\"/>\n")            
+
+    iBidrectionalPathTracerLightImageText = 'true' if iBidrectionalPathTracerLightImage else 'false'
+    outFile.write("     <boolean name=\"lightImage\" value=\"%s\"/>\n" % iBidrectionalPathTracerLightImageText)
+
+    iBidrectionalPathTracerSampleDirectText = 'true' if iBidrectionalPathTracerSampleDirect else 'false'
+    outFile.write("     <boolean name=\"sampleDirect\" value=\"%s\"/>\n" % iBidrectionalPathTracerSampleDirectText)
+
+    outFile.write(" </integrator>\n\n\n")
+
+def writeIntegratorAmbientOcclusion(outFile, renderSettings, integratorMitsuba):
+    outFile.write(" <integrator type=\"ao\">\n")
+
+    iAmbientOcclusionShadingSamples = cmds.getAttr("%s.%s" % (renderSettings, "iAmbientOcclusionShadingSamples"))
+    iAmbientOcclusionUseAutomaticRayLength = cmds.getAttr("%s.%s" % (renderSettings, "iAmbientOcclusionUseAutomaticRayLength"))
+    iAmbientOcclusionRayLength = cmds.getAttr("%s.%s" % (renderSettings, "iAmbientOcclusionRayLength"))
+
+    outFile.write("     <integer name=\"shadingSamples\" value=\"" + str(iAmbientOcclusionShadingSamples) + "\"/>\n")
+
+    iAmbientOcclusionRayLength = -1 if iAmbientOcclusionUseAutomaticRayLength else iAmbientOcclusionRayLength
+    outFile.write("     <float name=\"rayLength\" value=\"" + str(-1) + "\"/>\n")
+
+    outFile.write(" </integrator>\n\n\n")
+
+def writeIntegratorDirectIllumination(outFile, renderSettings, integratorMitsuba):
+    outFile.write(" <integrator type=\"direct\">\n")
+
+    iDirectIlluminationShadingSamples = cmds.getAttr("%s.%s" % (renderSettings, "iDirectIlluminationShadingSamples"))
+    iDirectIlluminationUseEmitterAndBSDFSamples = cmds.getAttr("%s.%s" % (renderSettings, "iDirectIlluminationUseEmitterAndBSDFSamples"))
+    iDirectIlluminationEmitterSamples = cmds.getAttr("%s.%s" % (renderSettings, "iDirectIlluminationEmitterSamples"))
+    iDirectIlluminationBSDFSamples = cmds.getAttr("%s.%s" % (renderSettings, "iDirectIlluminationBSDFSamples"))
+    iDirectIlluminationStrictNormals = cmds.getAttr("%s.%s" % (renderSettings, "iDirectIlluminationStrictNormals"))
+    iDirectIlluminationHideEmitters = cmds.getAttr("%s.%s" % (renderSettings, "iDirectIlluminationHideEmitters"))
+
+    if iDirectIlluminationUseEmitterAndBSDFSamples:
+        outFile.write("     <integer name=\"emitterSamples\" value=\"" + str(iDirectIlluminationEmitterSamples) + "\"/>\n")
+        outFile.write("     <integer name=\"bsdfSamples\" value=\"" + str(iDirectIlluminationBSDFSamples) + "\"/>\n")
+
+    else:
+        outFile.write("     <integer name=\"shadingSamples\" value=\"" + str(iDirectIlluminationShadingSamples) + "\"/>\n")
+
+    iDirectIlluminationStrictNormalsText = 'true' if iDirectIlluminationStrictNormals else 'false'
+    outFile.write("     <boolean name=\"strictNormals\" value=\"%s\"/>\n" % iDirectIlluminationStrictNormalsText)
+
+    iDirectIlluminationHideEmittersText = 'true' if iDirectIlluminationHideEmitters else 'false'
+    outFile.write("     <boolean name=\"hideEmitters\" value=\"%s\"/>\n" % iDirectIlluminationHideEmittersText)
+
+    outFile.write(" </integrator>\n\n\n")
+
+def writeIntegratorPhotonMap(outFile, renderSettings, integratorMitsuba):
+    outFile.write(" <integrator type=\"direct\">\n")
+
+    iPhotonMapDirectSamples = cmds.getAttr("%s.%s" % (renderSettings, "iPhotonMapDirectSamples"))
+    iPhotonMapGlossySamples = cmds.getAttr("%s.%s" % (renderSettings, "iPhotonMapGlossySamples"))
+    iPhotonMapUseInfiniteDepth = cmds.getAttr("%s.%s" % (renderSettings, "iPhotonMapUseInfiniteDepth"))
+    iPhotonMapMaxDepth = cmds.getAttr("%s.%s" % (renderSettings, "iPhotonMapMaxDepth"))
+    iPhotonMapGlobalPhotons = cmds.getAttr("%s.%s" % (renderSettings, "iPhotonMapGlobalPhotons"))
+    iPhotonMapCausticPhotons = cmds.getAttr("%s.%s" % (renderSettings, "iPhotonMapCausticPhotons"))
+    iPhotonMapVolumePhotons = cmds.getAttr("%s.%s" % (renderSettings, "iPhotonMapVolumePhotons"))
+    iPhotonMapGlobalLookupRadius = cmds.getAttr("%s.%s" % (renderSettings, "iPhotonMapGlobalLookupRadius"))
+    iPhotonMapCausticLookupRadius = cmds.getAttr("%s.%s" % (renderSettings, "iPhotonMapCausticLookupRadius"))
+    iPhotonMapLookupSize = cmds.getAttr("%s.%s" % (renderSettings, "iPhotonMapLookupSize"))
+    iPhotonMapGranularity = cmds.getAttr("%s.%s" % (renderSettings, "iPhotonMapGranularity"))
+    iPhotonMapHideEmitters = cmds.getAttr("%s.%s" % (renderSettings, "iPhotonMapHideEmitters"))
+    iPhotonMapRRDepth = cmds.getAttr("%s.%s" % (renderSettings, "iPhotonMapRRDepth"))
+
+    outFile.write("     <integer name=\"directSamples\" value=\"" + str(iPhotonMapDirectSamples) + "\"/>\n")
+    outFile.write("     <integer name=\"glossySamples\" value=\"" + str(iPhotonMapGlossySamples) + "\"/>\n")
+
+    iPhotonMapMaxDepth = -1 if iPhotonMapUseInfiniteDepth else iPhotonMapMaxDepth
+    outFile.write("     <integer name=\"maxDepth\" value=\"" + str(iPhotonMapMaxDepth) + "\"/>\n")
+
+    outFile.write("     <integer name=\"globalPhotons\" value=\"" + str(iPhotonMapGlobalPhotons) + "\"/>\n")
+    outFile.write("     <integer name=\"causticPhotons\" value=\"" + str(iPhotonMapCausticPhotons) + "\"/>\n")
+    outFile.write("     <integer name=\"volumePhotons\" value=\"" + str(iPhotonMapVolumePhotons) + "\"/>\n")
+
+    outFile.write("     <float name=\"globalLookupRadius\" value=\"" + str(iPhotonMapGlobalLookupRadius) + "\"/>\n")  
+    outFile.write("     <float name=\"causticLookupRadius\" value=\"" + str(iPhotonMapCausticLookupRadius) + "\"/>\n")            
+    outFile.write("     <integer name=\"lookupSize\" value=\"" + str(iPhotonMapLookupSize) + "\"/>\n")
+
+    outFile.write("     <integer name=\"granularity\" value=\"" + str(iPhotonMapGranularity) + "\"/>\n")
+
+    iPhotonMapHideEmittersText = "true" if iPhotonMapHideEmitters else "false"
+    outFile.write("     <boolean name=\"hideEmitters\" value=\"%s\"/>\n" % iPhotonMapHideEmittersText)
+
+    outFile.write("     <integer name=\"rrDepth\" value=\"" + str(iPhotonMapRRDepth) + "\"/>\n")    
+
+    outFile.write(" </integrator>\n\n\n")
+
 def writeIntegrator(outFile):
     renderSettings = MitsubaRenderSettingsUI.renderSettings
     integratorMaya = cmds.getAttr("%s.%s" % (renderSettings, "integrator")).replace('_', ' ')
@@ -425,118 +555,19 @@ def writeIntegrator(outFile):
     if( integratorMaya == "Path Tracer" or 
         integratorMaya == "Volumetric Path Tracer" or 
         integratorMaya == "Simple Volumetric Path Tracer" ):
-
-        outFile.write(" <integrator type=\"%s\">\n" % integratorMitsuba)
-
-        attrPrefixes = { 
-            "Path Tracer" : "", 
-            "Volumetric Path Tracer" : "Volumetric", 
-            "Simple Volumetric Path Tracer" : "SimpleVolumetric"
-        }
-        attrPrefix = attrPrefixes[integratorMaya]
-
-        iPathTracerUseInfiniteDepth = cmds.getAttr("%s.%s" % (renderSettings, "i%sPathTracerUseInfiniteDepth" % attrPrefix))
-        iPathTracerMaxDepth = cmds.getAttr("%s.%s" % (renderSettings, "i%sPathTracerMaxDepth" % attrPrefix))
-        iPathTracerRRDepth = cmds.getAttr("%s.%s" % (renderSettings, "i%sPathTracerRRDepth" % attrPrefix))
-        iPathTracerStrictNormals = cmds.getAttr("%s.%s" % (renderSettings, "i%sPathTracerStrictNormals" % attrPrefix))
-        iPathTracerHideEmitters = cmds.getAttr("%s.%s" % (renderSettings, "i%sPathTracerHideEmitters" % attrPrefix))
-
-        iPathTracerMaxDepth = -1 if iPathTracerUseInfiniteDepth else iPathTracerMaxDepth
-        outFile.write("     <integer name=\"maxDepth\" value=\"" + str(iPathTracerMaxDepth) + "\"/>\n")
-
-        outFile.write("     <integer name=\"rrDepth\" value=\"" + str(iPathTracerRRDepth) + "\"/>\n")            
-
-        iPathTracerStrictNormalsText = 'true' if iPathTracerStrictNormals else 'false'
-        outFile.write("     <boolean name=\"strictNormals\" value=\"%s\"/>\n" % iPathTracerStrictNormalsText)
-
-        iPathTracerHideEmittersText = 'true' if iPathTracerHideEmitters else 'false'
-        outFile.write("     <boolean name=\"hideEmitters\" value=\"%s\"/>\n" % iPathTracerHideEmittersText)
-
-        outFile.write(" </integrator>\n\n\n")
+        writeIntegratorPathTracer(outFile, renderSettings, integratorMitsuba)
 
     elif integratorMaya == "Bidirectional Path Tracer":
-        outFile.write(" <integrator type=\"%s\">\n" % integratorMitsuba)
-
-        iBidrectionalPathTracerUseInfiniteDepth = cmds.getAttr("%s.%s" % (renderSettings, "iBidrectionalPathTracerUseInfiniteDepth"))
-        iBidrectionalPathTracerMaxDepth = cmds.getAttr("%s.%s" % (renderSettings, "iBidrectionalPathTracerMaxDepth"))
-        iBidrectionalPathTracerRRDepth = cmds.getAttr("%s.%s" % (renderSettings, "iBidrectionalPathTracerRRDepth"))
-        iBidrectionalPathTracerLightImage = cmds.getAttr("%s.%s" % (renderSettings, "iBidrectionalPathTracerLightImage"))
-        iBidrectionalPathTracerSampleDirect = cmds.getAttr("%s.%s" % (renderSettings, "iBidrectionalPathTracerSampleDirect"))
-
-        iBidrectionalPathTracerMaxDepth = -1 if iBidrectionalPathTracerUseInfiniteDepth else iBidrectionalPathTracerMaxDepth
-        outFile.write("     <integer name=\"maxDepth\" value=\"" + str(iBidrectionalPathTracerMaxDepth) + "\"/>\n")
-
-        outFile.write("     <integer name=\"rrDepth\" value=\"" + str(iBidrectionalPathTracerRRDepth) + "\"/>\n")            
-
-        iBidrectionalPathTracerLightImageText = 'true' if iBidrectionalPathTracerLightImage else 'false'
-        outFile.write("     <boolean name=\"lightImage\" value=\"%s\"/>\n" % iBidrectionalPathTracerLightImageText)
-
-        iBidrectionalPathTracerSampleDirectText = 'true' if iBidrectionalPathTracerSampleDirect else 'false'
-        outFile.write("     <boolean name=\"sampleDirect\" value=\"%s\"/>\n" % iBidrectionalPathTracerSampleDirectText)
-
-        outFile.write(" </integrator>\n\n\n")
-
-    elif integratorMaya == "Bidirectional Path Tracer":
-        outFile.write(" <integrator type=\"%s\">\n" % integratorMitsuba)
-
-        iBidrectionalPathTracerUseInfiniteDepth = cmds.getAttr("%s.%s" % (renderSettings, "iBidrectionalPathTracerUseInfiniteDepth"))
-        iBidrectionalPathTracerMaxDepth = cmds.getAttr("%s.%s" % (renderSettings, "iBidrectionalPathTracerMaxDepth"))
-        iBidrectionalPathTracerRRDepth = cmds.getAttr("%s.%s" % (renderSettings, "iBidrectionalPathTracerRRDepth"))
-        iBidrectionalPathTracerLightImage = cmds.getAttr("%s.%s" % (renderSettings, "iBidrectionalPathTracerLightImage"))
-        iBidrectionalPathTracerSampleDirect = cmds.getAttr("%s.%s" % (renderSettings, "iBidrectionalPathTracerSampleDirect"))
-
-        iBidrectionalPathTracerMaxDepth = -1 if iBidrectionalPathTracerUseInfiniteDepth else iBidrectionalPathTracerMaxDepth
-        outFile.write("     <integer name=\"maxDepth\" value=\"" + str(iBidrectionalPathTracerMaxDepth) + "\"/>\n")
-
-        outFile.write("     <integer name=\"rrDepth\" value=\"" + str(iBidrectionalPathTracerRRDepth) + "\"/>\n")            
-
-        iBidrectionalPathTracerLightImageText = 'true' if iBidrectionalPathTracerLightImage else 'false'
-        outFile.write("     <boolean name=\"lightImage\" value=\"%s\"/>\n" % iBidrectionalPathTracerLightImageText)
-
-        iBidrectionalPathTracerSampleDirectText = 'true' if iBidrectionalPathTracerSampleDirect else 'false'
-        outFile.write("     <boolean name=\"sampleDirect\" value=\"%s\"/>\n" % iBidrectionalPathTracerSampleDirectText)
-
-        outFile.write(" </integrator>\n\n\n")
+        writeIntegratorBidirectionalPathTracer(outFile, renderSettings, integratorMitsuba)
 
     elif integratorMaya == "Ambient Occlusion":
-
-        outFile.write(" <integrator type=\"ao\">\n")
-
-        iAmbientOcclusionShadingSamples = cmds.getAttr("%s.%s" % (renderSettings, "iAmbientOcclusionShadingSamples"))
-        iAmbientOcclusionUseAutomaticRayLength = cmds.getAttr("%s.%s" % (renderSettings, "iAmbientOcclusionUseAutomaticRayLength"))
-        iAmbientOcclusionRayLength = cmds.getAttr("%s.%s" % (renderSettings, "iAmbientOcclusionRayLength"))
-
-        outFile.write("     <integer name=\"shadingSamples\" value=\"" + str(iAmbientOcclusionShadingSamples) + "\"/>\n")
-
-        iAmbientOcclusionRayLength = -1 if iAmbientOcclusionUseAutomaticRayLength else iAmbientOcclusionRayLength
-        outFile.write("     <float name=\"rayLength\" value=\"" + str(-1) + "\"/>\n")
-
-        outFile.write(" </integrator>\n\n\n")
+        writeIntegratorAmbientOcclusion(outFile, renderSettings, integratorMitsuba)
 
     elif integratorMaya == "Direct Illumination":
-        outFile.write(" <integrator type=\"direct\">\n")
+        writeIntegratorDirectIllumination(outFile, renderSettings, integratorMitsuba)
 
-        iDirectIlluminationShadingSamples = cmds.getAttr("%s.%s" % (renderSettings, "iDirectIlluminationShadingSamples"))
-        iDirectIlluminationUseEmitterAndBSDFSamples = cmds.getAttr("%s.%s" % (renderSettings, "iDirectIlluminationUseEmitterAndBSDFSamples"))
-        iDirectIlluminationEmitterSamples = cmds.getAttr("%s.%s" % (renderSettings, "iDirectIlluminationEmitterSamples"))
-        iDirectIlluminationBSDFSamples = cmds.getAttr("%s.%s" % (renderSettings, "iDirectIlluminationBSDFSamples"))
-        iDirectIlluminationStrictNormals = cmds.getAttr("%s.%s" % (renderSettings, "iDirectIlluminationStrictNormals"))
-        iDirectIlluminationHideEmitters = cmds.getAttr("%s.%s" % (renderSettings, "iDirectIlluminationHideEmitters"))
-
-        if iDirectIlluminationUseEmitterAndBSDFSamples:
-            outFile.write("     <integer name=\"emitterSamples\" value=\"" + str(iDirectIlluminationEmitterSamples) + "\"/>\n")
-            outFile.write("     <integer name=\"bsdfSamples\" value=\"" + str(iDirectIlluminationBSDFSamples) + "\"/>\n")
-
-        else:
-            outFile.write("     <integer name=\"shadingSamples\" value=\"" + str(iDirectIlluminationShadingSamples) + "\"/>\n")
-
-        iDirectIlluminationStrictNormalsText = 'true' if iDirectIlluminationStrictNormals else 'false'
-        outFile.write("     <boolean name=\"strictNormals\" value=\"%s\"/>\n" % iDirectIlluminationStrictNormalsText)
-
-        iDirectIlluminationHideEmittersText = 'true' if iDirectIlluminationHideEmitters else 'false'
-        outFile.write("     <boolean name=\"hideEmitters\" value=\"%s\"/>\n" % iDirectIlluminationHideEmittersText)
-
-        outFile.write(" </integrator>\n\n\n")
+    elif integratorMaya == "Photon Map":
+        writeIntegratorPhotonMap(outFile, renderSettings, integratorMitsuba)
 
     else:
         writeIntegratorUsingUI(outFile)
@@ -570,113 +601,8 @@ def writeIntegratorUsingUI(outFile):
 
     #print( "Active Integrator : %s" % activeIntegrator )
 
-    #Write path tracer, volpaths settings
-    if activeIntegrator=="Volumetric_Path_Tracer" or activeIntegrator=="Simple_Volumetric_Path_Tracer" \
-    or   activeIntegrator=="Volumetric Path Tracer" or activeIntegrator=="Simple Volumetric Path Tracer":
-        '''
-        The order for this integrator is:
-        0. checkBox to use infinite samples
-        1. intFieldGrp maxDepth
-        2. intFieldGrp rrDepth
-        3. checkBox strictNormals
-        4. checkBox hideEmitters
-        '''
-        if activeIntegrator=="Path_Tracer" or activeIntegrator=="Path Tracer":
-            outFile.write(" <integrator type=\"path\">\n")
-        elif activeIntegrator=="Volumetric_Path_Tracer" or activeIntegrator=="Volumetric Path Tracer":
-            outFile.write(" <integrator type=\"volpath\">\n")
-        else:
-            outFile.write(" <integrator type=\"volpath_simple\">\n")
-
-        integratorSettings = cmds.frameLayout(activeSettings, query=True, childArray=True)
-
-        if cmds.checkBox(integratorSettings[0], query=True, value=True):
-            outFile.write("     <integer name=\"maxDepth\" value=\"-1\"/>\n")
-        else:
-            maxDepth = cmds.intFieldGrp(integratorSettings[1], query=True, value1=True)
-            outFile.write("     <integer name=\"maxDepth\" value=\"" + str(maxDepth) + "\"/>\n")
-
-        rrDepth = cmds.intFieldGrp(integratorSettings[2], query=True, value1=True)
-        outFile.write("     <integer name=\"rrDepth\" value=\"" + str(rrDepth) + "\"/>\n")            
-
-        if cmds.checkBox(integratorSettings[3], query=True, value=True):
-            outFile.write("     <boolean name=\"strictNormals\" value=\"true\"/>\n")
-        else:
-            outFile.write("     <boolean name=\"strictNormals\" value=\"false\"/>\n")
-
-        if cmds.checkBox(integratorSettings[4], query=True, value=True):
-            outFile.write("     <boolean name=\"hideEmitters\" value=\"true\"/>\n")
-        else:
-            outFile.write("     <boolean name=\"hideEmitters\" value=\"false\"/>\n")
-
-    #Write photon mapper
-    elif activeIntegrator=="Photon_Map" or activeIntegrator=="Photon Map":
-        '''
-        The order for this integrator is:
-        0. intFieldGrp directSamples
-        1. intFieldGrp glossySamples
-        2. checkBox to use infinite depth
-        3. intFieldGrp maxDepth
-        4. intFieldGrp globalPhotons
-        5. intFieldGrp causticPhotons
-        6. intFieldGrp volumePhotons
-        7. floatFieldGrp globalLookupRadius
-        8. floatFieldGrp causticLookupRadius
-        9. intFieldGrp lookupSize
-        10. checkBox to use automatic granularity
-        11. intFieldGrp granularity
-        12. checkBox hideEmitters
-        13. intFieldGrp rrDepth
-        '''
-        outFile.write(" <integrator type=\"photonmapper\">\n")
-        integratorSettings = cmds.frameLayout(activeSettings, query=True, childArray=True)
-
-        directSamples = cmds.intFieldGrp(integratorSettings[0], query=True, value1=True)
-        outFile.write("     <integer name=\"directSamples\" value=\"" + str(directSamples) + "\"/>\n")
-
-        glossySamples = cmds.intFieldGrp(integratorSettings[1], query=True, value1=True)
-        outFile.write("     <integer name=\"glossySamples\" value=\"" + str(glossySamples) + "\"/>\n")
-
-        if cmds.checkBox(integratorSettings[2], query=True, value=True):
-            outFile.write("     <integer name=\"maxDepth\" value=\"-1\"/>\n")
-        else:
-            maxDepth = cmds.intFieldGrp(integratorSettings[3], query=True, value1=True)
-            outFile.write("     <integer name=\"maxDepth\" value=\"" + str(maxDepth) + "\"/>\n")
-
-        globalPhotons = cmds.intFieldGrp(integratorSettings[4], query=True, value1=True)
-        outFile.write("     <integer name=\"globalPhotons\" value=\"" + str(globalPhotons) + "\"/>\n")
-
-        causticPhotons = cmds.intFieldGrp(integratorSettings[5], query=True, value1=True)
-        outFile.write("     <integer name=\"causticPhotons\" value=\"" + str(causticPhotons) + "\"/>\n")
-
-        volumePhotons = cmds.intFieldGrp(integratorSettings[6], query=True, value1=True)
-        outFile.write("     <integer name=\"volumePhotons\" value=\"" + str(volumePhotons) + "\"/>\n")
-
-        globalLookupRadius = cmds.floatFieldGrp(integratorSettings[7], query=True, value1=True)
-        outFile.write("     <float name=\"globalLookupRadius\" value=\"" + str(globalLookupRadius) + "\"/>\n")  
-
-        causticLookupRadius = cmds.floatFieldGrp(integratorSettings[8], query=True, value1=True)
-        outFile.write("     <float name=\"causticLookupRadius\" value=\"" + str(causticLookupRadius) + "\"/>\n")            
-
-        lookupSize = cmds.intFieldGrp(integratorSettings[9], query=True, value1=True)
-        outFile.write("     <integer name=\"lookupSize\" value=\"" + str(lookupSize) + "\"/>\n")
-
-        if cmds.checkBox(integratorSettings[10], query=True, value=True):
-            outFile.write("     <integer name=\"granularity\" value=\"0\"/>\n")
-        else:
-            granularity = cmds.intFieldGrp(integratorSettings[11], query=True, value1=True)
-            outFile.write("     <integer name=\"granularity\" value=\"" + str(granularity) + "\"/>\n")
-
-        if cmds.checkBox(integratorSettings[12], query=True, value=True):
-            outFile.write("     <boolean name=\"hideEmitters\" value=\"true\"/>\n")
-        else:
-            outFile.write("     <boolean name=\"hideEmitters\" value=\"false\"/>\n")
-
-        rrDepth = cmds.intFieldGrp(integratorSettings[13], query=True, value1=True)
-        outFile.write("     <integer name=\"rrDepth\" value=\"" + str(rrDepth) + "\"/>\n")    
-
     #Write progressive photon mapper
-    elif activeIntegrator=="Progressive_Photon_Map" or activeIntegrator=="Progressive Photon Map":
+    if activeIntegrator=="Progressive_Photon_Map" or activeIntegrator=="Progressive Photon Map":
         '''
         The order for this integrator is:
         0. checkBox to use infinite depth

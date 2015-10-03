@@ -196,20 +196,60 @@ def createIntegratorFrames():
     cmds.setParent('..')
 
     pmSettings = cmds.frameLayout(label="Photon Map", cll=True, visible=False)
-    cmds.intFieldGrp(numberOfFields=1, label="directSamples", value1=16)
-    cmds.intFieldGrp(numberOfFields=1, label="glossySamples", value1=32)
-    cmds.checkBox(label = "Use infinite depth", value=True)
-    cmds.intFieldGrp(numberOfFields=1, label="maxDepth", value1=1)
-    cmds.intFieldGrp(numberOfFields=1, label="globalPhotons", value1=250000)
-    cmds.intFieldGrp(numberOfFields=1, label="causticPhotons", value1=250000)
-    cmds.intFieldGrp(numberOfFields=1, label="volumePhotons", value1=250000)
-    cmds.floatFieldGrp(numberOfFields=1, label="globalLookupRadius", value1=0.05)
-    cmds.floatFieldGrp(numberOfFields=1, label="causticLookupRadius", value1=0.05)
-    cmds.intFieldGrp(numberOfFields=1, label="lookupSize", value1=120)
-    cmds.checkBox(label = "Use automatic granularity")
-    cmds.intFieldGrp(numberOfFields=1, label="granularity", value1=0)
-    cmds.checkBox(label = "hideEmitters")
-    cmds.intFieldGrp(numberOfFields=1, label="rrDepth", value1=1)
+
+    iPhotonMapDirectSamples = cmds.getAttr( "%s.%s" % (renderSettings, "iPhotonMapDirectSamples"))
+    iPhotonMapGlossySamples = cmds.getAttr( "%s.%s" % (renderSettings, "iPhotonMapGlossySamples"))
+    iPhotonMapUseInfiniteDepth = cmds.getAttr( "%s.%s" % (renderSettings, "iPhotonMapUseInfiniteDepth"))
+    iPhotonMapMaxDepth = cmds.getAttr( "%s.%s" % (renderSettings, "iPhotonMapMaxDepth"))
+    iPhotonMapGlobalPhotons = cmds.getAttr( "%s.%s" % (renderSettings, "iPhotonMapGlobalPhotons"))
+    iPhotonMapCausticPhotons = cmds.getAttr( "%s.%s" % (renderSettings, "iPhotonMapCausticPhotons"))
+    iPhotonMapVolumePhotons = cmds.getAttr( "%s.%s" % (renderSettings, "iPhotonMapVolumePhotons"))
+    iPhotonMapGlobalLookupRadius = cmds.getAttr( "%s.%s" % (renderSettings, "iPhotonMapGlobalLookupRadius"))
+    iPhotonMapCausticLookupRadius = cmds.getAttr( "%s.%s" % (renderSettings, "iPhotonMapCausticLookupRadius"))
+    iPhotonMapLookupSize = cmds.getAttr( "%s.%s" % (renderSettings, "iPhotonMapLookupSize"))
+    iPhotonMapGranularity = cmds.getAttr( "%s.%s" % (renderSettings, "iPhotonMapGranularity"))
+    iPhotonMapHideEmitters = cmds.getAttr( "%s.%s" % (renderSettings, "iPhotonMapHideEmitters"))
+    iPhotonMapRRDepth = cmds.getAttr( "%s.%s" % (renderSettings, "iPhotonMapRRDepth"))
+
+    cmds.intFieldGrp(numberOfFields=1, label="Direct Samples", value1=iPhotonMapDirectSamples,
+        changeCommand=lambda (x): getIntFieldGroup(None, "iPhotonMapDirectSamples", x))
+
+    cmds.intFieldGrp(numberOfFields=1, label="Glossy Samples", value1=iPhotonMapGlossySamples,
+        changeCommand=lambda (x): getIntFieldGroup(None, "iPhotonMapGlossySamples", x))
+
+    cmds.checkBox(label = "Use Infinite Depth", value=iPhotonMapUseInfiniteDepth,
+        changeCommand=lambda (x): getCheckBox(None, "iPhotonMapUseInfiniteDepth", x))   
+
+    cmds.intFieldGrp(numberOfFields=1, label="Max Depth", value1=iPhotonMapMaxDepth,
+        changeCommand=lambda (x): getIntFieldGroup(None, "iPhotonMapMaxDepth", x))
+
+    cmds.intFieldGrp(numberOfFields=1, label="Global Photons", value1=iPhotonMapGlobalPhotons,
+        changeCommand=lambda (x): getIntFieldGroup(None, "iPhotonMapGlobalPhotons", x))
+
+    cmds.intFieldGrp(numberOfFields=1, label="Caustic Photons", value1=iPhotonMapCausticPhotons,
+        changeCommand=lambda (x): getIntFieldGroup(None, "iPhotonMapCausticPhotons", x))
+
+    cmds.intFieldGrp(numberOfFields=1, label="Volume Photons", value1=iPhotonMapVolumePhotons,
+        changeCommand=lambda (x): getIntFieldGroup(None, "iPhotonMapVolumePhotons", x))
+
+    cmds.floatFieldGrp(numberOfFields=1, label="Global Lookup Radius", value1=iPhotonMapGlobalLookupRadius,
+        changeCommand=lambda (x): getIntFieldGroup(None, "iPhotonMapGlobalLookupRadius", x))
+
+    cmds.floatFieldGrp(numberOfFields=1, label="Caustic Lookup Radius", value1=iPhotonMapCausticLookupRadius,
+        changeCommand=lambda (x): getIntFieldGroup(None, "iPhotonMapCausticLookupRadius", x))
+
+    cmds.intFieldGrp(numberOfFields=1, label="Lookup Size", value1=iPhotonMapLookupSize,
+        changeCommand=lambda (x): getIntFieldGroup(None, "iPhotonMapLookupSize", x))
+
+    cmds.intFieldGrp(numberOfFields=1, label="Granularity", value1=iPhotonMapGranularity,
+        changeCommand=lambda (x): getIntFieldGroup(None, "iPhotonMapGranularity", x))
+
+    cmds.checkBox(label = "Hide Emitters", value=iPhotonMapHideEmitters,
+        changeCommand=lambda (x): getCheckBox(None, "iPhotonMapHideEmitters", x))   
+
+    cmds.intFieldGrp(numberOfFields=1, label="Russian Roulette Depth", value1=iPhotonMapRRDepth,
+        changeCommand=lambda (x): getIntFieldGroup(None, "iPhotonMapRRDepth", x))
+
     cmds.setParent('..')
 
     ppmSettings = cmds.frameLayout(label="Progressive Photon Map", cll=True, visible=False)

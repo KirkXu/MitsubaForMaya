@@ -56,6 +56,21 @@ class MitsubaRenderSetting(OpenMayaMPx.MPxNode):
     mVolumetricPathTracerStrictNormals = OpenMaya.MObject()
     mVolumetricPathTracerHideEmitters = OpenMaya.MObject()
 
+    # Integrator - Photon Map variables
+    mPhotonMapDirectSamples = OpenMaya.MObject()
+    mPhotonMapGlossySamples = OpenMaya.MObject()
+    mPhotonMapUseInfiniteDepth = OpenMaya.MObject()
+    mPhotonMapMaxDepth = OpenMaya.MObject()
+    mPhotonMapGlobalPhotons = OpenMaya.MObject()
+    mPhotonMapCausticPhotons = OpenMaya.MObject()
+    mPhotonMapVolumePhotons = OpenMaya.MObject()
+    mPhotonMapGlobalLookupRadius = OpenMaya.MObject()
+    mPhotonMapCausticLookupRadius = OpenMaya.MObject()
+    mPhotonMapLookupSize = OpenMaya.MObject()
+    mPhotonMapGranularity = OpenMaya.MObject()
+    mPhotonMapHideEmitters = OpenMaya.MObject()
+    mPhotonMapRRDepth = OpenMaya.MObject()
+
     # Sampler variables
     mSampler = OpenMaya.MObject()
     mSampleCount = OpenMaya.MObject()
@@ -126,7 +141,20 @@ def nodeInitializer():
         MitsubaRenderSetting.addStringAttribute(sAttr, "mMitsubaPath", "mitsubaPath", "mp", defaultMitsubaPath)
 
         # Integrator variables
-        MitsubaRenderSetting.addStringAttribute(sAttr, "mIntegrator", "integrator", "ig", "Path Tracer")
+        MitsubaRenderSetting.addStringAttribute(sAttr,  "mIntegrator", "integrator", "ig", "Path Tracer")
+
+        # Sampler variables
+        MitsubaRenderSetting.addStringAttribute(sAttr,  "mSampler", "sampler", "sm", "Independent Sampler")
+        MitsubaRenderSetting.addIntegerAttribute(nAttr, "mSampleCount", "sampleCount", "sc", 8)
+        MitsubaRenderSetting.addIntegerAttribute(nAttr, "mSamplerDimension", "samplerDimension", "sd", 4)
+        MitsubaRenderSetting.addIntegerAttribute(nAttr, "mSamplerScramble", "samplerScramble", "ss", -1)
+
+        # Reconstruction Filter variables
+        MitsubaRenderSetting.addStringAttribute(sAttr,  "mReconstructionFilter", "reconstructionFilter", "rf", "Box filter")
+
+        # Overall controls
+        MitsubaRenderSetting.addBooleanAttribute(nAttr, "mKeepTempFiles", "keepTempFiles", "kt", False)
+        MitsubaRenderSetting.addBooleanAttribute(nAttr, "mVerbose", "verbose", "vb", False)
 
         # Integrator - Path Tracer variables
         MitsubaRenderSetting.addBooleanAttribute(nAttr, "mPathTracerUseInfiniteDepth", "iPathTracerUseInfiniteDepth", "iptuid", True)
@@ -145,7 +173,7 @@ def nodeInitializer():
         # Integrator - Ambient Occlusion variables
         MitsubaRenderSetting.addIntegerAttribute(nAttr, "mAmbientOcclusionShadingSamples", "iAmbientOcclusionShadingSamples", "iaoss", 1)
         MitsubaRenderSetting.addBooleanAttribute(nAttr, "mAmbientOcclusionUseAutomaticRayLength", "iAmbientOcclusionUseAutomaticRayLength", "iaouarl", True)
-        MitsubaRenderSetting.addFloatAttribute(nAttr, "mAmbientOcclusionRayLength", "iAmbientOcclusionRayLength", "iaorl", -1)
+        MitsubaRenderSetting.addFloatAttribute(nAttr,   "mAmbientOcclusionRayLength", "iAmbientOcclusionRayLength", "iaorl", -1)
 
         # Integrator - Direct Illumination variables
         MitsubaRenderSetting.addIntegerAttribute(nAttr, "mDirectIlluminationShadingSamples", "iDirectIlluminationShadingSamples", "idiss", 1)
@@ -169,18 +197,20 @@ def nodeInitializer():
         MitsubaRenderSetting.addBooleanAttribute(nAttr, "mVolumetricPathTracerStrictNormals", "iVolumetricPathTracerStrictNormals", "ivptsn", False)
         MitsubaRenderSetting.addBooleanAttribute(nAttr, "mVolumetricPathTracerHideEmitters", "iVolumetricPathTracerHideEmitters", "ivpthe", False)
 
-        # Sampler variables
-        MitsubaRenderSetting.addStringAttribute(sAttr, "mSampler", "sampler", "sm", "Independent Sampler")
-        MitsubaRenderSetting.addIntegerAttribute(nAttr, "mSampleCount", "sampleCount", "sc", 8)
-        MitsubaRenderSetting.addIntegerAttribute(nAttr, "mSamplerDimension", "samplerDimension", "sd", 4)
-        MitsubaRenderSetting.addIntegerAttribute(nAttr, "mSamplerScramble", "samplerScramble", "ss", -1)
-
-        # Reconstruction Filter variables
-        MitsubaRenderSetting.addStringAttribute(sAttr, "mReconstructionFilter", "reconstructionFilter", "rf", "Box filter")
-
-        # Overall controls
-        MitsubaRenderSetting.addBooleanAttribute(nAttr, "mKeepTempFiles", "keepTempFiles", "kt", False)
-        MitsubaRenderSetting.addBooleanAttribute(nAttr, "mVerbose", "verbose", "vb", False)
+        # Integrator - Photon Map variables
+        MitsubaRenderSetting.addIntegerAttribute(nAttr, "mPhotonMapDirectSamples", "iPhotonMapDirectSamples", "ipmds", 16)
+        MitsubaRenderSetting.addIntegerAttribute(nAttr, "mPhotonMapGlossySamples", "iPhotonMapGlossySamples", "ipmgs", 32)
+        MitsubaRenderSetting.addBooleanAttribute(nAttr, "mPhotonMapUseInfiniteDepth", "iPhotonMapUseInfiniteDepth", "ipmuid", True)
+        MitsubaRenderSetting.addIntegerAttribute(nAttr, "mPhotonMapMaxDepth", "iPhotonMapMaxDepth", "ipmmd", -1)
+        MitsubaRenderSetting.addIntegerAttribute(nAttr, "mPhotonMapGlobalPhotons", "iPhotonMapGlobalPhotons", "ipmgp", 250000)
+        MitsubaRenderSetting.addIntegerAttribute(nAttr, "mPhotonMapCausticPhotons", "iPhotonMapCausticPhotons", "ipmcp", 250000)
+        MitsubaRenderSetting.addIntegerAttribute(nAttr, "mPhotonMapVolumePhotons", "iPhotonMapVolumePhotons", "ipmvp", 250000)
+        MitsubaRenderSetting.addFloatAttribute(nAttr,   "mPhotonMapGlobalLookupRadius", "iPhotonMapGlobalLookupRadius", "ipmglr", 0.05)
+        MitsubaRenderSetting.addFloatAttribute(nAttr,   "mPhotonMapCausticLookupRadius", "iPhotonMapCausticLookupRadius", "ipmclr", 0.0125)
+        MitsubaRenderSetting.addIntegerAttribute(nAttr, "mPhotonMapLookupSize", "iPhotonMapLookupSize", "ipmls", 120)
+        MitsubaRenderSetting.addIntegerAttribute(nAttr, "mPhotonMapGranularity", "iPhotonMapGranularity", "ipmg", 0)
+        MitsubaRenderSetting.addBooleanAttribute(nAttr, "mPhotonMapHideEmitters", "iPhotonMapHideEmitters", "ipmhe", False)
+        MitsubaRenderSetting.addIntegerAttribute(nAttr, "mPhotonMapRRDepth", "iPhotonMapRRDepth", "ipmrrd", 5)
     except:
         sys.stderr.write("Failed to create and add attributes\n")
         raise
@@ -191,6 +221,19 @@ def nodeInitializer():
 
         # Integrator variables
         MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mIntegrator)
+
+        # Sampler variables
+        MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mSampler)
+        MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mSampleCount)
+        MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mSamplerDimension)
+        MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mSamplerScramble)
+
+        # Reconstruction Filter variables
+        MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mReconstructionFilter)
+
+        # Overall controls
+        MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mKeepTempFiles)
+        MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mVerbose)
 
         # Integrator - Path Tracer variables
         MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mPathTracerUseInfiniteDepth)
@@ -233,18 +276,23 @@ def nodeInitializer():
         MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mVolumetricPathTracerStrictNormals)
         MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mVolumetricPathTracerHideEmitters)
 
-        # Sampler variables
-        MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mSampler)
-        MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mSampleCount)
-        MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mSamplerDimension)
-        MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mSamplerScramble)
+        # Integrator - Photon Map variables
+        MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mPhotonMapDirectSamples)
+        MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mPhotonMapGlossySamples)
 
-        # Reconstruction Filter variables
-        MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mReconstructionFilter)
+        MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mPhotonMapUseInfiniteDepth)
+        MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mPhotonMapMaxDepth)
+        MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mPhotonMapGlobalPhotons)
+        MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mPhotonMapCausticPhotons)
+        MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mPhotonMapVolumePhotons)
 
-        # Overall controls
-        MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mKeepTempFiles)
-        MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mVerbose)
+        MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mPhotonMapGlobalLookupRadius)
+        MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mPhotonMapCausticLookupRadius)
+        MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mPhotonMapLookupSize)
+        
+        MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mPhotonMapGranularity)
+        MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mPhotonMapHideEmitters)
+        MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mPhotonMapRRDepth)
     except:
         sys.stderr.write("Failed to add attributes\n")
         raise
