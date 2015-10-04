@@ -396,13 +396,11 @@ def createIntegratorFramePathSpaceMetropolisLightTransport():
 
     mltSettings = cmds.frameLayout(label="Path Space Metropolis Light Transport", cll=True, visible=False)
 
-
     cmds.checkBox(label = "Use Infinite Depth", value=iPathSpaceMetropolisLightTransportUseInfiniteDepth,
         changeCommand=lambda (x): getCheckBox(None, "iPathSpaceMetropolisLightTransportUseInfiniteDepth", x))   
 
     cmds.intFieldGrp(numberOfFields=1, label="Max Depth", value1=iPathSpaceMetropolisLightTransportMaxDepth,
         changeCommand=lambda (x): getIntFieldGroup(None, "iPathSpaceMetropolisLightTransportMaxDepth", x))
-
 
     cmds.intFieldGrp(numberOfFields=1, label="Direct Samples", value1=iPathSpaceMetropolisLightTransportDirectSamples,
         changeCommand=lambda (x): getIntFieldGroup(None, "iPathSpaceMetropolisLightTransportDirectSamples", x))
@@ -434,6 +432,59 @@ def createIntegratorFramePathSpaceMetropolisLightTransport():
     cmds.setParent('..')
 
     return mltSettings
+
+def createIntegratorFrameEnergyRedistributionPathTracing():
+    iEnergyRedistributionPathTracingUseInfiniteDepth = cmds.getAttr("%s.%s" % (renderSettings, "iEnergyRedistributionPathTracingUseInfiniteDepth"))
+    iEnergyRedistributionPathTracingMaxDepth = cmds.getAttr("%s.%s" % (renderSettings, "iEnergyRedistributionPathTracingMaxDepth"))
+    iEnergyRedistributionPathTracingNumChains = cmds.getAttr("%s.%s" % (renderSettings, "iEnergyRedistributionPathTracingNumChains"))
+    iEnergyRedistributionPathTracingMaxChains = cmds.getAttr("%s.%s" % (renderSettings, "iEnergyRedistributionPathTracingMaxChains"))
+    iEnergyRedistributionPathTracingChainLength = cmds.getAttr("%s.%s" % (renderSettings, "iEnergyRedistributionPathTracingChainLength"))
+    iEnergyRedistributionPathTracingDirectSamples = cmds.getAttr("%s.%s" % (renderSettings, "iEnergyRedistributionPathTracingDirectSamples"))
+    iEnergyRedistributionPathTracingLensPerturbation = cmds.getAttr("%s.%s" % (renderSettings, "iEnergyRedistributionPathTracingLensPerturbation"))
+    iEnergyRedistributionPathTracingMultiChainPerturbation = cmds.getAttr("%s.%s" % (renderSettings, "iEnergyRedistributionPathTracingMultiChainPerturbation"))
+    iEnergyRedistributionPathTracingCausticPerturbation = cmds.getAttr("%s.%s" % (renderSettings, "iEnergyRedistributionPathTracingCausticPerturbation"))
+    iEnergyRedistributionPathTracingManifoldPerturbation = cmds.getAttr("%s.%s" % (renderSettings, "iEnergyRedistributionPathTracingManifoldPerturbation"))
+    iEnergyRedistributionPathTracingLambda = cmds.getAttr("%s.%s" % (renderSettings, "iEnergyRedistributionPathTracingLambda"))
+
+    erptSettings = cmds.frameLayout(label="Energy Redistribution Path Tracer", cll=True, visible=False)
+
+    cmds.checkBox(label = "Use Infinite Depth", value=iEnergyRedistributionPathTracingUseInfiniteDepth,
+        changeCommand=lambda (x): getCheckBox(None, "iEnergyRedistributionPathTracingUseInfiniteDepth", x))   
+
+    cmds.intFieldGrp(numberOfFields=1, label="Max Depth", value1=iEnergyRedistributionPathTracingMaxDepth,
+        changeCommand=lambda (x): getIntFieldGroup(None, "iEnergyRedistributionPathTracingMaxDepth", x))
+
+    cmds.floatFieldGrp(numberOfFields=1, label="Num Chains", value1=iEnergyRedistributionPathTracingNumChains,
+        changeCommand=lambda (x): getIntFieldGroup(None, "iEnergyRedistributionPathTracingNumChains", x))
+
+    cmds.intFieldGrp(numberOfFields=1, label="Max Chains", value1=iEnergyRedistributionPathTracingMaxChains,
+        changeCommand=lambda (x): getIntFieldGroup(None, "iEnergyRedistributionPathTracingMaxChains", x))
+
+    cmds.intFieldGrp(numberOfFields=1, label="Chain Length", value1=iEnergyRedistributionPathTracingChainLength,
+        changeCommand=lambda (x): getIntFieldGroup(None, "iEnergyRedistributionPathTracingChainLength", x))
+
+    cmds.intFieldGrp(numberOfFields=1, label="Direct Samples", value1=iEnergyRedistributionPathTracingDirectSamples,
+        changeCommand=lambda (x): getIntFieldGroup(None, "iEnergyRedistributionPathTracingDirectSamples", x))
+
+    cmds.checkBox(label = "Lens Perturbation", value=iEnergyRedistributionPathTracingLensPerturbation,
+        changeCommand=lambda (x): getCheckBox(None, "iEnergyRedistributionPathTracingLensPerturbation", x))   
+
+    cmds.checkBox(label = "MultiChain Perturbation", value=iEnergyRedistributionPathTracingMultiChainPerturbation,
+        changeCommand=lambda (x): getCheckBox(None, "iEnergyRedistributionPathTracingMultiChainPerturbation", x))   
+
+    cmds.checkBox(label = "Caustic Perturbation", value=iEnergyRedistributionPathTracingCausticPerturbation,
+        changeCommand=lambda (x): getCheckBox(None, "iEnergyRedistributionPathTracingCausticPerturbation", x))   
+
+    cmds.checkBox(label = "Manifold Perturbation", value=iEnergyRedistributionPathTracingManifoldPerturbation,
+        changeCommand=lambda (x): getCheckBox(None, "iEnergyRedistributionPathTracingManifoldPerturbation", x))   
+
+    cmds.floatFieldGrp(numberOfFields=1, label="Lambda", value1=iEnergyRedistributionPathTracingLambda,
+        changeCommand=lambda (x): getIntFieldGroup(None, "iEnergyRedistributionPathTracingLambda", x))
+
+    cmds.setParent('..')
+
+    return erptSettings
+
 
 def createIntegratorFrames():
     #Make the integrator specific settings
@@ -474,21 +525,8 @@ def createIntegratorFrames():
     # Path Space Metropolis Light Transport Settings
     mltSettings = createIntegratorFramePathSpaceMetropolisLightTransport()
 
-    erptSettings = cmds.frameLayout(label="Energy Redistribution Path Tracer", cll=True, visible=False)
-    cmds.checkBox(label = "Use infinite depth", value=True)
-    cmds.intFieldGrp(numberOfFields=1, label="maxDepth", value1=1)
-    cmds.floatFieldGrp(numberOfFields=1, label="numChains", value1=1.0)
-    cmds.checkBox(label = "Enable max chains", value=False)
-    cmds.floatFieldGrp(numberOfFields=1, label="maxChains", value1=1.0)
-    cmds.checkBox(label = "Use automatic direct samples", value=False)
-    cmds.intFieldGrp(numberOfFields=1, label="directSamples", value1=16)
-    cmds.checkBox(label = "lensPerturbation", value=True)
-    cmds.checkBox(label = "multiChainPerturbation", value=True)
-    cmds.checkBox(label = "causticPerturbation", value=True)
-    cmds.checkBox(label = "manifoldPerturbation", value=False)
-    cmds.checkBox(label = "hideEmitters", value=True)
-    cmds.floatFieldGrp(numberOfFields=1, label="lambda", value1=50)
-    cmds.setParent('..')
+    # Energy Redistribution Path Tracing Settings
+    erptSettings = createIntegratorFrameEnergyRedistributionPathTracing()
 
     ptrSettings = cmds.frameLayout(label="Adjoint Particle Tracer", cll=True, visible=False)
     cmds.checkBox(label = "Use infinite depth", value=True)

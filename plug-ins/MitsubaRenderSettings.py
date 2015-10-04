@@ -127,6 +127,19 @@ class MitsubaRenderSetting(OpenMayaMPx.MPxNode):
     mPathSpaceMetropolisLightTransportManifoldPurturbation = OpenMaya.MObject()
     mPathSpaceMetropolisLightTransportLambda = OpenMaya.MObject()
 
+    # Integrator - Energy Redistribution Path Tracing variables
+    mEnergyRedistributionPathTracingUseInfiniteDepth = OpenMaya.MObject()
+    mEnergyRedistributionPathTracingMaxDepth = OpenMaya.MObject()
+    mEnergyRedistributionPathTracingNumChains = OpenMaya.MObject()
+    mEnergyRedistributionPathTracingMaxChains = OpenMaya.MObject()
+    mEnergyRedistributionPathTracingChainLength = OpenMaya.MObject()
+    mEnergyRedistributionPathTracingDirectSamples = OpenMaya.MObject()
+    mEnergyRedistributionPathTracingLensPerturbation = OpenMaya.MObject()
+    mEnergyRedistributionPathTracingMultiChainPerturbation = OpenMaya.MObject()
+    mEnergyRedistributionPathTracingCausticPerturbation = OpenMaya.MObject()
+    mEnergyRedistributionPathTracingManifoldPerturbation = OpenMaya.MObject()
+    mEnergyRedistributionPathTracingLambda = OpenMaya.MObject()
+
     def __init__(self):
         OpenMayaMPx.MPxNode.__init__(self)
 
@@ -298,6 +311,19 @@ def nodeInitializer():
         MitsubaRenderSetting.addBooleanAttribute(nAttr, "mPathSpaceMetropolisLightTransportManifoldPurturbation", "iPathSpaceMetropolisLightTransportManifoldPurturbation", "ipsmltmp", False)
         MitsubaRenderSetting.addFloatAttribute(nAttr,   "mPathSpaceMetropolisLightTransportLambda", "iPathSpaceMetropolisLightTransportLambda", "ipsmltl", 50)
 
+        # Integrator - Energy Redistribution Path Tracing variables
+        MitsubaRenderSetting.addBooleanAttribute(nAttr, "mEnergyRedistributionPathTracingUseInfiniteDepth", "iEnergyRedistributionPathTracingUseInfiniteDepth", "ierptuid", True)
+        MitsubaRenderSetting.addIntegerAttribute(nAttr, "mEnergyRedistributionPathTracingMaxDepth", "iEnergyRedistributionPathTracingMaxDepth", "ierptmd", -1)
+        MitsubaRenderSetting.addFloatAttribute(nAttr,   "mEnergyRedistributionPathTracingNumChains", "iEnergyRedistributionPathTracingNumChains", "ierptnc", 1)
+        MitsubaRenderSetting.addIntegerAttribute(nAttr,   "mEnergyRedistributionPathTracingMaxChains", "iEnergyRedistributionPathTracingMaxChains", "ierptmc", 0)
+        MitsubaRenderSetting.addIntegerAttribute(nAttr, "mEnergyRedistributionPathTracingChainLength", "iEnergyRedistributionPathTracingChainLength", "ierptcl", 1)
+        MitsubaRenderSetting.addIntegerAttribute(nAttr, "mEnergyRedistributionPathTracingDirectSamples", "iEnergyRedistributionPathTracingDirectSamples", "ierptds", 16)
+        MitsubaRenderSetting.addBooleanAttribute(nAttr, "mEnergyRedistributionPathTracingLensPerturbation", "iEnergyRedistributionPathTracingLensPerturbation", "ierptlp", True)
+        MitsubaRenderSetting.addBooleanAttribute(nAttr, "mEnergyRedistributionPathTracingMultiChainPerturbation", "iEnergyRedistributionPathTracingMultiChainPerturbation", "ierptmcp", True)
+        MitsubaRenderSetting.addBooleanAttribute(nAttr, "mEnergyRedistributionPathTracingCausticPerturbation", "iEnergyRedistributionPathTracingCausticPerturbation", "ierptcp", True)
+        MitsubaRenderSetting.addBooleanAttribute(nAttr, "mEnergyRedistributionPathTracingManifoldPerturbation", "iEnergyRedistributionPathTracingManifoldPerturbation", "ierptmp", False)
+        MitsubaRenderSetting.addFloatAttribute(nAttr,   "mEnergyRedistributionPathTracingLambda", "iEnergyRedistributionPathTracingLambda", "ierptl", 50)
+
     except:
         sys.stderr.write("Failed to create and add attributes\n")
         raise
@@ -420,6 +446,19 @@ def nodeInitializer():
         MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mPathSpaceMetropolisLightTransportCausticPurturbation)
         MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mPathSpaceMetropolisLightTransportManifoldPurturbation)
         MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mPathSpaceMetropolisLightTransportLambda)
+
+        # Integrator - Energy Redistribution Path Tracing variables
+        MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mEnergyRedistributionPathTracingUseInfiniteDepth)
+        MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mEnergyRedistributionPathTracingMaxDepth)
+        MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mEnergyRedistributionPathTracingNumChains)
+        MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mEnergyRedistributionPathTracingMaxChains)
+        MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mEnergyRedistributionPathTracingChainLength)
+        MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mEnergyRedistributionPathTracingDirectSamples)
+        MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mEnergyRedistributionPathTracingLensPerturbation)
+        MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mEnergyRedistributionPathTracingMultiChainPerturbation)
+        MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mEnergyRedistributionPathTracingCausticPerturbation)
+        MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mEnergyRedistributionPathTracingManifoldPerturbation)
+        MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mEnergyRedistributionPathTracingLambda)
 
     except:
         sys.stderr.write("Failed to add attributes\n")

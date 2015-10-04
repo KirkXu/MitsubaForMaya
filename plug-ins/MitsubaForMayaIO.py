@@ -420,6 +420,7 @@ def writeIntegratorPathTracer(outFile, renderSettings, integratorMitsuba):
 
     outFile.write(" </integrator>\n\n\n")
 
+
 def writeIntegratorBidirectionalPathTracer(outFile, renderSettings, integratorMitsuba):
     iBidrectionalPathTracerUseInfiniteDepth = cmds.getAttr("%s.%s" % (renderSettings, "iBidrectionalPathTracerUseInfiniteDepth"))
     iBidrectionalPathTracerMaxDepth = cmds.getAttr("%s.%s" % (renderSettings, "iBidrectionalPathTracerMaxDepth"))
@@ -440,6 +441,7 @@ def writeIntegratorBidirectionalPathTracer(outFile, renderSettings, integratorMi
 
     outFile.write(" </integrator>\n\n\n")
 
+
 def writeIntegratorAmbientOcclusion(outFile, renderSettings, integratorMitsuba):
     iAmbientOcclusionShadingSamples = cmds.getAttr("%s.%s" % (renderSettings, "iAmbientOcclusionShadingSamples"))
     iAmbientOcclusionUseAutomaticRayLength = cmds.getAttr("%s.%s" % (renderSettings, "iAmbientOcclusionUseAutomaticRayLength"))
@@ -453,6 +455,7 @@ def writeIntegratorAmbientOcclusion(outFile, renderSettings, integratorMitsuba):
     outFile.write("     <float name=\"rayLength\" value=\"" + str(-1) + "\"/>\n")
 
     outFile.write(" </integrator>\n\n\n")
+
 
 def writeIntegratorDirectIllumination(outFile, renderSettings, integratorMitsuba):
     iDirectIlluminationShadingSamples = cmds.getAttr("%s.%s" % (renderSettings, "iDirectIlluminationShadingSamples"))
@@ -477,6 +480,7 @@ def writeIntegratorDirectIllumination(outFile, renderSettings, integratorMitsuba
     outFile.write("     <boolean name=\"hideEmitters\" value=\"%s\"/>\n" % iDirectIlluminationHideEmittersText)
 
     outFile.write(" </integrator>\n\n\n")
+
 
 def writeIntegratorPhotonMap(outFile, renderSettings, integratorMitsuba):
     iPhotonMapDirectSamples = cmds.getAttr("%s.%s" % (renderSettings, "iPhotonMapDirectSamples"))
@@ -513,6 +517,7 @@ def writeIntegratorPhotonMap(outFile, renderSettings, integratorMitsuba):
 
     outFile.write(" </integrator>\n\n\n")
 
+
 def writeIntegratorProgressivePhotonMap(outFile, renderSettings, integratorMitsuba):
     attrPrefixes = { 
         "ppm" : "", 
@@ -543,6 +548,7 @@ def writeIntegratorProgressivePhotonMap(outFile, renderSettings, integratorMitsu
 
     outFile.write(" </integrator>\n\n\n")
 
+
 def writeIntegratorPrimarySampleSpaceMetropolisLightTransport(outFile, renderSettings, integratorMitsuba):
     iPrimarySampleSpaceMetropolisLightTransportBidirectional = cmds.getAttr("%s.%s" % (renderSettings, "iPrimarySampleSpaceMetropolisLightTransportBidirectional"))
     iPrimarySampleSpaceMetropolisLightTransportUseInfiniteDepth = cmds.getAttr("%s.%s" % (renderSettings, "iPrimarySampleSpaceMetropolisLightTransportUseInfiniteDepth"))
@@ -568,6 +574,7 @@ def writeIntegratorPrimarySampleSpaceMetropolisLightTransport(outFile, renderSet
     outFile.write("     <float name=\"pLarge\" value=\"" + str(iPrimarySampleSpaceMetropolisLightTransportPLarge) + "\"/>\n")  
 
     outFile.write(" </integrator>\n\n\n")
+
 
 def writeIntegratorPathSpaceMetropolisLightTransport(outFile, renderSettings, integratorMitsuba):
     iPathSpaceMetropolisLightTransportUseInfiniteDepth = cmds.getAttr("%s.%s" % (renderSettings, "iPathSpaceMetropolisLightTransportUseInfiniteDepth"))
@@ -603,6 +610,43 @@ def writeIntegratorPathSpaceMetropolisLightTransport(outFile, renderSettings, in
     outFile.write("     <boolean name=\"causticPerturbation\" value=\"%s\"/>\n" % iPathSpaceMetropolisLightTransportCausticPurturbationText)
     outFile.write("     <boolean name=\"manifoldPerturbation\" value=\"%s\"/>\n" % iPathSpaceMetropolisLightTransportManifoldPurturbationText)
     outFile.write("     <float name=\"lambda\" value=\"" + str(iPathSpaceMetropolisLightTransportLambda) + "\"/>\n")  
+
+    outFile.write(" </integrator>\n\n\n")
+
+
+def writeIntegratorEnergyRedistributionPathTracing(outFile, renderSettings, integratorMitsuba):
+    iEnergyRedistributionPathTracingUseInfiniteDepth = cmds.getAttr("%s.%s" % (renderSettings, "iEnergyRedistributionPathTracingUseInfiniteDepth"))
+    iEnergyRedistributionPathTracingMaxDepth = cmds.getAttr("%s.%s" % (renderSettings, "iEnergyRedistributionPathTracingMaxDepth"))
+    iEnergyRedistributionPathTracingNumChains = cmds.getAttr("%s.%s" % (renderSettings, "iEnergyRedistributionPathTracingNumChains"))
+    iEnergyRedistributionPathTracingMaxChains = cmds.getAttr("%s.%s" % (renderSettings, "iEnergyRedistributionPathTracingMaxChains"))
+    iEnergyRedistributionPathTracingChainLength = cmds.getAttr("%s.%s" % (renderSettings, "iEnergyRedistributionPathTracingChainLength"))
+    iEnergyRedistributionPathTracingDirectSamples = cmds.getAttr("%s.%s" % (renderSettings, "iEnergyRedistributionPathTracingDirectSamples"))
+    iEnergyRedistributionPathTracingLensPerturbation = cmds.getAttr("%s.%s" % (renderSettings, "iEnergyRedistributionPathTracingLensPerturbation"))
+    iEnergyRedistributionPathTracingMultiChainPerturbation = cmds.getAttr("%s.%s" % (renderSettings, "iEnergyRedistributionPathTracingMultiChainPerturbation"))
+    iEnergyRedistributionPathTracingCausticPerturbation = cmds.getAttr("%s.%s" % (renderSettings, "iEnergyRedistributionPathTracingCausticPerturbation"))
+    iEnergyRedistributionPathTracingManifoldPerturbation = cmds.getAttr("%s.%s" % (renderSettings, "iEnergyRedistributionPathTracingManifoldPerturbation"))
+    iEnergyRedistributionPathTracingLambda = cmds.getAttr("%s.%s" % (renderSettings, "iEnergyRedistributionPathTracingLambda"))
+
+    iEnergyRedistributionPathTracingMaxDepth = -1 if iEnergyRedistributionPathTracingUseInfiniteDepth else iEnergyRedistributionPathTracingMaxDepth
+
+    iEnergyRedistributionPathTracingLensPerturbationText = 'true' if iEnergyRedistributionPathTracingLensPerturbation else 'false'
+    iEnergyRedistributionPathTracingMultiChainPerturbationText = 'true' if iEnergyRedistributionPathTracingMultiChainPerturbation else 'false'
+    iEnergyRedistributionPathTracingCausticPerturbationText = 'true' if iEnergyRedistributionPathTracingCausticPerturbation else 'false'
+    iEnergyRedistributionPathTracingManifoldPerturbationText = 'true' if iEnergyRedistributionPathTracingManifoldPerturbation else 'false'
+
+    outFile.write(" <integrator type=\"%s\">\n" % integratorMitsuba)
+
+    outFile.write("     <integer name=\"maxDepth\" value=\"" + str(iEnergyRedistributionPathTracingMaxDepth) + "\"/>\n")
+    outFile.write("     <float name=\"numChains\" value=\"" + str(iEnergyRedistributionPathTracingNumChains) + "\"/>\n")
+    outFile.write("     <integer name=\"maxChains\" value=\"" + str(iEnergyRedistributionPathTracingMaxChains) + "\"/>\n")
+    outFile.write("     <integer name=\"directSamples\" value=\"" + str(iEnergyRedistributionPathTracingDirectSamples) + "\"/>\n")
+    outFile.write("     <integer name=\"chainLength\" value=\"" + str(iEnergyRedistributionPathTracingChainLength) + "\"/>\n")
+    outFile.write("     <integer name=\"directSamples\" value=\"" + str(iEnergyRedistributionPathTracingDirectSamples) + "\"/>\n")
+    outFile.write("     <boolean name=\"lensPerturbation\" value=\"%s\"/>\n" % iEnergyRedistributionPathTracingLensPerturbationText)
+    outFile.write("     <boolean name=\"multiChainPerturbation\" value=\"%s\"/>\n" % iEnergyRedistributionPathTracingMultiChainPerturbationText)
+    outFile.write("     <boolean name=\"causticPerturbation\" value=\"%s\"/>\n" % iEnergyRedistributionPathTracingCausticPerturbationText)
+    outFile.write("     <boolean name=\"manifoldPerturbation\" value=\"%s\"/>\n" % iEnergyRedistributionPathTracingManifoldPerturbationText)
+    outFile.write("     <float name=\"lambda\" value=\"" + str(iEnergyRedistributionPathTracingLambda) + "\"/>\n")  
 
     outFile.write(" </integrator>\n\n\n")
 
@@ -663,6 +707,9 @@ def writeIntegrator(outFile):
     elif integratorMaya == "Path Space Metropolis Light Transport":
         writeIntegratorPathSpaceMetropolisLightTransport(outFile, renderSettings, integratorMitsuba)
 
+    elif integratorMaya == "Energy Redistribution Path Tracer":
+        writeIntegratorEnergyRedistributionPathTracing(outFile, renderSettings, integratorMitsuba)
+
     else:
         writeIntegratorUsingUI(outFile)
 
@@ -695,78 +742,8 @@ def writeIntegratorUsingUI(outFile):
 
     #print( "Active Integrator : %s" % activeIntegrator )
 
-    #Write erpt
-    if activeIntegrator=="Energy_Redistribution_Path_Tracer" or activeIntegrator=="Energy Redistribution Path Tracer":
-        '''
-        The order for this integrator is:
-        0. checkBox to use infinite depth
-        1. intFieldGrp maxDepth
-        2. floatFieldGrp numChains
-        3. checkBox to use maxChains
-        4. floatFieldGrp maxChains
-        5. checkBox to use automatic directSamples
-        6. intFieldGrp directSamples
-        7. checkBox lensPerturbation
-        8. checkBox multiChainPerturbation
-        9. checkBox causticPerturbation
-        10. checkBox manifoldPerturbation
-        11. checkBox hideEmitters
-        12. floatFieldGrp lambda
-        '''
-        outFile.write(" <integrator type=\"mlt\">\n")
-        integratorSettings = cmds.frameLayout(activeSettings, query=True, childArray=True)
-
-        if cmds.checkBox(integratorSettings[0], query=True, value=True):
-            outFile.write("     <integer name=\"maxDepth\" value=\"-1\"/>\n")
-        else:
-            maxDepth = cmds.intFieldGrp(integratorSettings[1], query=True, value1=True)
-            outFile.write("     <integer name=\"maxDepth\" value=\"" + str(maxDepth) + "\"/>\n")
-
-        numChains = cmds.floatFieldGrp(integratorSettings[2], query=True, value1=True)
-        outFile.write("     <float name=\"numChains\" value=\"" + str(numChains) + "\"/>\n")
-
-        if not cmds.checkBox(integratorSettings[3], query=True, value=True):
-            outFile.write("     <integer name=\"maxChains\" value=\"0\"/>\n")
-        else:
-            maxChains = cmds.floatFieldGrp(integratorSettings[4], query=True, value1=True)
-            outFile.write("     <integer name=\"maxChains\" value=\"" + str(maxChains) + "\"/>\n")
-
-        if cmds.checkBox(integratorSettings[5], query=True, value=True):
-            outFile.write("     <integer name=\"directSamples\" value=\"-1\"/>\n")
-        else:
-            directSamples = cmds.intFieldGrp(integratorSettings[6], query=True, value1=True)
-            outFile.write("     <integer name=\"directSamples\" value=\"" + str(directSamples) + "\"/>\n")
-
-        if cmds.checkBox(integratorSettings[7], query=True, value=True):
-            outFile.write("     <boolean name=\"lensPerturbation\" value=\"true\"/>\n")
-        else:
-            outFile.write("     <boolean name=\"lensPerturbation\" value=\"false\"/>\n")
-
-        if cmds.checkBox(integratorSettings[8], query=True, value=True):
-            outFile.write("     <boolean name=\"multiChainPerturbation\" value=\"true\"/>\n")
-        else:
-            outFile.write("     <boolean name=\"multiChainPerturbation\" value=\"false\"/>\n")
-
-        if cmds.checkBox(integratorSettings[9], query=True, value=True):
-            outFile.write("     <boolean name=\"causticPerturbation\" value=\"true\"/>\n")
-        else:
-            outFile.write("     <boolean name=\"causticPerturbation\" value=\"false\"/>\n")
-
-        if cmds.checkBox(integratorSettings[10], query=True, value=True):
-            outFile.write("     <boolean name=\"manifoldPerturbation\" value=\"true\"/>\n")
-        else:
-            outFile.write("     <boolean name=\"manifoldPerturbation\" value=\"false\"/>\n")
-
-        if cmds.checkBox(integratorSettings[11], query=True, value=True):
-            outFile.write("     <boolean name=\"hideEmitters\" value=\"true\"/>\n")
-        else:
-            outFile.write("     <boolean name=\"hideEmitters\" value=\"false\"/>\n")
-
-        mtsLambda = cmds.floatFieldGrp(integratorSettings[12], query=True, value1=True)
-        outFile.write("     <float name=\"lambda\" value=\"" + str(mtsLambda) + "\"/>\n")\
-
     #Write ptracer
-    elif activeIntegrator=="Adjoint_Particle_Tracer" or activeIntegrator=="Adjoint Particle Tracer":
+    if activeIntegrator=="Adjoint_Particle_Tracer" or activeIntegrator=="Adjoint Particle Tracer":
         '''
         The order for this integrator is:
         0. checkBox to use infinite depth
