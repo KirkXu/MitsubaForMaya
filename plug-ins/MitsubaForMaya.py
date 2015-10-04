@@ -8,15 +8,15 @@ import maya.mel as mel
 import maya.OpenMaya as OpenMaya
 import maya.OpenMayaMPx as OpenMayaMPx
 
-from process import Process
-
 kPluginCmdName = "Mitsuba"
 
 pluginDir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
 sys.path.append(pluginDir)
 
+from util.process import Process
+
 # Import modules for settings, material, lights and volumes
-import MitsubaRenderSettings
+from util import MitsubaRenderSettings
 
 from materials import bump
 from materials import coating

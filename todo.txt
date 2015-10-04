@@ -26,19 +26,22 @@ x move materials into 'materials'
 x add __init__.py as appropriate
 x support batch / animated renders
 
+x hookup verbose render setting
+
 x remove dependence on UI to drive render parameters
 x add support for persisting render settings
  x filters
  x samplers
  x integrators - Path Tracer
+ x The rest of the integrators
+
+support render cancel
+support batch render cancel
+support using Mitsuba GUI for in-progress render viewing
+support interactive render view / update / cancel
 
 support animated parameters in batch mode
 
-remove dependence on UI to drive render parameters
-add support for persisting render settings
-- The rest of the integrators
-
-hookup verbose render setting
 create renderData/mitsuba directory for temporary render files
 
 indent code to 4 space tabs
@@ -46,7 +49,6 @@ replace all mel functions with automatically generated mel which immediately cal
 make plugin ids consistent
 
 replace xml writing with etree
-support interactive render view / update / cancel
 
 Note references
 http://knowledge.autodesk.com/support/maya/troubleshooting/caas/sfdcarticles/sfdcarticles/Registering-a-custom-renderer-for-batch-rendering.html
@@ -62,6 +64,10 @@ Location to copy .mod and .xml files
 /Applications/Autodesk/maya2016/Maya.app/Contents/bin/rendererDesc/
 
 
+Notes on usage
+- Energyredistributionpathtracing, maxChains is noted as a float attribute in the documentation but the implementation expects an integer
+- Energyredistributionpathtracing seems to render, with continuous "Unable to recreate specular vertex in perturbation" errors
+- Progressive Photon Map crashes
 
 
 
