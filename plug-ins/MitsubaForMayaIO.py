@@ -445,7 +445,7 @@ def writeIntegratorBidirectionalPathTracer(outFile, renderSettings, integratorMi
     outFile.write(" </integrator>\n\n\n")
 
 def writeIntegratorAmbientOcclusion(outFile, renderSettings, integratorMitsuba):
-    outFile.write(" <integrator type=\"ao\">\n")
+    outFile.write(" <integrator type=\"%s\">\n" % integratorMitsuba)
 
     iAmbientOcclusionShadingSamples = cmds.getAttr("%s.%s" % (renderSettings, "iAmbientOcclusionShadingSamples"))
     iAmbientOcclusionUseAutomaticRayLength = cmds.getAttr("%s.%s" % (renderSettings, "iAmbientOcclusionUseAutomaticRayLength"))
@@ -459,7 +459,7 @@ def writeIntegratorAmbientOcclusion(outFile, renderSettings, integratorMitsuba):
     outFile.write(" </integrator>\n\n\n")
 
 def writeIntegratorDirectIllumination(outFile, renderSettings, integratorMitsuba):
-    outFile.write(" <integrator type=\"direct\">\n")
+    outFile.write(" <integrator type=\"%s\">\n" % integratorMitsuba)
 
     iDirectIlluminationShadingSamples = cmds.getAttr("%s.%s" % (renderSettings, "iDirectIlluminationShadingSamples"))
     iDirectIlluminationUseEmitterAndBSDFSamples = cmds.getAttr("%s.%s" % (renderSettings, "iDirectIlluminationUseEmitterAndBSDFSamples"))
@@ -484,7 +484,7 @@ def writeIntegratorDirectIllumination(outFile, renderSettings, integratorMitsuba
     outFile.write(" </integrator>\n\n\n")
 
 def writeIntegratorPhotonMap(outFile, renderSettings, integratorMitsuba):
-    outFile.write(" <integrator type=\"direct\">\n")
+    outFile.write(" <integrator type=\"%s\">\n" % integratorMitsuba)
 
     iPhotonMapDirectSamples = cmds.getAttr("%s.%s" % (renderSettings, "iPhotonMapDirectSamples"))
     iPhotonMapGlossySamples = cmds.getAttr("%s.%s" % (renderSettings, "iPhotonMapGlossySamples"))
@@ -520,6 +520,37 @@ def writeIntegratorPhotonMap(outFile, renderSettings, integratorMitsuba):
     outFile.write("     <boolean name=\"hideEmitters\" value=\"%s\"/>\n" % iPhotonMapHideEmittersText)
 
     outFile.write("     <integer name=\"rrDepth\" value=\"" + str(iPhotonMapRRDepth) + "\"/>\n")    
+
+    outFile.write(" </integrator>\n\n\n")
+
+def writeIntegratorProgressivePhotonMap(outFile, renderSettings, integratorMitsuba):
+    outFile.write(" <integrator type=\"%s\">\n" % integratorMitsuba)
+
+    attrPrefixes = { 
+        "ppm" : "", 
+        "sppm" : "Stochastic", 
+    }
+    attrPrefix = attrPrefixes[integratorMitsuba]
+
+    iProgressivePhotonMapUseInfiniteDepth = cmds.getAttr("%s.%s" % (renderSettings, "i%sProgressivePhotonMapUseInfiniteDepth" % attrPrefix))
+    iProgressivePhotonMapMaxDepth = cmds.getAttr("%s.%s" % (renderSettings, "i%sProgressivePhotonMapMaxDepth" % attrPrefix))
+    iProgressivePhotonMapPhotonCount = cmds.getAttr("%s.%s" % (renderSettings, "i%sProgressivePhotonMapPhotonCount" % attrPrefix))
+    iProgressivePhotonMapInitialRadius = cmds.getAttr("%s.%s" % (renderSettings, "i%sProgressivePhotonMapInitialRadius" % attrPrefix))
+    iProgressivePhotonMapAlpha = cmds.getAttr("%s.%s" % (renderSettings, "i%sProgressivePhotonMapAlpha" % attrPrefix))
+    iProgressivePhotonMapGranularity = cmds.getAttr("%s.%s" % (renderSettings, "i%sProgressivePhotonMapGranularity" % attrPrefix))
+    iProgressivePhotonMapRRDepth = cmds.getAttr("%s.%s" % (renderSettings, "i%sProgressivePhotonMapRRDepth" % attrPrefix))
+    iProgressivePhotonMapMaxPasses = cmds.getAttr("%s.%s" % (renderSettings, "i%sProgressivePhotonMapMaxPasses" % attrPrefix))
+
+    iProgressivePhotonMapMaxDepth = -1 if iProgressivePhotonMapUseInfiniteDepth else iProgressivePhotonMapMaxDepth
+    outFile.write("     <integer name=\"maxDepth\" value=\"" + str(iProgressivePhotonMapMaxDepth) + "\"/>\n")
+
+    outFile.write("     <integer name=\"photonCount\" value=\"" + str(iProgressivePhotonMapPhotonCount) + "\"/>\n")
+    outFile.write("     <float name=\"initialRadius\" value=\"" + str(iProgressivePhotonMapInitialRadius) + "\"/>\n")
+
+    outFile.write("     <float name=\"alpha\" value=\"" + str(iProgressivePhotonMapAlpha) + "\"/>\n")
+    outFile.write("     <integer name=\"granularity\" value=\"" + str(iProgressivePhotonMapGranularity) + "\"/>\n")
+    outFile.write("     <integer name=\"rrDepth\" value=\"" + str(iProgressivePhotonMapRRDepth) + "\"/>\n")    
+    outFile.write("     <integer name=\"maxPasses\" value=\"" + str(iProgressivePhotonMapMaxPasses) + "\"/>\n")    
 
     outFile.write(" </integrator>\n\n\n")
 
@@ -569,6 +600,10 @@ def writeIntegrator(outFile):
     elif integratorMaya == "Photon Map":
         writeIntegratorPhotonMap(outFile, renderSettings, integratorMitsuba)
 
+    elif( integratorMaya == "Progressive Photon Map" or
+          integratorMaya == "Stochastic Progressive Photon Map" ):
+        writeIntegratorProgressivePhotonMap(outFile, renderSettings, integratorMitsuba)
+
     else:
         writeIntegratorUsingUI(outFile)
 
@@ -601,124 +636,8 @@ def writeIntegratorUsingUI(outFile):
 
     #print( "Active Integrator : %s" % activeIntegrator )
 
-    #Write progressive photon mapper
-    if activeIntegrator=="Progressive_Photon_Map" or activeIntegrator=="Progressive Photon Map":
-        '''
-        The order for this integrator is:
-        0. checkBox to use infinite depth
-        1. intFieldGrp maxDepth
-        2. intFieldGrp photonCount
-        3. checkBox to use automatic initialRadius
-        4. floatFieldGrp initialRadius
-        5. floatFieldGrp alpha
-        6. checkBox to use automatic granularity
-        7. intFieldGrp granularity
-        8. checkBox hideEmitters
-        9. intFieldGrp rrDepth
-        10. checkBox to use infinite maxPasses
-        11. intFieldGrp maxPasses
-        '''
-        outFile.write(" <integrator type=\"ppm\">\n")
-        integratorSettings = cmds.frameLayout(activeSettings, query=True, childArray=True)
-
-        if cmds.checkBox(integratorSettings[0], query=True, value=True):
-            outFile.write("     <integer name=\"maxDepth\" value=\"-1\"/>\n")
-        else:
-            maxDepth = cmds.intFieldGrp(integratorSettings[1], query=True, value1=True)
-            outFile.write("     <integer name=\"maxDepth\" value=\"" + str(maxDepth) + "\"/>\n")
-
-        photonCount = cmds.intFieldGrp(integratorSettings[2], query=True, value1=True)
-        outFile.write("     <integer name=\"photonCount\" value=\"" + str(photonCount) + "\"/>\n")
-
-        if cmds.checkBox(integratorSettings[3], query=True, value=True):
-            outFile.write("     <float name=\"initialRadius\" value=\"0\"/>\n")
-        else:
-            initialRadius = cmds.floatFieldGrp(integratorSettings[4], query=True, value1=True)
-            outFile.write("     <float name=\"initialRadius\" value=\"" + str(initialRadius) + "\"/>\n")
-
-        alpha = cmds.floatFieldGrp(integratorSettings[5], query=True, value1=True)
-        outFile.write("     <float name=\"alpha\" value=\"" + str(alpha) + "\"/>\n") 
-
-        if cmds.checkBox(integratorSettings[6], query=True, value=True):
-            outFile.write("     <integer name=\"granularity\" value=\"0\"/>\n")
-        else:
-            granularity = cmds.intFieldGrp(integratorSettings[7], query=True, value1=True)
-            outFile.write("     <integer name=\"granularity\" value=\"" + str(granularity) + "\"/>\n")
-
-        if cmds.checkBox(integratorSettings[8], query=True, value=True):
-            outFile.write("     <boolean name=\"lightImage\" value=\"true\"/>\n")
-        else:
-            outFile.write("     <boolean name=\"lightImage\" value=\"false\"/>\n")
-       
-        rrDepth = cmds.intFieldGrp(integratorSettings[9], query=True, value1=True)
-        outFile.write("     <integer name=\"rrDepth\" value=\"" + str(rrDepth) + "\"/>\n")    
-
-        if cmds.checkBox(integratorSettings[10], query=True, value=True):
-            outFile.write("     <integer name=\"maxPasses\" value=\"-1\"/>\n")
-        else:
-            maxPasses = cmds.intFieldGrp(integratorSettings[11], query=True, value1=True)
-            outFile.write("     <integer name=\"maxPasses\" value=\"" + str(maxPasses) + "\"/>\n")
-
-    #Write sppm
-    elif activeIntegrator=="Stochastic_Progressive_Photon_Map" or activeIntegrator=="Stochastic Progressive Photon Map":
-        '''
-        The order for this integrator is:
-        0. checkBox to use infinite depth
-        1. intFieldGrp maxDepth
-        2. intFieldGrp photonCount
-        3. checkBox to use automatic initialRadius
-        4. floatFieldGrp initialRadius
-        5. floatFieldGrp alpha
-        6. checkBox to use automatic granularity
-        7. intFieldGrp granularity
-        8. checkBox hideEmitters
-        9. intFieldGrp rrDepth
-        10. checkBox to use infinite maxPasses
-        11. intFieldGrp maxPasses
-        '''
-        outFile.write(" <integrator type=\"sppm\">\n")
-        integratorSettings = cmds.frameLayout(activeSettings, query=True, childArray=True)
-
-        if cmds.checkBox(integratorSettings[0], query=True, value=True):
-            outFile.write("     <integer name=\"maxDepth\" value=\"-1\"/>\n")
-        else:
-            maxDepth = cmds.intFieldGrp(integratorSettings[1], query=True, value1=True)
-            outFile.write("     <integer name=\"maxDepth\" value=\"" + str(maxDepth) + "\"/>\n")
-
-        photonCount = cmds.intFieldGrp(integratorSettings[2], query=True, value1=True)
-        outFile.write("     <integer name=\"photonCount\" value=\"" + str(photonCount) + "\"/>\n")
-
-        if cmds.checkBox(integratorSettings[3], query=True, value=True):
-            outFile.write("     <float name=\"initialRadius\" value=\"0\"/>\n")
-        else:
-            initialRadius = cmds.floatFieldGrp(integratorSettings[4], query=True, value1=True)
-            outFile.write("     <float name=\"initialRadius\" value=\"" + str(initialRadius) + "\"/>\n")
-
-        alpha = cmds.floatFieldGrp(integratorSettings[5], query=True, value1=True)
-        outFile.write("     <float name=\"alpha\" value=\"" + str(alpha) + "\"/>\n") 
-
-        if cmds.checkBox(integratorSettings[6], query=True, value=True):
-            outFile.write("     <integer name=\"granularity\" value=\"0\"/>\n")
-        else:
-            granularity = cmds.intFieldGrp(integratorSettings[7], query=True, value1=True)
-            outFile.write("     <integer name=\"granularity\" value=\"" + str(granularity) + "\"/>\n")
-
-        if cmds.checkBox(integratorSettings[8], query=True, value=True):
-            outFile.write("     <boolean name=\"hideEmitters\" value=\"true\"/>\n")
-        else:
-            outFile.write("     <boolean name=\"hideEmitters\" value=\"false\"/>\n")
-        
-        rrDepth = cmds.intFieldGrp(integratorSettings[9], query=True, value1=True)
-        outFile.write("     <integer name=\"rrDepth\" value=\"" + str(rrDepth) + "\"/>\n")    
-
-        if cmds.checkBox(integratorSettings[10], query=True, value=True):
-            outFile.write("     <integer name=\"maxPasses\" value=\"-1\"/>\n")
-        else:
-            maxPasses = cmds.intFieldGrp(integratorSettings[11], query=True, value1=True)
-            outFile.write("     <integer name=\"maxPasses\" value=\"" + str(maxPasses) + "\"/>\n")
-
     #Write pssmlt
-    elif activeIntegrator=="Primary_Sample_Space_Metropolis_Light_Transport" or activeIntegrator=="Primary Sample Space Metropolis Light Transport":
+    if activeIntegrator=="Primary_Sample_Space_Metropolis_Light_Transport" or activeIntegrator=="Primary Sample Space Metropolis Light Transport":
         '''
         The order for this integrator is:
         0. checkBox bidirectional

@@ -37,13 +37,7 @@ global renderButton
 global fileNameField
 global hideEmitters
 
-def createIntegratorFrames():
-    #Make the integrator specific settings
-    global integratorFrames
-
-    integratorFrames = []
-
-    # Ambient Occlusion Settings
+def createIntegratorFrameAmbientOcclusion():
     aoSettings = cmds.frameLayout(label="Ambient Occlusion", cll=True, visible=False)
 
     existingShadingSamples = cmds.getAttr( "%s.%s" % (renderSettings, "iAmbientOcclusionShadingSamples"))
@@ -61,7 +55,9 @@ def createIntegratorFrames():
 
     cmds.setParent('..')
 
-    # Direct Illumination Settings
+    return aoSettings
+
+def createIntegratorFrameDirectIllumination():
     diSettings = cmds.frameLayout(label="Direct Illumination", cll=True, visible=False)
 
     iDirectIlluminationShadingSamples = cmds.getAttr("%s.%s" % (renderSettings, "iDirectIlluminationShadingSamples"))
@@ -91,7 +87,9 @@ def createIntegratorFrames():
 
     cmds.setParent('..')
 
-    # Path Tracer settings
+    return diSettings
+
+def createIntegratorFramePathTracer():
     pSettings = cmds.frameLayout(label="Path Tracer", cll=True)
 
     existingUseInfiniteDepth = cmds.getAttr( "%s.%s" % (renderSettings, "iPathTracerUseInfiniteDepth"))
@@ -117,7 +115,9 @@ def createIntegratorFrames():
 
     cmds.setParent('..')
 
-    # Simple Volumetric Path Tracer settings
+    return pSettings
+
+def createIntegratorFrameSimpleVolumetricPathTracer():
     vpsSettings = cmds.frameLayout(label="Simple Volumetric Path Tracer", cll=True, visible=False)
 
     existingUseInfiniteDepth = cmds.getAttr( "%s.%s" % (renderSettings, "iSimpleVolumetricPathTracerUseInfiniteDepth"))
@@ -143,7 +143,9 @@ def createIntegratorFrames():
 
     cmds.setParent('..')
 
-    # Volumetric Path Tracer settings
+    return vpsSettings
+
+def createIntegratorFrameVolumetricPathTracer():
     vpSettings = cmds.frameLayout(label="Volumetric Path Tracer", cll=True, visible=False)
 
     existingUseInfiniteDepth = cmds.getAttr( "%s.%s" % (renderSettings, "iVolumetricPathTracerUseInfiniteDepth"))
@@ -169,7 +171,9 @@ def createIntegratorFrames():
 
     cmds.setParent('..')
 
-    # Bidirection Path Tracer Settings
+    return vpSettings
+
+def createIntegratorFrameBidirectionalPathTracer():
     bdptSettings = cmds.frameLayout(label="Bidirectional Path Tracer", cll=True, visible=False)
 
     existingUseInfiniteDepth = cmds.getAttr( "%s.%s" % (renderSettings, "iBidrectionalPathTracerUseInfiniteDepth"))
@@ -195,6 +199,9 @@ def createIntegratorFrames():
 
     cmds.setParent('..')
 
+    return bdptSettings
+
+def createIntegratorFramePhotonMap():
     pmSettings = cmds.frameLayout(label="Photon Map", cll=True, visible=False)
 
     iPhotonMapDirectSamples = cmds.getAttr( "%s.%s" % (renderSettings, "iPhotonMapDirectSamples"))
@@ -252,35 +259,120 @@ def createIntegratorFrames():
 
     cmds.setParent('..')
 
+    return pmSettings
+
+def createIntegratorFrameProgressivePhotonMap():
     ppmSettings = cmds.frameLayout(label="Progressive Photon Map", cll=True, visible=False)
-    cmds.checkBox(label = "Use infinite depth", value=True)
-    cmds.intFieldGrp(numberOfFields=1, label="maxDepth", value1=1)
-    cmds.intFieldGrp(numberOfFields=1, label="photonCount", value1=250000)
-    cmds.checkBox(label = "Automatically decide initialRadius")
-    cmds.floatFieldGrp(numberOfFields=1, label="initialRadius", value1=0.0)
-    cmds.floatFieldGrp(numberOfFields=1, label="alpha", value1=0.7)
-    cmds.checkBox(label = "Use automatic granularity")
-    cmds.intFieldGrp(numberOfFields=1, label="granularity", value1=0)
-    cmds.checkBox(label = "hideEmitters")
-    cmds.intFieldGrp(numberOfFields=1, label="rrDepth", value1=1)
-    cmds.checkBox(label = "Use infinite maxPasses")
-    cmds.intFieldGrp(numberOfFields=1, label="maxPasses", value1=1)
+
+    iProgressivePhotonMapUseInfiniteDepth = cmds.getAttr("%s.%s" % (renderSettings, "iProgressivePhotonMapUseInfiniteDepth"))
+    iProgressivePhotonMapMaxDepth = cmds.getAttr("%s.%s" % (renderSettings, "iProgressivePhotonMapMaxDepth"))
+    iProgressivePhotonMapPhotonCount = cmds.getAttr("%s.%s" % (renderSettings, "iProgressivePhotonMapPhotonCount"))
+    iProgressivePhotonMapInitialRadius = cmds.getAttr("%s.%s" % (renderSettings, "iProgressivePhotonMapInitialRadius"))
+    iProgressivePhotonMapAlpha = cmds.getAttr("%s.%s" % (renderSettings, "iProgressivePhotonMapAlpha"))
+    iProgressivePhotonMapGranularity = cmds.getAttr("%s.%s" % (renderSettings, "iProgressivePhotonMapGranularity"))
+    iProgressivePhotonMapRRDepth = cmds.getAttr("%s.%s" % (renderSettings, "iProgressivePhotonMapRRDepth"))
+    iProgressivePhotonMapMaxPasses = cmds.getAttr("%s.%s" % (renderSettings, "iProgressivePhotonMapMaxPasses"))
+
+    cmds.checkBox(label = "Use Infinite Depth", value=iProgressivePhotonMapUseInfiniteDepth,
+        changeCommand=lambda (x): getCheckBox(None, "iProgressivePhotonMapUseInfiniteDepth", x))   
+
+    cmds.intFieldGrp(numberOfFields=1, label="Max Depth", value1=iProgressivePhotonMapMaxDepth,
+        changeCommand=lambda (x): getIntFieldGroup(None, "iProgressivePhotonMapMaxDepth", x))
+
+    cmds.intFieldGrp(numberOfFields=1, label="Photon Count", value1=iProgressivePhotonMapPhotonCount,
+        changeCommand=lambda (x): getIntFieldGroup(None, "iProgressivePhotonMapPhotonCount", x))
+
+    cmds.floatFieldGrp(numberOfFields=1, label="Initial Radius", value1=iProgressivePhotonMapInitialRadius,
+        changeCommand=lambda (x): getIntFieldGroup(None, "iProgressivePhotonMapInitialRadius", x))
+
+    cmds.floatFieldGrp(numberOfFields=1, label="Alpha", value1=iProgressivePhotonMapAlpha,
+        changeCommand=lambda (x): getIntFieldGroup(None, "iProgressivePhotonMapAlpha", x))
+
+    cmds.intFieldGrp(numberOfFields=1, label="Granularity", value1=iProgressivePhotonMapGranularity,
+        changeCommand=lambda (x): getIntFieldGroup(None, "iProgressivePhotonMapGranularity", x))
+
+    cmds.intFieldGrp(numberOfFields=1, label="Russian Roulette Depth", value1=iProgressivePhotonMapRRDepth,
+        changeCommand=lambda (x): getIntFieldGroup(None, "iProgressivePhotonMapRRDepth", x))
+
+    cmds.intFieldGrp(numberOfFields=1, label="Max Passes", value1=iProgressivePhotonMapMaxPasses,
+        changeCommand=lambda (x): getIntFieldGroup(None, "iProgressivePhotonMapMaxPasses", x))
+
     cmds.setParent('..')
 
+    return ppmSettings
+
+def createIntegratorFrameStochasticProgressivePhotonMap():
     sppmSettings = cmds.frameLayout(label="Stochastic Progressive Photon Map", cll=True, visible=False)
-    cmds.checkBox(label = "Use infinite depth", value=True)
-    cmds.intFieldGrp(numberOfFields=1, label="maxDepth", value1=1)
-    cmds.intFieldGrp(numberOfFields=1, label="photonCount", value1=250000)
-    cmds.checkBox(label = "Automatically decide initialRadius")
-    cmds.floatFieldGrp(numberOfFields=1, label="initialRadius", value1=0.0)
-    cmds.floatFieldGrp(numberOfFields=1, label="alpha", value1=0.7)
-    cmds.checkBox(label = "Use automatic granularity")
-    cmds.intFieldGrp(numberOfFields=1, label="granularity", value1=0)
-    cmds.checkBox(label = "hideEmitters")
-    cmds.intFieldGrp(numberOfFields=1, label="rrDepth", value1=1)
-    cmds.checkBox(label = "Use infinite maxPasses")
-    cmds.intFieldGrp(numberOfFields=1, label="maxPasses", value1=1)
+
+    iStochasticProgressivePhotonMapUseInfiniteDepth = cmds.getAttr("%s.%s" % (renderSettings, "iStochasticProgressivePhotonMapUseInfiniteDepth"))
+    iStochasticProgressivePhotonMapMaxDepth = cmds.getAttr("%s.%s" % (renderSettings, "iStochasticProgressivePhotonMapMaxDepth"))
+    iStochasticProgressivePhotonMapPhotonCount = cmds.getAttr("%s.%s" % (renderSettings, "iStochasticProgressivePhotonMapPhotonCount"))
+    iStochasticProgressivePhotonMapInitialRadius = cmds.getAttr("%s.%s" % (renderSettings, "iStochasticProgressivePhotonMapInitialRadius"))
+    iStochasticProgressivePhotonMapAlpha = cmds.getAttr("%s.%s" % (renderSettings, "iStochasticProgressivePhotonMapAlpha"))
+    iStochasticProgressivePhotonMapGranularity = cmds.getAttr("%s.%s" % (renderSettings, "iStochasticProgressivePhotonMapGranularity"))
+    iStochasticProgressivePhotonMapRRDepth = cmds.getAttr("%s.%s" % (renderSettings, "iStochasticProgressivePhotonMapRRDepth"))
+    iStochasticProgressivePhotonMapMaxPasses = cmds.getAttr("%s.%s" % (renderSettings, "iStochasticProgressivePhotonMapMaxPasses"))
+
+    cmds.checkBox(label = "Use Infinite Depth", value=iStochasticProgressivePhotonMapUseInfiniteDepth,
+        changeCommand=lambda (x): getCheckBox(None, "iStochasticProgressivePhotonMapUseInfiniteDepth", x))   
+
+    cmds.intFieldGrp(numberOfFields=1, label="Max Depth", value1=iStochasticProgressivePhotonMapMaxDepth,
+        changeCommand=lambda (x): getIntFieldGroup(None, "iStochasticProgressivePhotonMapMaxDepth", x))
+
+    cmds.intFieldGrp(numberOfFields=1, label="Photon Count", value1=iStochasticProgressivePhotonMapPhotonCount,
+        changeCommand=lambda (x): getIntFieldGroup(None, "iStochasticProgressivePhotonMapPhotonCount", x))
+
+    cmds.floatFieldGrp(numberOfFields=1, label="Initial Radius", value1=iStochasticProgressivePhotonMapInitialRadius,
+        changeCommand=lambda (x): getIntFieldGroup(None, "iStochasticProgressivePhotonMapInitialRadius", x))
+
+    cmds.floatFieldGrp(numberOfFields=1, label="Alpha", value1=iStochasticProgressivePhotonMapAlpha,
+        changeCommand=lambda (x): getIntFieldGroup(None, "iStochasticProgressivePhotonMapAlpha", x))
+
+    cmds.intFieldGrp(numberOfFields=1, label="Granularity", value1=iStochasticProgressivePhotonMapGranularity,
+        changeCommand=lambda (x): getIntFieldGroup(None, "iStochasticProgressivePhotonMapGranularity", x))
+
+    cmds.intFieldGrp(numberOfFields=1, label="Russian Roulette Depth", value1=iStochasticProgressivePhotonMapRRDepth,
+        changeCommand=lambda (x): getIntFieldGroup(None, "iStochasticProgressivePhotonMapRRDepth", x))
+
+    cmds.intFieldGrp(numberOfFields=1, label="Max Passes", value1=iStochasticProgressivePhotonMapMaxPasses,
+        changeCommand=lambda (x): getIntFieldGroup(None, "iStochasticProgressivePhotonMapMaxPasses", x))
+
     cmds.setParent('..')
+
+    return sppmSettings
+
+def createIntegratorFrames():
+    #Make the integrator specific settings
+    global integratorFrames
+
+    integratorFrames = []
+
+    # Ambient Occlusion Settings
+    aoSettings = createIntegratorFrameAmbientOcclusion()
+
+    # Direct Illumination Settings
+    diSettings = createIntegratorFrameDirectIllumination()
+
+    # Path Tracer settings
+    pSettings = createIntegratorFramePathTracer()
+
+    # Simple Volumetric Path Tracer settings
+    vpsSettings = createIntegratorFrameSimpleVolumetricPathTracer()
+
+    # Volumetric Path Tracer settings
+    vpSettings = createIntegratorFrameVolumetricPathTracer()
+
+    # Bidirection Path Tracer Settings
+    bdptSettings = createIntegratorFrameBidirectionalPathTracer()
+
+    # Photon Map Settings
+    pmSettings = createIntegratorFramePhotonMap()
+
+    # Progressive Photon Map Settings
+    ppmSettings = createIntegratorFrameProgressivePhotonMap()
+
+    # Stochastic Progressive Photon Map Settings
+    sppmSettings = createIntegratorFrameStochasticProgressivePhotonMap()
 
     pssmltSettings = cmds.frameLayout(label="Primary Sample Space Metropolis Light Transport", cll=True, visible=False)
     cmds.checkBox(label = "bidirectional")

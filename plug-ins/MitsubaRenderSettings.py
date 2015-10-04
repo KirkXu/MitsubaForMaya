@@ -15,6 +15,19 @@ class MitsubaRenderSetting(OpenMayaMPx.MPxNode):
     # Integrator variables
     mIntegrator = OpenMaya.MObject()
 
+    # Sampler variables
+    mSampler = OpenMaya.MObject()
+    mSampleCount = OpenMaya.MObject()
+    mSamplerDimension = OpenMaya.MObject()
+    mSamplerScramble = OpenMaya.MObject()
+
+    # Reconstruction Filter variables
+    mReconstructionFilter = OpenMaya.MObject()
+
+    # Overall controls
+    mKeepTempFiles = OpenMaya.MObject()
+    mVerbose = OpenMaya.MObject()
+
     # Integrator - Path Tracer variables
     mPathTracerUseInfiniteDepth = OpenMaya.MObject()
     mPathTracerMaxDepth = OpenMaya.MObject()
@@ -71,18 +84,25 @@ class MitsubaRenderSetting(OpenMayaMPx.MPxNode):
     mPhotonMapHideEmitters = OpenMaya.MObject()
     mPhotonMapRRDepth = OpenMaya.MObject()
 
-    # Sampler variables
-    mSampler = OpenMaya.MObject()
-    mSampleCount = OpenMaya.MObject()
-    mSamplerDimension = OpenMaya.MObject()
-    mSamplerScramble = OpenMaya.MObject()
+    # Integrator - Progressive Photon Map variables
+    mProgressivePhotonMapUseInfiniteDepth = OpenMaya.MObject()
+    mProgressivePhotonMapMaxDepth = OpenMaya.MObject()
+    mProgressivePhotonMapPhotonCount = OpenMaya.MObject()
+    mProgressivePhotonMapInitialRadius = OpenMaya.MObject()
+    mProgressivePhotonMapAlpha = OpenMaya.MObject()
+    mProgressivePhotonMapGranularity = OpenMaya.MObject()
+    mProgressivePhotonMapRRDepth = OpenMaya.MObject()
+    mProgressivePhotonMapMaxPasses = OpenMaya.MObject()
 
-    # Reconstruction Filter variables
-    mReconstructionFilter = OpenMaya.MObject()
-
-    # Overall controls
-    mKeepTempFiles = OpenMaya.MObject()
-    mVerbose = OpenMaya.MObject()
+    # Integrator - Stochastic Progressive Photon Map variables
+    mStochasticProgressivePhotonMapUseInfiniteDepth = OpenMaya.MObject()
+    mStochasticProgressivePhotonMapMaxDepth = OpenMaya.MObject()
+    mStochasticProgressivePhotonMapPhotonCount = OpenMaya.MObject()
+    mStochasticProgressivePhotonMapInitialRadius = OpenMaya.MObject()
+    mStochasticProgressivePhotonMapAlpha = OpenMaya.MObject()
+    mStochasticProgressivePhotonMapGranularity = OpenMaya.MObject()
+    mStochasticProgressivePhotonMapRRDepth = OpenMaya.MObject()
+    mStochasticProgressivePhotonMapMaxPasses = OpenMaya.MObject()
 
     def __init__(self):
         OpenMayaMPx.MPxNode.__init__(self)
@@ -211,6 +231,27 @@ def nodeInitializer():
         MitsubaRenderSetting.addIntegerAttribute(nAttr, "mPhotonMapGranularity", "iPhotonMapGranularity", "ipmg", 0)
         MitsubaRenderSetting.addBooleanAttribute(nAttr, "mPhotonMapHideEmitters", "iPhotonMapHideEmitters", "ipmhe", False)
         MitsubaRenderSetting.addIntegerAttribute(nAttr, "mPhotonMapRRDepth", "iPhotonMapRRDepth", "ipmrrd", 5)
+
+        # Integrator - Progressive Photon Map variables
+        MitsubaRenderSetting.addBooleanAttribute(nAttr, "mProgressivePhotonMapUseInfiniteDepth", "iProgressivePhotonMapUseInfiniteDepth", "ippmuid", True)
+        MitsubaRenderSetting.addIntegerAttribute(nAttr, "mProgressivePhotonMapMaxDepth", "iProgressivePhotonMapMaxDepth", "ippmmd", -1)
+        MitsubaRenderSetting.addIntegerAttribute(nAttr, "mProgressivePhotonMapPhotonCount", "iProgressivePhotonMapPhotonCount", "ippmpc", 250000)
+        MitsubaRenderSetting.addFloatAttribute(nAttr,   "mProgressivePhotonMapInitialRadius", "iProgressivePhotonMapInitialRadius", "ippmir", 0)
+        MitsubaRenderSetting.addFloatAttribute(nAttr,   "mProgressivePhotonMapAlpha", "iProgressivePhotonMapAlpha", "ippma", 0.7)
+        MitsubaRenderSetting.addIntegerAttribute(nAttr, "mProgressivePhotonMapGranularity", "iProgressivePhotonMapGranularity", "ippmg", 0)
+        MitsubaRenderSetting.addIntegerAttribute(nAttr, "mProgressivePhotonMapRRDepth", "iProgressivePhotonMapRRDepth", "ippmrrd", 5)
+        MitsubaRenderSetting.addIntegerAttribute(nAttr, "mProgressivePhotonMapMaxPasses", "iProgressivePhotonMapMaxPasses", "ippmmp", 10)
+
+        # Integrator - Stochastic Progressive Photon Map variables
+        MitsubaRenderSetting.addBooleanAttribute(nAttr, "mStochasticProgressivePhotonMapUseInfiniteDepth", "iStochasticProgressivePhotonMapUseInfiniteDepth", "isppmuid", True)
+        MitsubaRenderSetting.addIntegerAttribute(nAttr, "mStochasticProgressivePhotonMapMaxDepth", "iStochasticProgressivePhotonMapMaxDepth", "isppmmd", -1)
+        MitsubaRenderSetting.addIntegerAttribute(nAttr, "mStochasticProgressivePhotonMapPhotonCount", "iStochasticProgressivePhotonMapPhotonCount", "isppmpc", 250000)
+        MitsubaRenderSetting.addFloatAttribute(nAttr,   "mStochasticProgressivePhotonMapInitialRadius", "iStochasticProgressivePhotonMapInitialRadius", "isppmir", 0)
+        MitsubaRenderSetting.addFloatAttribute(nAttr,   "mStochasticProgressivePhotonMapAlpha", "iStochasticProgressivePhotonMapAlpha", "isppma", 0.7)
+        MitsubaRenderSetting.addIntegerAttribute(nAttr, "mStochasticProgressivePhotonMapGranularity", "iStochasticProgressivePhotonMapGranularity", "isppmg", 0)
+        MitsubaRenderSetting.addIntegerAttribute(nAttr, "mStochasticProgressivePhotonMapRRDepth", "iStochasticProgressivePhotonMapRRDepth", "isppmrrd", 5)
+        MitsubaRenderSetting.addIntegerAttribute(nAttr, "mStochasticProgressivePhotonMapMaxPasses", "iStochasticProgressivePhotonMapMaxPasses", "isppmmp", 10)
+
     except:
         sys.stderr.write("Failed to create and add attributes\n")
         raise
@@ -279,20 +320,38 @@ def nodeInitializer():
         # Integrator - Photon Map variables
         MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mPhotonMapDirectSamples)
         MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mPhotonMapGlossySamples)
-
         MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mPhotonMapUseInfiniteDepth)
         MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mPhotonMapMaxDepth)
         MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mPhotonMapGlobalPhotons)
         MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mPhotonMapCausticPhotons)
         MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mPhotonMapVolumePhotons)
-
         MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mPhotonMapGlobalLookupRadius)
         MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mPhotonMapCausticLookupRadius)
-        MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mPhotonMapLookupSize)
-        
+        MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mPhotonMapLookupSize)        
         MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mPhotonMapGranularity)
         MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mPhotonMapHideEmitters)
         MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mPhotonMapRRDepth)
+
+        # Integrator - Progressive Photon Map variables
+        MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mProgressivePhotonMapUseInfiniteDepth)
+        MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mProgressivePhotonMapMaxDepth)
+        MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mProgressivePhotonMapPhotonCount)
+        MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mProgressivePhotonMapInitialRadius)
+        MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mProgressivePhotonMapAlpha)
+        MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mProgressivePhotonMapGranularity)
+        MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mProgressivePhotonMapRRDepth)
+        MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mProgressivePhotonMapMaxPasses)
+
+        # Integrator - Stochastic Progressive Photon Map variables
+        MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mStochasticProgressivePhotonMapUseInfiniteDepth)
+        MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mStochasticProgressivePhotonMapMaxDepth)
+        MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mStochasticProgressivePhotonMapPhotonCount)
+        MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mStochasticProgressivePhotonMapInitialRadius)
+        MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mStochasticProgressivePhotonMapAlpha)
+        MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mStochasticProgressivePhotonMapGranularity)
+        MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mStochasticProgressivePhotonMapRRDepth)
+        MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mStochasticProgressivePhotonMapMaxPasses)
+
     except:
         sys.stderr.write("Failed to add attributes\n")
         raise
