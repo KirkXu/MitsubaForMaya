@@ -8,8 +8,8 @@ import maya.OpenMayaMPx as OpenMayaMPx
 
 import pymel.core
 
-from MitsubaForMaya import materialNodeTypes
-import MitsubaRenderSettingsUI
+# Will be populated as materials are registered with Maya
+materialNodeTypes = []
 
 #
 # IO functions
@@ -73,6 +73,307 @@ def getTextureFile(material, connectionAttr):
 
     return fileTexture
 
+def writeShaderSmoothCoating(material, materialName, outFile, tabbedSpace):
+    intIOR = cmds.getAttr(material+".intIOR")
+    extIOR = cmds.getAttr(material+".extIOR")
+    thickness = cmds.getAttr(material+".thickness")
+    sigmaA = cmds.getAttr(material+".sigmaA")
+    specularReflectance = cmds.getAttr(material+".specularReflectance")
+
+    outFile.write(tabbedSpace + " <bsdf type=\"coating\" id=\"" + materialName + "\">\n")
+    outFile.write(tabbedSpace + "     <float name=\"intIOR\" value=\"" + str(intIOR) + "\"/>\n")
+    outFile.write(tabbedSpace + "     <float name=\"extIOR\" value=\"" + str(extIOR) + "\"/>\n")
+    outFile.write(tabbedSpace + "     <float name=\"thickness\" value=\"" + str(thickness) + "\"/>\n")
+    outFile.write(tabbedSpace + "     <srgb name=\"sigmaA\" value=\"" + str(sigmaA[0][0]) + " " + str(sigmaA[0][1]) + " " + str(sigmaA[0][2]) + "\"/>\n")
+    outFile.write(tabbedSpace + "     <srgb name=\"specularReflectance\" value=\"" + str(specularReflectance[0][0]) + " " + str(specularReflectance[0][1]) + " " + str(specularReflectance[0][2]) + "\"/>\n")
+    
+    #Nested bsdf
+    hasNestedBSDF = False
+    connections = cmds.listConnections(material, connections=True)
+    for i in range(len(connections)):
+        if i%2==1:
+            connection = connections[i]
+            connectionType = cmds.nodeType(connection)
+            if connectionType in materialNodeTypes and connections[i-1]==material+".bsdf":
+                #We've found the nested bsdf, so write it
+                writeShader(connection, connection, outFile, tabbedSpace+"    ")
+                hasNestedBSDF = True
+
+    if not hasNestedBSDF:
+        #Write a basic diffuse using the bsdf attribute
+        bsdf = cmds.getAttr(material+".bsdf")
+        outFile.write(tabbedSpace + "     <bsdf type=\"diffuse\">\n")
+        outFile.write(tabbedSpace + "          <srgb name=\"reflectance\" value=\"" + str(bsdf[0][0]) + " " + str(bsdf[0][1]) + " " + str(bsdf[0][2]) + "\"/>\n")
+        outFile.write(tabbedSpace + "     </bsdf>\n")
+
+    outFile.write(tabbedSpace + " </bsdf>\n")
+
+def writeShaderConductor(material, materialName, outFile, tabbedSpace):
+    conductorMaterial = cmds.getAttr(material+".material", asString=True)
+    extEta = cmds.getAttr(material+".extEta")
+    outFile.write(tabbedSpace + " <bsdf type=\"conductor\"   id=\"" + materialName + "\">\n")
+    outFile.write(tabbedSpace + "     <string name=\"material\" value=\"" + str(conductorMaterial) + "\"/>\n")
+    outFile.write(tabbedSpace + "     <float name=\"extEta\" value=\"" + str(extEta) + "\"/>\n")
+    outFile.write(tabbedSpace + " </bsdf>\n")
+
+def writeShaderDielectric(material, materialName, outFile, tabbedSpace):
+    #Get all of the required attributes
+    intIOR = cmds.getAttr(material+".intIOR")
+    extIOR = cmds.getAttr(material+".extIOR")
+
+    #Write material
+    outFile.write(tabbedSpace + " <bsdf type=\"dielectric\" id=\"" + materialName + "\">\n")
+    outFile.write(tabbedSpace + "     <float name=\"intIOR\" value=\"" + str(intIOR) + "\"/>\n")
+    outFile.write(tabbedSpace + "     <float name=\"extIOR\" value=\"" + str(extIOR) + "\"/>\n")
+    outFile.write(tabbedSpace + " </bsdf>\n\n")
+
+def writeShaderDiffuseTransmitter(material, materialName, outFile, tabbedSpace):
+    transmittance = cmds.getAttr(material+".reflectance")
+    outFile.write(tabbedSpace + " <bsdf type=\"diffuse\" id=\"" + materialName + "\">\n")
+    outFile.write(tabbedSpace + "     <srgb name=\"reflectance\" value=\"" + str(transmittance[0][0]) + " " + str(transmittance[0][1]) + " " + str(transmittance[0][2]) + "\"/>\n")
+    outFile.write(tabbedSpace + " </bsdf>\n")
+
+def writeShaderDiffuse(material, materialName, outFile, tabbedSpace):
+    outFile.write(tabbedSpace + " <bsdf type=\"diffuse\" id=\"" + materialName + "\">\n")
+
+    #texture
+    connectionAttr = "reflectance"
+    fileTexture = getTextureFile(material, connectionAttr)
+
+    if fileTexture:
+        outFile.write(tabbedSpace + "     <texture type=\"bitmap\" name=\"reflectance\">\n")
+        outFile.write(tabbedSpace + "         <string name=\"filename\" value=\"" + fileTexture + "\"/>")
+        outFile.write(tabbedSpace + "     </texture>\n")
+    else:
+        reflectance = cmds.getAttr(material+".reflectance")
+        outFile.write(tabbedSpace + "     <srgb name=\"reflectance\" value=\"" + str(reflectance[0][0]) + " " + str(reflectance[0][1]) + " " + str(reflectance[0][2]) + "\"/>\n")
+
+    outFile.write(tabbedSpace + " </bsdf>\n")
+
+def writeShaderPhong(material, materialName, outFile, tabbedSpace):
+    exponent = cmds.getAttr(material+".exponent")
+    specularReflectance = cmds.getAttr(material+".specularReflectance")
+    diffuseReflectance = cmds.getAttr(material+".diffuseReflectance")
+
+    outFile.write(tabbedSpace + " <bsdf type=\"phong\" id=\"" + materialName + "\">\n")
+    outFile.write(tabbedSpace + "     <float name=\"exponent\" value=\"" + str(exponent) + "\"/>\n")
+    outFile.write(tabbedSpace + "     <srgb name=\"specularReflectance\" value=\"" + str(specularReflectance[0][0]) + " " + str(specularReflectance[0][1]) + " " + str(specularReflectance[0][2]) + "\"/>\n")
+    outFile.write(tabbedSpace + "     <srgb name=\"diffuseReflectance\" value=\"" + str(diffuseReflectance[0][0]) + " " + str(diffuseReflectance[0][1]) + " " + str(diffuseReflectance[0][2]) + "\"/>\n")
+    outFile.write(tabbedSpace + " </bsdf>\n")
+
+def writeShaderPlastic(material, materialName, outFile, tabbedSpace):
+    intIOR = cmds.getAttr(material+".intIOR")
+    extIOR = cmds.getAttr(material+".extIOR")
+    specularReflectance = cmds.getAttr(material+".specularReflectance")
+    diffuseReflectance = cmds.getAttr(material+".diffuseReflectance")
+
+    outFile.write(tabbedSpace + " <bsdf type=\"plastic\" id=\"" + materialName + "\">\n")
+    outFile.write(tabbedSpace + "     <float name=\"intIOR\" value=\"" + str(intIOR) + "\"/>\n")
+    outFile.write(tabbedSpace + "     <float name=\"extIOR\" value=\"" + str(extIOR) + "\"/>\n")
+    outFile.write(tabbedSpace + "     <srgb name=\"specularReflectance\" value=\"" + str(specularReflectance[0][0]) + " " + str(specularReflectance[0][1]) + " " + str(specularReflectance[0][2]) + "\"/>\n")
+    outFile.write(tabbedSpace + "     <srgb name=\"diffuseReflectance\" value=\"" + str(diffuseReflectance[0][0]) + " " + str(diffuseReflectance[0][1]) + " " + str(diffuseReflectance[0][2]) + "\"/>\n")
+    outFile.write(tabbedSpace + " </bsdf>\n")
+
+def writeShaderRoughCoating(material, materialName, outFile, tabbedSpace):
+    distribution = cmds.getAttr(material+".distribution", asString=True)
+    alpha = cmds.getAttr(material+".alpha")
+    intIOR = cmds.getAttr(material+".intIOR")
+    extIOR = cmds.getAttr(material+".extIOR")
+    thickness = cmds.getAttr(material+".thickness")
+    sigmaA = cmds.getAttr(material+".sigmaA")
+    specularReflectance = cmds.getAttr(material+".specularReflectance")
+
+    outFile.write(tabbedSpace + " <bsdf type=\"roughcoating\" id=\"" + materialName + "\">\n")
+    outFile.write(tabbedSpace + "     <string name=\"distribution\" value=\"" + str(distribution) + "\"/>\n")
+    outFile.write(tabbedSpace + "     <float name=\"alpha\" value=\"" + str(alpha) + "\"/>\n")
+    outFile.write(tabbedSpace + "     <float name=\"intIOR\" value=\"" + str(intIOR) + "\"/>\n")
+    outFile.write(tabbedSpace + "     <float name=\"extIOR\" value=\"" + str(extIOR) + "\"/>\n")
+    outFile.write(tabbedSpace + "     <float name=\"thickness\" value=\"" + str(thickness) + "\"/>\n")
+    outFile.write(tabbedSpace + "     <srgb name=\"sigmaA\" value=\"" + str(sigmaA[0][0]) + " " + str(sigmaA[0][1]) + " " + str(sigmaA[0][2]) + "\"/>\n")
+    outFile.write(tabbedSpace + "     <srgb name=\"specularReflectance\" value=\"" + str(specularReflectance[0][0]) + " " + str(specularReflectance[0][1]) + " " + str(specularReflectance[0][2]) + "\"/>\n")
+    
+    #Nested bsdf
+    hasNestedBSDF = False
+    connections = cmds.listConnections(material, connections=True)
+    for i in range(len(connections)):
+        if i%2==1:
+            connection = connections[i]
+            connectionType = cmds.nodeType(connection)
+            if connectionType in materialNodeTypes and connections[i-1]==material+".bsdf":
+                #We've found the nested bsdf, so write it
+                writeShader(connection, connection, outFile, tabbedSpace+"    ")
+                hasNestedBSDF=True
+    
+    if not hasNestedBSDF:
+        #Write a basic diffuse using the bsdf attribute
+        bsdf = cmds.getAttr(material+".bsdf")
+        outFile.write(tabbedSpace + "     <bsdf type=\"diffuse\">\n")
+        outFile.write(tabbedSpace + "          <srgb name=\"reflectance\" value=\"" + str(bsdf[0][0]) + " " + str(bsdf[0][1]) + " " + str(bsdf[0][2]) + "\"/>\n")
+        outFile.write(tabbedSpace + "     </bsdf>\n")
+
+    outFile.write(tabbedSpace + " </bsdf>\n")
+
+def writeShaderRoughConductor(material, materialName, outFile, tabbedSpace):
+    outFile.write(tabbedSpace + " <bsdf type=\"roughconductor\" id=\"" + materialName + "\">\n")
+
+    distribution = cmds.getAttr(material+".distribution", asString=True)
+    #We have different behaviour depending on the distribution
+    outFile.write(tabbedSpace + "     <string name=\"distribution\" value=\"" + str(distribution) + "\"/>\n")
+    #Using Anisotropic Phong, use alphaUV
+    if distribution=="as":
+        alphaUV = cmds.getAttr(material+".alphaUV")
+        outFile.write(tabbedSpace + "     <float name=\"alphaU\" value=\"" + str(alphaUV[0]) + "\"/>\n")
+        outFile.write(tabbedSpace + "     <float name=\"alphaV\" value=\"" + str(alphaUV[1]) + "\"/>\n")
+    else:
+        alpha = cmds.getAttr(material+".alpha")
+        outFile.write(tabbedSpace + "     <float name=\"alpha\" value=\"" + str(alpha) + "\"/>\n")
+
+    #write the rest
+    conductorMaterial = cmds.getAttr(material+".material")
+    extEta = cmds.getAttr(material+"extEta")
+    outFile.write(tabbedSpace + "     <string name=\"material\" value=\"" + str(conductorMaterial) + "\"/>\n")
+    outFile.write(tabbedSpace + "     <float name=\"extEta\" value=\"" + str(extEta) + "\"/>\n")
+    outFile.write(tabbedSpace + " </bsdf>\n")
+
+def writeShaderRoughDielectric(material, materialName, outFile, tabbedSpace):
+    #Get all of the required attributes
+    intIOR = cmds.getAttr(material+".intIOR")
+    extIOR = cmds.getAttr(material+".extIOR")
+    specularReflectance = cmds.getAttr(material+".specularReflectance")
+    specularTransmittance = cmds.getAttr(material+".specularTransmittance")
+
+    #Write material
+    outFile.write(tabbedSpace + " <bsdf type=\"dielectric\" id=\"" + materialName + "\">\n")
+    
+    distribution = cmds.getAttr(material+".distribution", asString=True)
+    #We have different behaviour depending on the distribution
+    outFile.write(tabbedSpace + "     <string name=\"distribution\" value=\"" + str(distribution) + "\"/>\n")
+    #Using Anisotropic Phong, use alphaUV
+    if distribution=="as":
+        alphaUV = cmds.getAttr(material+".alphaUV")
+        outFile.write(tabbedSpace + "     <float name=\"alphaU\" value=\"" + str(alphaUV[0]) + "\"/>\n")
+        outFile.write(tabbedSpace + "     <float name=\"alphaV\" value=\"" + str(alphaUV[1]) + "\"/>\n")
+    else:
+        alpha = cmds.getAttr(material+".alpha")
+        outFile.write(tabbedSpace + "     <float name=\"alpha\" value=\"" + str(alpha) + "\"/>\n")
+
+    outFile.write(tabbedSpace + "     <float name=\"intIOR\" value=\"" + str(intIOR) + "\"/>\n")
+    outFile.write(tabbedSpace + "     <float name=\"extIOR\" value=\"" + str(extIOR) + "\"/>\n")
+    outFile.write(tabbedSpace + "     <srgb name=\"specularReflectance\" value=\"" + str(specularReflectance[0][0]) + " " + str(specularReflectance[0][1]) + " " + str(specularReflectance[0][2]) + "\"/>\n")
+    outFile.write(tabbedSpace + "     <srgb name=\"specularTransmittance\" value=\"" + str(specularTransmittance[0][0]) + " " + str(specularTransmittance[0][1]) + " " + str(specularTransmittance[0][2]) + "\"/>\n")
+    outFile.write(tabbedSpace + " </bsdf>\n\n")
+
+def writeShaderRoughDiffuse(material, materialName, outFile, tabbedSpace):
+    reflectance = cmds.getAttr(material+".reflectance")
+    alpha = cmds.getAttr(material+".alpha")
+    useFastApprox = cmds.getAttr(material+".useFastApprox")
+
+    outFile.write(tabbedSpace + " <bsdf type=\"roughdiffuse\" id=\"" + materialName + "\">\n")
+    outFile.write(tabbedSpace + "     <srgb name=\"reflectance\" value=\"" + str(reflectance[0][0]) + " " + str(reflectance[0][1]) + " " + str(reflectance[0][2]) + "\"/>\n")
+    outFile.write(tabbedSpace + "     <float name=\"alpha\" value=\"" + str(alpha) + "\"/>\n")
+    outFile.write(tabbedSpace + "     <boolean name=\"useFastApprox\" value=\"" + str(useFastApprox) + "\"/>\n")
+    outFile.write(tabbedSpace + " </bsdf>\n")
+
+def writeShaderRoughPlastic(material, materialName, outFile, tabbedSpace):
+    distribution = cmds.getAttr(material+".distribution", asString=True)
+    alpha = cmds.getAttr(material+".alpha")
+    intIOR = cmds.getAttr(material+".intIOR")
+    extIOR = cmds.getAttr(material+".extIOR")
+    specularReflectance = cmds.getAttr(material+".specularReflectance")
+    diffuseReflectance = cmds.getAttr(material+".diffuseReflectance")
+
+    outFile.write(tabbedSpace + " <bsdf type=\"roughplastic\" id=\"" + materialName + "\">\n")
+    outFile.write(tabbedSpace + "     <string name=\"distribution\" value=\"" + str(distribution) + "\"/>\n")
+    outFile.write(tabbedSpace + "     <float name=\"alpha\" value=\"" + str(alpha) + "\"/>\n")
+    outFile.write(tabbedSpace + "     <float name=\"intIOR\" value=\"" + str(intIOR) + "\"/>\n")
+    outFile.write(tabbedSpace + "     <float name=\"extIOR\" value=\"" + str(extIOR) + "\"/>\n")
+    outFile.write(tabbedSpace + "     <srgb name=\"specularReflectance\" value=\"" + str(specularReflectance[0][0]) + " " + str(specularReflectance[0][1]) + " " + str(specularReflectance[0][2]) + "\"/>\n")
+    outFile.write(tabbedSpace + "     <srgb name=\"diffuseReflectance\" value=\"" + str(diffuseReflectance[0][0]) + " " + str(diffuseReflectance[0][1]) + " " + str(diffuseReflectance[0][2]) + "\"/>\n")
+    outFile.write(tabbedSpace + " </bsdf>\n")
+
+def writeShaderThinDielectric(material, materialName, outFile, tabbedSpace):
+    #Get all of the required attributes
+    intIOR = cmds.getAttr(material+".intIOR")
+    extIOR = cmds.getAttr(material+".extIOR")
+
+    #Write material
+    outFile.write(tabbedSpace + " <bsdf type=\"thindielectric\" id=\"" + materialName + "\">\n")
+    outFile.write(tabbedSpace + "     <float name=\"intIOR\" value=\"" + str(intIOR) + "\"/>\n")
+    outFile.write(tabbedSpace + "     <float name=\"extIOR\" value=\"" + str(extIOR) + "\"/>\n")
+    outFile.write(tabbedSpace + " </bsdf>\n\n")
+
+def writeShaderTwoSided(material, materialName, outFile, tabbedSpace):
+    outFile.write(tabbedSpace + " <bsdf type=\"twosided\" id=\"" + materialName + "\">\n")
+    #Nested bsdf
+    connections = cmds.listConnections(material, connections=True)
+    for i in range(len(connections)):
+        if i%2==1:
+            connection = connections[i]
+            connectionType = cmds.nodeType(connection)
+            if connectionType in materialNodeTypes and connections[i-1]==material+".bsdf":
+                #We've found the nested bsdf, so write it
+                writeShader(connection, outFile, tabbedSpace+"    ")
+
+    outFile.write(tabbedSpace + " </bsdf>\n")
+
+def writeShaderWard(material, materialName, outFile, tabbedSpace):
+    variant = cmds.getAttr(material+".variant", asString=True)
+    alphaUV = cmds.getAttr(material+".alphaUV")
+    specularReflectance = cmds.getAttr(material+".specularReflectance")
+    diffuseReflectance = cmds.getAttr(material+".diffuseReflectance")
+
+    outFile.write(tabbedSpace + " <bsdf type=\"phong\" id=\"" + materialName + "\">\n")
+    outFile.write(tabbedSpace + "     <string name=\"variant\" value=\"" + str(variant) + "\"/>\n")
+    outFile.write(tabbedSpace + "     <float name=\"alphaU\" value=\"" + str(alphaUV[0][0]) + "\"/>\n")
+    outFile.write(tabbedSpace + "     <float name=\"alphaV\" value=\"" + str(alphaUV[0][1]) + "\"/>\n")
+    outFile.write(tabbedSpace + "     <srgb name=\"specularReflectance\" value=\"" + str(specularReflectance[0][0]) + " " + str(specularReflectance[0][1]) + " " + str(specularReflectance[0][2]) + "\"/>\n")
+    outFile.write(tabbedSpace + "     <srgb name=\"diffuseReflectance\" value=\"" + str(diffuseReflectance[0][0]) + " " + str(diffuseReflectance[0][1]) + " " + str(diffuseReflectance[0][2]) + "\"/>\n")
+    outFile.write(tabbedSpace + " </bsdf>\n")
+
+def writeShaderIrawan(material, materialName, outFile, tabbedSpace):
+    outFile.write(tabbedSpace + " <bsdf type=\"irawan\" id=\"" + materialName + "\">\n")
+
+    # filename
+    filename = cmds.getAttr(material+".filename", asString=True)
+    outFile.write(tabbedSpace + "     <string name=\"filename\" value=\"" + filename + "\"/>\n")
+
+    # repeat
+    repeatu = cmds.getAttr(material+".repeatu")
+    outFile.write(tabbedSpace + "     <float name=\"repeatU\" value=\"" + str(repeatu) + "\"/>\n")
+
+    repeatv = cmds.getAttr(material+".repeatv")
+    outFile.write(tabbedSpace + "     <float name=\"repeatV\" value=\"" + str(repeatv) + "\"/>\n")
+
+    #warp and weft
+    warpkd = cmds.getAttr(material+".warpkd")
+    outFile.write(tabbedSpace + "     <rgb name=\"warp_kd\" value=\"" + str(warpkd[0][0]) + " " + str(warpkd[0][1]) + " " + str(warpkd[0][2]) + "\"/>\n")
+
+    warpks = cmds.getAttr(material+".warpks")
+    outFile.write(tabbedSpace + "     <rgb name=\"warp_ks\" value=\"" + str(warpks[0][0]) + " " + str(warpks[0][1]) + " " + str(warpks[0][2]) + "\"/>\n")
+
+    weftkd = cmds.getAttr(material+".weftkd")
+    outFile.write(tabbedSpace + "     <rgb name=\"weft_kd\" value=\"" + str(weftkd[0][0]) + " " + str(weftkd[0][1]) + " " + str(weftkd[0][2]) + "\"/>\n")
+
+    weftks = cmds.getAttr(material+".weftks")
+    outFile.write(tabbedSpace + "     <rgb name=\"weft_ks\" value=\"" + str(weftks[0][0]) + " " + str(weftks[0][1]) + " " + str(weftks[0][2]) + "\"/>\n")
+
+    outFile.write(tabbedSpace + " </bsdf>\n")
+
+def writeShaderObjectAreaLight(material, materialName, outFile, tabbedSpace):
+    outFile.write(tabbedSpace + " <emitter type=\"area\" id=\"" + materialName + "\">\n")
+
+    color = cmds.getAttr(material+".radiance")
+    outFile.write(tabbedSpace + "     <rgb name=\"radiance\" value=\"" + str(color[0][0]) + " " + str(color[0][1]) + " " + str(color[0][2]) + "\"/>\n")
+
+    #radiance = cmds.getAttr(material+".radiance")
+    #outFile.write(tabbedSpace + "     <spectrum name=\"radiance\" value=\"" + str(radiance) + "\"/>\n")
+
+    samplingWeight = cmds.getAttr(material+".samplingWeight")
+    outFile.write(tabbedSpace + "     <float name=\"samplingWeight\" value=\"" + str(samplingWeight) + "\"/>\n")
+
+    outFile.write(tabbedSpace + " </emitter>\n")
+
+
 '''
 Write a surface material (material) to a Mitsuba scene file (outFile)
 tabbedSpace is a string of blank space to account for recursive xml
@@ -80,315 +381,71 @@ tabbedSpace is a string of blank space to account for recursive xml
 def writeShader(material, materialName, outFile, tabbedSpace):
     matType = cmds.nodeType(material)
     
-    if matType=="MitsubaBumpShader":
-        print "bump"
-
-    elif matType=="MitsubaSmoothCoatingShader":
-        intIOR = cmds.getAttr(material+".intIOR")
-        extIOR = cmds.getAttr(material+".extIOR")
-        thickness = cmds.getAttr(material+".thickness")
-        sigmaA = cmds.getAttr(material+".sigmaA")
-        specularReflectance = cmds.getAttr(material+".specularReflectance")
-
-        outFile.write(tabbedSpace + " <bsdf type=\"coating\" id=\"" + materialName + "\">\n")
-        outFile.write(tabbedSpace + "     <float name=\"intIOR\" value=\"" + str(intIOR) + "\"/>\n")
-        outFile.write(tabbedSpace + "     <float name=\"extIOR\" value=\"" + str(extIOR) + "\"/>\n")
-        outFile.write(tabbedSpace + "     <float name=\"thickness\" value=\"" + str(thickness) + "\"/>\n")
-        outFile.write(tabbedSpace + "     <srgb name=\"sigmaA\" value=\"" + str(sigmaA[0][0]) + " " + str(sigmaA[0][1]) + " " + str(sigmaA[0][2]) + "\"/>\n")
-        outFile.write(tabbedSpace + "     <srgb name=\"specularReflectance\" value=\"" + str(specularReflectance[0][0]) + " " + str(specularReflectance[0][1]) + " " + str(specularReflectance[0][2]) + "\"/>\n")
-        
-        #Nested bsdf
-        hasNestedBSDF = False
-        connections = cmds.listConnections(material, connections=True)
-        for i in range(len(connections)):
-            if i%2==1:
-                connection = connections[i]
-                connectionType = cmds.nodeType(connection)
-                if connectionType in materialNodeTypes and connections[i-1]==material+".bsdf":
-                    #We've found the nested bsdf, so write it
-                    writeShader(connection, connection, outFile, tabbedSpace+"    ")
-                    hasNestedBSDF = True
-
-        if not hasNestedBSDF:
-            #Write a basic diffuse using the bsdf attribute
-            bsdf = cmds.getAttr(material+".bsdf")
-            outFile.write(tabbedSpace + "     <bsdf type=\"diffuse\">\n")
-            outFile.write(tabbedSpace + "          <srgb name=\"reflectance\" value=\"" + str(bsdf[0][0]) + " " + str(bsdf[0][1]) + " " + str(bsdf[0][2]) + "\"/>\n")
-            outFile.write(tabbedSpace + "     </bsdf>\n")
-
-        outFile.write(tabbedSpace + " </bsdf>\n")
+    if matType=="MitsubaSmoothCoatingShader":
+        writeShaderSmoothCoating(material, materialName, outFile, tabbedSpace)
     
     elif matType=="MitsubaConductorShader":
-        conductorMaterial = cmds.getAttr(material+".material", asString=True)
-        extEta = cmds.getAttr(material+".extEta")
-        outFile.write(tabbedSpace + " <bsdf type=\"conductor\"   id=\"" + materialName + "\">\n")
-        outFile.write(tabbedSpace + "     <string name=\"material\" value=\"" + str(conductorMaterial) + "\"/>\n")
-        outFile.write(tabbedSpace + "     <float name=\"extEta\" value=\"" + str(extEta) + "\"/>\n")
-        outFile.write(tabbedSpace + " </bsdf>\n")
+        writeShaderConductor(material, materialName, outFile, tabbedSpace)
 
     elif matType=="MitsubaDielectricShader":
-        #Get all of the required attributes
-        intIOR = cmds.getAttr(material+".intIOR")
-        extIOR = cmds.getAttr(material+".extIOR")
-
-        #Write material
-        outFile.write(tabbedSpace + " <bsdf type=\"dielectric\" id=\"" + materialName + "\">\n")
-        outFile.write(tabbedSpace + "     <float name=\"intIOR\" value=\"" + str(intIOR) + "\"/>\n")
-        outFile.write(tabbedSpace + "     <float name=\"extIOR\" value=\"" + str(extIOR) + "\"/>\n")
-        outFile.write(tabbedSpace + " </bsdf>\n\n")
+        writeShaderDielectric(material, materialName, outFile, tabbedSpace)
 
     elif matType=="MitsubaDiffuseTransmitterShader":
-        transmittance = cmds.getAttr(material+".reflectance")
-        outFile.write(tabbedSpace + " <bsdf type=\"diffuse\" id=\"" + materialName + "\">\n")
-        outFile.write(tabbedSpace + "     <srgb name=\"reflectance\" value=\"" + str(transmittance[0][0]) + " " + str(transmittance[0][1]) + " " + str(transmittance[0][2]) + "\"/>\n")
-        outFile.write(tabbedSpace + " </bsdf>\n")
+        writeShaderDiffuseTransmitter(material, materialName, outFile, tabbedSpace)
 
     elif matType=="MitsubaDiffuseShader":
-        outFile.write(tabbedSpace + " <bsdf type=\"diffuse\" id=\"" + materialName + "\">\n")
+        writeShaderDiffuse(material, materialName, outFile, tabbedSpace)
 
-        #texture
-        connectionAttr = "reflectance"
-        fileTexture = getTextureFile(material, connectionAttr)
+    elif matType=="MitsubaPhongShader":
+        writeShaderPhong(material, materialName, outFile, tabbedSpace)
 
-        if fileTexture:
-            outFile.write(tabbedSpace + "     <texture type=\"bitmap\" name=\"reflectance\">\n")
-            outFile.write(tabbedSpace + "         <string name=\"filename\" value=\"" + fileTexture + "\"/>")
-            outFile.write(tabbedSpace + "     </texture>\n")
-        else:
-            reflectance = cmds.getAttr(material+".reflectance")
-            outFile.write(tabbedSpace + "     <srgb name=\"reflectance\" value=\"" + str(reflectance[0][0]) + " " + str(reflectance[0][1]) + " " + str(reflectance[0][2]) + "\"/>\n")
+    elif matType=="MitsubaPlasticShader":
+        writeShaderPlastic(material, materialName, outFile, tabbedSpace)
 
-        outFile.write(tabbedSpace + " </bsdf>\n")
+    elif matType=="MitsubaRoughCoatingShader":
+        writeShaderRoughCoating(material, materialName, outFile, tabbedSpace)
+
+    elif matType=="MitsubaRoughConductorShader":
+        writeShaderRoughConductor(material, materialName, outFile, tabbedSpace)
+
+    elif matType=="MitsubaRoughDielectricShader":
+        writeShaderRoughDielectric(material, materialName, outFile, tabbedSpace)
+
+    elif matType=="MitsubaRoughDiffuseShader":
+        writeShaderRoughDiffuse(material, materialName, outFile, tabbedSpace)
+
+    elif matType=="MitsubaRoughPlasticShader":
+        writeShaderRoughPlastic(material, materialName, outFile, tabbedSpace)
+
+    elif matType=="MitsubaThinDielectricShader":
+        writeShaderThinDielectric(material, materialName, outFile, tabbedSpace)
+
+    elif matType=="MitsubaTwoSidedShader":
+        writeShaderTwoSided(material, materialName, outFile, tabbedSpace)
+
+    elif matType=="MitsubaWardShader":
+        writeShaderWard(material, materialName, outFile, tabbedSpace)
+
+    elif matType=="MitsubaIrawanShader":
+        writeShaderIrawan(material, materialName, outFile, tabbedSpace)
+
+    elif matType=="MitsubaObjectAreaLightShader":
+        writeShaderObjectAreaLight(material, materialName, outFile, tabbedSpace)
+
+    else:
+        print( "Unsupported Material : %s" % materialName )
+
+    '''
+    elif matType=="MitsubaBumpShader":
+        print "bump"
 
     elif matType=="MitsubaMaskShader":
         print "mask"
 
     elif matType=="MitsubaMixtureShader":
         print "mixture"
+    '''
 
-    elif matType=="MitsubaPhongShader":
-        exponent = cmds.getAttr(material+".exponent")
-        specularReflectance = cmds.getAttr(material+".specularReflectance")
-        diffuseReflectance = cmds.getAttr(material+".diffuseReflectance")
-
-        outFile.write(tabbedSpace + " <bsdf type=\"phong\" id=\"" + materialName + "\">\n")
-        outFile.write(tabbedSpace + "     <float name=\"exponent\" value=\"" + str(exponent) + "\"/>\n")
-        outFile.write(tabbedSpace + "     <srgb name=\"specularReflectance\" value=\"" + str(specularReflectance[0][0]) + " " + str(specularReflectance[0][1]) + " " + str(specularReflectance[0][2]) + "\"/>\n")
-        outFile.write(tabbedSpace + "     <srgb name=\"diffuseReflectance\" value=\"" + str(diffuseReflectance[0][0]) + " " + str(diffuseReflectance[0][1]) + " " + str(diffuseReflectance[0][2]) + "\"/>\n")
-        outFile.write(tabbedSpace + " </bsdf>\n")
-
-    elif matType=="MitsubaPlasticShader":
-        intIOR = cmds.getAttr(material+".intIOR")
-        extIOR = cmds.getAttr(material+".extIOR")
-        specularReflectance = cmds.getAttr(material+".specularReflectance")
-        diffuseReflectance = cmds.getAttr(material+".diffuseReflectance")
-
-        outFile.write(tabbedSpace + " <bsdf type=\"plastic\" id=\"" + materialName + "\">\n")
-        outFile.write(tabbedSpace + "     <float name=\"intIOR\" value=\"" + str(intIOR) + "\"/>\n")
-        outFile.write(tabbedSpace + "     <float name=\"extIOR\" value=\"" + str(extIOR) + "\"/>\n")
-        outFile.write(tabbedSpace + "     <srgb name=\"specularReflectance\" value=\"" + str(specularReflectance[0][0]) + " " + str(specularReflectance[0][1]) + " " + str(specularReflectance[0][2]) + "\"/>\n")
-        outFile.write(tabbedSpace + "     <srgb name=\"diffuseReflectance\" value=\"" + str(diffuseReflectance[0][0]) + " " + str(diffuseReflectance[0][1]) + " " + str(diffuseReflectance[0][2]) + "\"/>\n")
-        outFile.write(tabbedSpace + " </bsdf>\n")
-
-
-    elif matType=="MitsubaRoughCoatingShader":
-        distribution = cmds.getAttr(material+".distribution", asString=True)
-        alpha = cmds.getAttr(material+".alpha")
-        intIOR = cmds.getAttr(material+".intIOR")
-        extIOR = cmds.getAttr(material+".extIOR")
-        thickness = cmds.getAttr(material+".thickness")
-        sigmaA = cmds.getAttr(material+".sigmaA")
-        specularReflectance = cmds.getAttr(material+".specularReflectance")
-
-        outFile.write(tabbedSpace + " <bsdf type=\"roughcoating\" id=\"" + materialName + "\">\n")
-        outFile.write(tabbedSpace + "     <string name=\"distribution\" value=\"" + str(distribution) + "\"/>\n")
-        outFile.write(tabbedSpace + "     <float name=\"alpha\" value=\"" + str(alpha) + "\"/>\n")
-        outFile.write(tabbedSpace + "     <float name=\"intIOR\" value=\"" + str(intIOR) + "\"/>\n")
-        outFile.write(tabbedSpace + "     <float name=\"extIOR\" value=\"" + str(extIOR) + "\"/>\n")
-        outFile.write(tabbedSpace + "     <float name=\"thickness\" value=\"" + str(thickness) + "\"/>\n")
-        outFile.write(tabbedSpace + "     <srgb name=\"sigmaA\" value=\"" + str(sigmaA[0][0]) + " " + str(sigmaA[0][1]) + " " + str(sigmaA[0][2]) + "\"/>\n")
-        outFile.write(tabbedSpace + "     <srgb name=\"specularReflectance\" value=\"" + str(specularReflectance[0][0]) + " " + str(specularReflectance[0][1]) + " " + str(specularReflectance[0][2]) + "\"/>\n")
-        
-        #Nested bsdf
-        hasNestedBSDF = False
-        connections = cmds.listConnections(material, connections=True)
-        for i in range(len(connections)):
-            if i%2==1:
-                connection = connections[i]
-                connectionType = cmds.nodeType(connection)
-                if connectionType in materialNodeTypes and connections[i-1]==material+".bsdf":
-                    #We've found the nested bsdf, so write it
-                    writeShader(connection, connection, outFile, tabbedSpace+"    ")
-                    hasNestedBSDF=True
-        
-        if not hasNestedBSDF:
-            #Write a basic diffuse using the bsdf attribute
-            bsdf = cmds.getAttr(material+".bsdf")
-            outFile.write(tabbedSpace + "     <bsdf type=\"diffuse\">\n")
-            outFile.write(tabbedSpace + "          <srgb name=\"reflectance\" value=\"" + str(bsdf[0][0]) + " " + str(bsdf[0][1]) + " " + str(bsdf[0][2]) + "\"/>\n")
-            outFile.write(tabbedSpace + "     </bsdf>\n")
-
-        outFile.write(tabbedSpace + " </bsdf>\n")
-
-    elif matType=="MitsubaRoughConductorShader":
-        outFile.write(tabbedSpace + " <bsdf type=\"roughconductor\" id=\"" + materialName + "\">\n")
-
-        distribution = cmds.getAttr(material+".distribution", asString=True)
-        #We have different behaviour depending on the distribution
-        outFile.write(tabbedSpace + "     <string name=\"distribution\" value=\"" + str(distribution) + "\"/>\n")
-        #Using Anisotropic Phong, use alphaUV
-        if distribution=="as":
-            alphaUV = cmds.getAttr(material+".alphaUV")
-            outFile.write(tabbedSpace + "     <float name=\"alphaU\" value=\"" + str(alphaUV[0]) + "\"/>\n")
-            outFile.write(tabbedSpace + "     <float name=\"alphaV\" value=\"" + str(alphaUV[1]) + "\"/>\n")
-        else:
-            alpha = cmds.getAttr(material+".alpha")
-            outFile.write(tabbedSpace + "     <float name=\"alpha\" value=\"" + str(alpha) + "\"/>\n")
-
-        #write the rest
-        conductorMaterial = cmds.getAttr(material+".material")
-        extEta = cmds.getAttr(material+"extEta")
-        outFile.write(tabbedSpace + "     <string name=\"material\" value=\"" + str(conductorMaterial) + "\"/>\n")
-        outFile.write(tabbedSpace + "     <float name=\"extEta\" value=\"" + str(extEta) + "\"/>\n")
-        outFile.write(tabbedSpace + " </bsdf>\n")
-
-    elif matType=="MitsubaRoughDielectricShader":
-        #Get all of the required attributes
-        intIOR = cmds.getAttr(material+".intIOR")
-        extIOR = cmds.getAttr(material+".extIOR")
-        specularReflectance = cmds.getAttr(material+".specularReflectance")
-        specularTransmittance = cmds.getAttr(material+".specularTransmittance")
-
-        #Write material
-        outFile.write(tabbedSpace + " <bsdf type=\"dielectric\" id=\"" + materialName + "\">\n")
-        
-        distribution = cmds.getAttr(material+".distribution", asString=True)
-        #We have different behaviour depending on the distribution
-        outFile.write(tabbedSpace + "     <string name=\"distribution\" value=\"" + str(distribution) + "\"/>\n")
-        #Using Anisotropic Phong, use alphaUV
-        if distribution=="as":
-            alphaUV = cmds.getAttr(material+".alphaUV")
-            outFile.write(tabbedSpace + "     <float name=\"alphaU\" value=\"" + str(alphaUV[0]) + "\"/>\n")
-            outFile.write(tabbedSpace + "     <float name=\"alphaV\" value=\"" + str(alphaUV[1]) + "\"/>\n")
-        else:
-            alpha = cmds.getAttr(material+".alpha")
-            outFile.write(tabbedSpace + "     <float name=\"alpha\" value=\"" + str(alpha) + "\"/>\n")
-
-        outFile.write(tabbedSpace + "     <float name=\"intIOR\" value=\"" + str(intIOR) + "\"/>\n")
-        outFile.write(tabbedSpace + "     <float name=\"extIOR\" value=\"" + str(extIOR) + "\"/>\n")
-        outFile.write(tabbedSpace + "     <srgb name=\"specularReflectance\" value=\"" + str(specularReflectance[0][0]) + " " + str(specularReflectance[0][1]) + " " + str(specularReflectance[0][2]) + "\"/>\n")
-        outFile.write(tabbedSpace + "     <srgb name=\"specularTransmittance\" value=\"" + str(specularTransmittance[0][0]) + " " + str(specularTransmittance[0][1]) + " " + str(specularTransmittance[0][2]) + "\"/>\n")
-        outFile.write(tabbedSpace + " </bsdf>\n\n")
-
-    elif matType=="MitsubaRoughDiffuseShader":
-        reflectance = cmds.getAttr(material+".reflectance")
-        alpha = cmds.getAttr(material+".alpha")
-        useFastApprox = cmds.getAttr(material+".useFastApprox")
-
-        outFile.write(tabbedSpace + " <bsdf type=\"roughdiffuse\" id=\"" + materialName + "\">\n")
-        outFile.write(tabbedSpace + "     <srgb name=\"reflectance\" value=\"" + str(reflectance[0][0]) + " " + str(reflectance[0][1]) + " " + str(reflectance[0][2]) + "\"/>\n")
-        outFile.write(tabbedSpace + "     <float name=\"alpha\" value=\"" + str(alpha) + "\"/>\n")
-        outFile.write(tabbedSpace + "     <boolean name=\"useFastApprox\" value=\"" + str(useFastApprox) + "\"/>\n")
-        outFile.write(tabbedSpace + " </bsdf>\n")
-
-    elif matType=="MitsubaRoughPlasticShader":
-        distribution = cmds.getAttr(material+".distribution", asString=True)
-        alpha = cmds.getAttr(material+".alpha")
-        intIOR = cmds.getAttr(material+".intIOR")
-        extIOR = cmds.getAttr(material+".extIOR")
-        specularReflectance = cmds.getAttr(material+".specularReflectance")
-        diffuseReflectance = cmds.getAttr(material+".diffuseReflectance")
-
-        outFile.write(tabbedSpace + " <bsdf type=\"roughplastic\" id=\"" + materialName + "\">\n")
-        outFile.write(tabbedSpace + "     <string name=\"distribution\" value=\"" + str(distribution) + "\"/>\n")
-        outFile.write(tabbedSpace + "     <float name=\"alpha\" value=\"" + str(alpha) + "\"/>\n")
-        outFile.write(tabbedSpace + "     <float name=\"intIOR\" value=\"" + str(intIOR) + "\"/>\n")
-        outFile.write(tabbedSpace + "     <float name=\"extIOR\" value=\"" + str(extIOR) + "\"/>\n")
-        outFile.write(tabbedSpace + "     <srgb name=\"specularReflectance\" value=\"" + str(specularReflectance[0][0]) + " " + str(specularReflectance[0][1]) + " " + str(specularReflectance[0][2]) + "\"/>\n")
-        outFile.write(tabbedSpace + "     <srgb name=\"diffuseReflectance\" value=\"" + str(diffuseReflectance[0][0]) + " " + str(diffuseReflectance[0][1]) + " " + str(diffuseReflectance[0][2]) + "\"/>\n")
-        outFile.write(tabbedSpace + " </bsdf>\n")
-
-    elif matType=="MitsubaThinDielectricShader":
-        #Get all of the required attributes
-        intIOR = cmds.getAttr(material+".intIOR")
-        extIOR = cmds.getAttr(material+".extIOR")
-
-        #Write material
-        outFile.write(tabbedSpace + " <bsdf type=\"thindielectric\" id=\"" + materialName + "\">\n")
-        outFile.write(tabbedSpace + "     <float name=\"intIOR\" value=\"" + str(intIOR) + "\"/>\n")
-        outFile.write(tabbedSpace + "     <float name=\"extIOR\" value=\"" + str(extIOR) + "\"/>\n")
-        outFile.write(tabbedSpace + " </bsdf>\n\n")
-
-    elif matType=="MitsubaTwoSidedShader":
-        outFile.write(tabbedSpace + " <bsdf type=\"twosided\" id=\"" + materialName + "\">\n")
-        #Nested bsdf
-        connections = cmds.listConnections(material, connections=True)
-        for i in range(len(connections)):
-            if i%2==1:
-                connection = connections[i]
-                connectionType = cmds.nodeType(connection)
-                if connectionType in materialNodeTypes and connections[i-1]==material+".bsdf":
-                    #We've found the nested bsdf, so write it
-                    writeShader(connection, outFile, tabbedSpace+"    ")
-
-        outFile.write(tabbedSpace + " </bsdf>\n")
-
-    elif matType=="MitsubaWardShader":
-        variant = cmds.getAttr(material+".variant", asString=True)
-        alphaUV = cmds.getAttr(material+".alphaUV")
-        specularReflectance = cmds.getAttr(material+".specularReflectance")
-        diffuseReflectance = cmds.getAttr(material+".diffuseReflectance")
-
-        outFile.write(tabbedSpace + " <bsdf type=\"phong\" id=\"" + materialName + "\">\n")
-        outFile.write(tabbedSpace + "     <string name=\"variant\" value=\"" + str(variant) + "\"/>\n")
-        outFile.write(tabbedSpace + "     <float name=\"alphaU\" value=\"" + str(alphaUV[0][0]) + "\"/>\n")
-        outFile.write(tabbedSpace + "     <float name=\"alphaV\" value=\"" + str(alphaUV[0][1]) + "\"/>\n")
-        outFile.write(tabbedSpace + "     <srgb name=\"specularReflectance\" value=\"" + str(specularReflectance[0][0]) + " " + str(specularReflectance[0][1]) + " " + str(specularReflectance[0][2]) + "\"/>\n")
-        outFile.write(tabbedSpace + "     <srgb name=\"diffuseReflectance\" value=\"" + str(diffuseReflectance[0][0]) + " " + str(diffuseReflectance[0][1]) + " " + str(diffuseReflectance[0][2]) + "\"/>\n")
-        outFile.write(tabbedSpace + " </bsdf>\n")
-
-    elif matType=="MitsubaIrawanShader":
-        outFile.write(tabbedSpace + " <bsdf type=\"irawan\" id=\"" + materialName + "\">\n")
-
-        # filename
-        filename = cmds.getAttr(material+".filename", asString=True)
-        outFile.write(tabbedSpace + "     <string name=\"filename\" value=\"" + filename + "\"/>\n")
-
-        # repeat
-        repeatu = cmds.getAttr(material+".repeatu")
-        outFile.write(tabbedSpace + "     <float name=\"repeatU\" value=\"" + str(repeatu) + "\"/>\n")
-
-        repeatv = cmds.getAttr(material+".repeatv")
-        outFile.write(tabbedSpace + "     <float name=\"repeatV\" value=\"" + str(repeatv) + "\"/>\n")
-
-        #warp and weft
-        warpkd = cmds.getAttr(material+".warpkd")
-        outFile.write(tabbedSpace + "     <rgb name=\"warp_kd\" value=\"" + str(warpkd[0][0]) + " " + str(warpkd[0][1]) + " " + str(warpkd[0][2]) + "\"/>\n")
-
-        warpks = cmds.getAttr(material+".warpks")
-        outFile.write(tabbedSpace + "     <rgb name=\"warp_ks\" value=\"" + str(warpks[0][0]) + " " + str(warpks[0][1]) + " " + str(warpks[0][2]) + "\"/>\n")
-
-        weftkd = cmds.getAttr(material+".weftkd")
-        outFile.write(tabbedSpace + "     <rgb name=\"weft_kd\" value=\"" + str(weftkd[0][0]) + " " + str(weftkd[0][1]) + " " + str(weftkd[0][2]) + "\"/>\n")
-
-        weftks = cmds.getAttr(material+".weftks")
-        outFile.write(tabbedSpace + "     <rgb name=\"weft_ks\" value=\"" + str(weftks[0][0]) + " " + str(weftks[0][1]) + " " + str(weftks[0][2]) + "\"/>\n")
-
-        outFile.write(tabbedSpace + " </bsdf>\n")
-
-    elif matType=="MitsubaObjectAreaLightShader":
-        outFile.write(tabbedSpace + " <emitter type=\"area\" id=\"" + materialName + "\">\n")
-
-        color = cmds.getAttr(material+".radiance")
-        outFile.write(tabbedSpace + "     <rgb name=\"radiance\" value=\"" + str(color[0][0]) + " " + str(color[0][1]) + " " + str(color[0][2]) + "\"/>\n")
-
-        #radiance = cmds.getAttr(material+".radiance")
-        #outFile.write(tabbedSpace + "     <spectrum name=\"radiance\" value=\"" + str(radiance) + "\"/>\n")
-
-        samplingWeight = cmds.getAttr(material+".samplingWeight")
-        outFile.write(tabbedSpace + "     <float name=\"samplingWeight\" value=\"" + str(samplingWeight) + "\"/>\n")
-
-        outFile.write(tabbedSpace + " </emitter>\n")
 
 '''
 Write the appropriate integrator
@@ -688,8 +745,7 @@ def writeIntegratorVirtualPointLight(outFile, renderSettings, integratorMitsuba)
     outFile.write(" </integrator>\n\n\n")
 
 
-def writeIntegrator(outFile):
-    renderSettings = MitsubaRenderSettingsUI.renderSettings
+def writeIntegrator(outFile, renderSettings):
     integratorMaya = cmds.getAttr("%s.%s" % (renderSettings, "integrator")).replace('_', ' ')
 
     mayaUINameToMitsubaName = {
@@ -759,8 +815,7 @@ def writeIntegrator(outFile):
 '''
 Write image sample generator
 '''
-def writeSampler(outFile, frameNumber):
-    renderSettings = MitsubaRenderSettingsUI.renderSettings
+def writeSampler(outFile, frameNumber, renderSettings):
     samplerMaya = cmds.getAttr("%s.%s" % (renderSettings, "sampler")).replace('_', ' ')
     sampleCount = cmds.getAttr("%s.%s" % (renderSettings, "sampleCount"))
     samplerDimension = cmds.getAttr("%s.%s" % (renderSettings, "samplerDimension"))
@@ -806,7 +861,7 @@ def writeSampler(outFile, frameNumber):
 '''
 Write sensor, which include camera, image sampler, and film
 '''
-def writeSensor(outFile, frameNumber):
+def writeSensor(outFile, frameNumber, renderSettings):
     outFile.write(" <!-- Camera -->\n")
 
     cams = cmds.ls(type="camera")
@@ -886,7 +941,7 @@ def writeSensor(outFile, frameNumber):
     outFile.write("\n")
     
     #write sampler generator:
-    writeSampler(outFile, frameNumber)
+    writeSampler(outFile, frameNumber, renderSettings)
 
     #Film
     outFile.write("     <film type=\"hdrfilm\">\n")
@@ -898,7 +953,6 @@ def writeSensor(outFile, frameNumber):
     outFile.write("         <integer name=\"width\" value=\"" + str(imageWidth) + "\"/>\n")
 
     #Filter
-    renderSettings = MitsubaRenderSettingsUI.renderSettings
     reconstructionFilterMaya = cmds.getAttr("%s.%s" % (renderSettings, "reconstructionFilter")).replace('_' ,' ')
     mayaUINameToMitsubaName = {
         "Box filter"  : "box",
@@ -1285,7 +1339,7 @@ def writeVolume(outFile, cwd, tabbedSpace, material, geom):
 
 
 
-def writeScene(outFileName, outDir):
+def writeScene(outFileName, outDir, renderSettings):
     outFile = open(outFileName, 'w+')
 
     #Scene stuff
@@ -1294,11 +1348,11 @@ def writeScene(outFileName, outDir):
     outFile.write("<scene version=\"0.5.0\">\n")
 
     #Write integrator
-    writeIntegrator(outFile)
+    writeIntegrator(outFile, renderSettings)
 
     #Write camera, sampler, and film
     frameNumber = int(cmds.currentTime(query=True))
-    writeSensor(outFile, frameNumber)
+    writeSensor(outFile, frameNumber, renderSettings)
 
     #Write lights
     writeLights(outFile)

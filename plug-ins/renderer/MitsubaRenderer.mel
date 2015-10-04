@@ -8,48 +8,48 @@ global proc mitsubaCreateRenderSettings() {
 
 global proc mitsubaUpdateSettingsUpdate() {
 	string $python = "";
-	$python += "import MitsubaRenderSettingsUI;";
-	$python += "MitsubaRenderSettingsUI.updateRenderSettings()";
+	$python += "import MitsubaRenderer;";
+	$python += "MitsubaRenderer.updateRenderSettings()";
 
 	python( $python );
 }
 
 global proc mitsubaBatchRenderProcedure(string $options) {
 	string $python = "";
-	$python += "import MitsubaForMaya;";
-	$python += "MitsubaForMaya.batchRenderProcedure(" + $options + ")";
+	$python += "import MitsubaRenderer;";
+	$python += "MitsubaRenderer.batchRenderProcedure(" + $options + ")";
 
 	python( $python );
 }
 
 global proc mitsubaBatchRenderOptionsProcedure() {
 	string $python = "";
-	$python += "import MitsubaForMaya;";
-	$python += "MitsubaForMaya.batchRenderOptionsProcedure()";
+	$python += "import MitsubaRenderer;";
+	$python += "MitsubaRenderer.batchRenderOptionsProcedure()";
 
 	python( $python );
 }
 
 global proc mitsubaCommandRenderProcedure(string $options) {
 	string $python = "";
-	$python += "import MitsubaForMaya;";
-	$python += "MitsubaForMaya.commandRenderProcedure(\"" + $options + "\")";
+	$python += "import MitsubaRenderer;";
+	$python += "MitsubaRenderer.commandRenderProcedure(\"" + $options + "\")";
 
 	python( $python );
 }
 
 global proc string mitsubaBatchRenderOptionsStringProcedure() {
 	string $python = "";
-	$python += "import MitsubaForMaya;";
-	$python += "MitsubaForMaya.batchRenderOptionsStringProcedure()";
+	$python += "import MitsubaRenderer;";
+	$python += "MitsubaRenderer.batchRenderOptionsStringProcedure()";
 
 	return `python( $python )`;
 }
 
 global proc mitsubaCancelBatchRenderProcedure() {
 	string $python = "";
-	$python += "import MitsubaForMaya;";
-	$python += "MitsubaForMaya.cancelBatchRenderProcedure()";
+	$python += "import MitsubaRenderer;";
+	$python += "MitsubaRenderer.cancelBatchRenderProcedure()";
 
 	python( $python );
 }

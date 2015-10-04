@@ -10,6 +10,8 @@ import maya.mel as mel
 
 ##################################################
 
+from MitsubaRenderer import createRenderSettingsNode, getRenderSettingsNode
+
 global renderSettings
 
 ##################################################
@@ -32,10 +34,6 @@ global sampleCount
 
 global rfilter
 global rfilterMenu
-
-global renderButton
-global fileNameField
-global hideEmitters
 
 def createIntegratorFrameAmbientOcclusion():
     existingShadingSamples = cmds.getAttr( "%s.%s" % (renderSettings, "iAmbientOcclusionShadingSamples"))
@@ -688,6 +686,7 @@ and film type.
 '''
 def createRenderSettingsUI():
     global renderSettings
+    renderSettings = getRenderSettingsNode()
 
     global renderSettingsWindow
     global integrator
@@ -696,7 +695,6 @@ def createRenderSettingsUI():
     global samplerMenu
     global rfilter
     global rfilterMenu
-    global renderButton
 
     print( "\n\n\nMitsuba Render Settings - Create UI - Python\n\n\n" )
 
@@ -798,27 +796,9 @@ def createRenderSettingsUI():
     cmds.checkBox(verbose, edit=1,
         changeCommand=lambda (x): getCheckBox(verbose, "verbose", x))
 
-
-def createRenderSettingsNode():
-    global renderSettings
-    print( "\n\n\nMitsuba Render Settings - Create Node - Python\n\n\n" )
-
-    existingSettings = cmds.ls(type='MitsubaRenderSettings')
-    if existingSettings != []:
-        # Just use the first one?
-        renderSettings = existingSettings[0]
-        print( "Using existing Mitsuba settings node : %s" % renderSettings)
-    else:
-        renderSettings = cmds.createNode('MitsubaRenderSettings', name='defaultMitsubaRenderGlobals')
-        print( "Creating new Mitsuba settings node : %s" % renderSettings)
-
 def createRenderSettings():
     createRenderSettingsNode()
     createRenderSettingsUI()
-
-def updateRenderSettings():
-    global renderSettings
-    print( "\n\n\nMitsuba Render Settings - Update - Python\n\n\n" )
 
 def createRenderWindow():
     global renderWindow
