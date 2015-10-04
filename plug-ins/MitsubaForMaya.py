@@ -12,11 +12,12 @@ kPluginCmdName = "Mitsuba"
 
 pluginDir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
 sys.path.append(pluginDir)
+sys.path.append(os.path.join(pluginDir, "util"))
 
-from util.process import Process
+from process import Process
 
 # Import modules for settings, material, lights and volumes
-from util import MitsubaRenderSettings
+import MitsubaRenderSettings
 
 from materials import bump
 from materials import coating
