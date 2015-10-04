@@ -341,6 +341,47 @@ def createIntegratorFrameStochasticProgressivePhotonMap():
 
     return sppmSettings
 
+def createIntegratorFramePrimarySampleSpaceMetropolisLightTransport():
+    pssmltSettings = cmds.frameLayout(label="Primary Sample Space Metropolis Light Transport", cll=True, visible=False)
+
+    iPrimarySampleSpaceMetropolisLightTransportBidirectional = cmds.getAttr("%s.%s" % (renderSettings, "iPrimarySampleSpaceMetropolisLightTransportBidirectional"))
+    iPrimarySampleSpaceMetropolisLightTransportUseInfiniteDepth = cmds.getAttr("%s.%s" % (renderSettings, "iPrimarySampleSpaceMetropolisLightTransportUseInfiniteDepth"))
+    iPrimarySampleSpaceMetropolisLightTransportMaxDepth = cmds.getAttr("%s.%s" % (renderSettings, "iPrimarySampleSpaceMetropolisLightTransportMaxDepth"))
+    iPrimarySampleSpaceMetropolisLightTransportDirectSamples = cmds.getAttr("%s.%s" % (renderSettings, "iPrimarySampleSpaceMetropolisLightTransportDirectSamples"))
+    iPrimarySampleSpaceMetropolisLightTransportRRDepth = cmds.getAttr("%s.%s" % (renderSettings, "iPrimarySampleSpaceMetropolisLightTransportRRDepth"))
+    iPrimarySampleSpaceMetropolisLightTransportLuminanceSamples = cmds.getAttr("%s.%s" % (renderSettings, "iPrimarySampleSpaceMetropolisLightTransportLuminanceSamples"))
+    iPrimarySampleSpaceMetropolisLightTransportTwoStage = cmds.getAttr("%s.%s" % (renderSettings, "iPrimarySampleSpaceMetropolisLightTransportTwoStage"))
+    iPrimarySampleSpaceMetropolisLightTransportPLarge = cmds.getAttr("%s.%s" % (renderSettings, "iPrimarySampleSpaceMetropolisLightTransportPLarge"))
+
+    cmds.checkBox(label = "Bidirectional", value=iPrimarySampleSpaceMetropolisLightTransportBidirectional,
+        changeCommand=lambda (x): getCheckBox(None, "iPrimarySampleSpaceMetropolisLightTransportBidirectional", x))   
+
+    cmds.checkBox(label = "Use Infinite Depth", value=iPrimarySampleSpaceMetropolisLightTransportUseInfiniteDepth,
+        changeCommand=lambda (x): getCheckBox(None, "iPrimarySampleSpaceMetropolisLightTransportUseInfiniteDepth", x))   
+
+    cmds.intFieldGrp(numberOfFields=1, label="Max Depth", value1=iPrimarySampleSpaceMetropolisLightTransportMaxDepth,
+        changeCommand=lambda (x): getIntFieldGroup(None, "iPrimarySampleSpaceMetropolisLightTransportMaxDepth", x))
+
+    cmds.intFieldGrp(numberOfFields=1, label="Direct Samples", value1=iPrimarySampleSpaceMetropolisLightTransportDirectSamples,
+        changeCommand=lambda (x): getIntFieldGroup(None, "iPrimarySampleSpaceMetropolisLightTransportDirectSamples", x))
+
+    cmds.intFieldGrp(numberOfFields=1, label="Russian Roulette Depth", value1=iPrimarySampleSpaceMetropolisLightTransportRRDepth,
+        changeCommand=lambda (x): getIntFieldGroup(None, "iPrimarySampleSpaceMetropolisLightTransportRRDepth", x))
+
+    cmds.intFieldGrp(numberOfFields=1, label="Luminance Samples", value1=iPrimarySampleSpaceMetropolisLightTransportLuminanceSamples,
+        changeCommand=lambda (x): getIntFieldGroup(None, "iPrimarySampleSpaceMetropolisLightTransportLuminanceSamples", x))
+
+    cmds.checkBox(label = "Two Stage", value=iPrimarySampleSpaceMetropolisLightTransportTwoStage,
+        changeCommand=lambda (x): getCheckBox(None, "iPrimarySampleSpaceMetropolisLightTransportTwoStage", x))   
+
+    cmds.floatFieldGrp(numberOfFields=1, label="P Large", value1=iPrimarySampleSpaceMetropolisLightTransportPLarge,
+        changeCommand=lambda (x): getIntFieldGroup(None, "iPrimarySampleSpaceMetropolisLightTransportPLarge", x))
+
+    cmds.setParent('..')
+
+    return pssmltSettings
+
+
 def createIntegratorFrames():
     #Make the integrator specific settings
     global integratorFrames
@@ -374,18 +415,8 @@ def createIntegratorFrames():
     # Stochastic Progressive Photon Map Settings
     sppmSettings = createIntegratorFrameStochasticProgressivePhotonMap()
 
-    pssmltSettings = cmds.frameLayout(label="Primary Sample Space Metropolis Light Transport", cll=True, visible=False)
-    cmds.checkBox(label = "bidirectional")
-    cmds.checkBox(label = "Use infinite depth", value=True)
-    cmds.intFieldGrp(numberOfFields=1, label="maxDepth", value1=1)
-    cmds.checkBox(label = "Use automatic direct samples")
-    cmds.intFieldGrp(numberOfFields=1, label="directSamples", value1=16)
-    cmds.intFieldGrp(numberOfFields=1, label="luminanceSamples", value1=100000)
-    cmds.checkBox(label = "twoStage", value=False)
-    cmds.checkBox(label = "hideEmitters", value=True)
-    cmds.intFieldGrp(numberOfFields=1, label="rrDepth", value1=5)
-    cmds.floatFieldGrp(numberOfFields=1, label="pLarge", value1=0.3)
-    cmds.setParent('..')
+    # Primary Sample Space Metropolis Light Transport Settings
+    pssmltSettings = createIntegratorFramePrimarySampleSpaceMetropolisLightTransport()
 
     mltSettings = cmds.frameLayout(label="Path Space Metropolis Light Transport", cll=True, visible=False)
     cmds.checkBox(label = "Use infinite depth", value=True)

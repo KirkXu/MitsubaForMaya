@@ -104,6 +104,16 @@ class MitsubaRenderSetting(OpenMayaMPx.MPxNode):
     mStochasticProgressivePhotonMapRRDepth = OpenMaya.MObject()
     mStochasticProgressivePhotonMapMaxPasses = OpenMaya.MObject()
 
+    # Integrator - Primary Sample Space Metropolis Light Transport variables
+    mPrimarySampleSpaceMetropolisLightTransportBidirectional = OpenMaya.MObject()
+    mPrimarySampleSpaceMetropolisLightTransportUseInfiniteDepth = OpenMaya.MObject()
+    mPrimarySampleSpaceMetropolisLightTransportMaxDepth = OpenMaya.MObject()
+    mPrimarySampleSpaceMetropolisLightTransportDirectSamples = OpenMaya.MObject()
+    mPrimarySampleSpaceMetropolisLightTransportRRDepth = OpenMaya.MObject()
+    mPrimarySampleSpaceMetropolisLightTransportLuminanceSamples = OpenMaya.MObject()
+    mPrimarySampleSpaceMetropolisLightTransportTwoStage = OpenMaya.MObject()
+    mPrimarySampleSpaceMetropolisLightTransportPLarge = OpenMaya.MObject()
+
     def __init__(self):
         OpenMayaMPx.MPxNode.__init__(self)
 
@@ -252,6 +262,17 @@ def nodeInitializer():
         MitsubaRenderSetting.addIntegerAttribute(nAttr, "mStochasticProgressivePhotonMapRRDepth", "iStochasticProgressivePhotonMapRRDepth", "isppmrrd", 5)
         MitsubaRenderSetting.addIntegerAttribute(nAttr, "mStochasticProgressivePhotonMapMaxPasses", "iStochasticProgressivePhotonMapMaxPasses", "isppmmp", 10)
 
+
+        # Integrator - Primary Sample Space Metropolis Light Transport variables
+        MitsubaRenderSetting.addBooleanAttribute(nAttr, "mPrimarySampleSpaceMetropolisLightTransportBidirectional", "iPrimarySampleSpaceMetropolisLightTransportBidirectional", "ipssmltb", True)
+        MitsubaRenderSetting.addBooleanAttribute(nAttr, "mPrimarySampleSpaceMetropolisLightTransportUseInfiniteDepth", "iPrimarySampleSpaceMetropolisLightTransportUseInfiniteDepth", "ipssmltuid", True)
+        MitsubaRenderSetting.addIntegerAttribute(nAttr, "mPrimarySampleSpaceMetropolisLightTransportMaxDepth", "iPrimarySampleSpaceMetropolisLightTransportMaxDepth", "ipssmltmd", -1)
+        MitsubaRenderSetting.addIntegerAttribute(nAttr, "mPrimarySampleSpaceMetropolisLightTransportDirectSamples", "iPrimarySampleSpaceMetropolisLightTransportDirectSamples", "ipssmltds", 16)
+        MitsubaRenderSetting.addIntegerAttribute(nAttr, "mPrimarySampleSpaceMetropolisLightTransportRRDepth", "iPrimarySampleSpaceMetropolisLightTransportRRDepth", "ipssmltrrd", 5)
+        MitsubaRenderSetting.addIntegerAttribute(nAttr, "mPrimarySampleSpaceMetropolisLightTransportLuminanceSamples", "iPrimarySampleSpaceMetropolisLightTransportLuminanceSamples", "ipssmltls", 100000)
+        MitsubaRenderSetting.addBooleanAttribute(nAttr, "mPrimarySampleSpaceMetropolisLightTransportTwoStage", "iPrimarySampleSpaceMetropolisLightTransportTwoStage", "ipssmltts", False)
+        MitsubaRenderSetting.addFloatAttribute(nAttr,   "mPrimarySampleSpaceMetropolisLightTransportPLarge", "iPrimarySampleSpaceMetropolisLightTransportPLarge", "ipssmltpl", 0.3)
+
     except:
         sys.stderr.write("Failed to create and add attributes\n")
         raise
@@ -351,6 +372,16 @@ def nodeInitializer():
         MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mStochasticProgressivePhotonMapGranularity)
         MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mStochasticProgressivePhotonMapRRDepth)
         MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mStochasticProgressivePhotonMapMaxPasses)
+
+        # Integrator - Primary Sample Space Metropolis Light Transport variables
+        MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mPrimarySampleSpaceMetropolisLightTransportBidirectional)
+        MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mPrimarySampleSpaceMetropolisLightTransportUseInfiniteDepth)
+        MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mPrimarySampleSpaceMetropolisLightTransportMaxDepth)
+        MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mPrimarySampleSpaceMetropolisLightTransportDirectSamples)
+        MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mPrimarySampleSpaceMetropolisLightTransportRRDepth)
+        MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mPrimarySampleSpaceMetropolisLightTransportLuminanceSamples)
+        MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mPrimarySampleSpaceMetropolisLightTransportTwoStage)
+        MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mPrimarySampleSpaceMetropolisLightTransportPLarge)
 
     except:
         sys.stderr.write("Failed to add attributes\n")

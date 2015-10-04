@@ -554,6 +554,32 @@ def writeIntegratorProgressivePhotonMap(outFile, renderSettings, integratorMitsu
 
     outFile.write(" </integrator>\n\n\n")
 
+def writeIntegratorPrimarySampleSpaceMetropolisLightTransport(outFile, renderSettings, integratorMitsuba):
+    outFile.write(" <integrator type=\"%s\">\n" % integratorMitsuba)
+
+    iPrimarySampleSpaceMetropolisLightTransportBidirectional = cmds.getAttr("%s.%s" % (renderSettings, "iPrimarySampleSpaceMetropolisLightTransportBidirectional"))
+    iPrimarySampleSpaceMetropolisLightTransportUseInfiniteDepth = cmds.getAttr("%s.%s" % (renderSettings, "iPrimarySampleSpaceMetropolisLightTransportUseInfiniteDepth"))
+    iPrimarySampleSpaceMetropolisLightTransportMaxDepth = cmds.getAttr("%s.%s" % (renderSettings, "iPrimarySampleSpaceMetropolisLightTransportMaxDepth"))
+    iPrimarySampleSpaceMetropolisLightTransportDirectSamples = cmds.getAttr("%s.%s" % (renderSettings, "iPrimarySampleSpaceMetropolisLightTransportDirectSamples"))
+    iPrimarySampleSpaceMetropolisLightTransportRRDepth = cmds.getAttr("%s.%s" % (renderSettings, "iPrimarySampleSpaceMetropolisLightTransportRRDepth"))
+    iPrimarySampleSpaceMetropolisLightTransportLuminanceSamples = cmds.getAttr("%s.%s" % (renderSettings, "iPrimarySampleSpaceMetropolisLightTransportLuminanceSamples"))
+    iPrimarySampleSpaceMetropolisLightTransportTwoStage = cmds.getAttr("%s.%s" % (renderSettings, "iPrimarySampleSpaceMetropolisLightTransportTwoStage"))
+    iPrimarySampleSpaceMetropolisLightTransportPLarge = cmds.getAttr("%s.%s" % (renderSettings, "iPrimarySampleSpaceMetropolisLightTransportPLarge"))
+
+    iPrimarySampleSpaceMetropolisLightTransportMaxDepth = -1 if iPrimarySampleSpaceMetropolisLightTransportUseInfiniteDepth else iPrimarySampleSpaceMetropolisLightTransportMaxDepth
+    iPrimarySampleSpaceMetropolisLightTransportBidirectionalText = 'true' if iPrimarySampleSpaceMetropolisLightTransportBidirectional else 'false'
+    iPrimarySampleSpaceMetropolisLightTransportTwoStageText = 'true' if iPrimarySampleSpaceMetropolisLightTransportTwoStage else 'false'
+
+    outFile.write("     <boolean name=\"bidirectional\" value=\"%s\"/>\n" % iPrimarySampleSpaceMetropolisLightTransportBidirectionalText)
+    outFile.write("     <integer name=\"maxDepth\" value=\"" + str(iPrimarySampleSpaceMetropolisLightTransportMaxDepth) + "\"/>\n")
+    outFile.write("     <integer name=\"directSamples\" value=\"" + str(iPrimarySampleSpaceMetropolisLightTransportDirectSamples) + "\"/>\n")
+    outFile.write("     <integer name=\"rrDepth\" value=\"" + str(iPrimarySampleSpaceMetropolisLightTransportRRDepth) + "\"/>\n")
+    outFile.write("     <integer name=\"luminanceSamples\" value=\"" + str(iPrimarySampleSpaceMetropolisLightTransportLuminanceSamples) + "\"/>\n")
+    outFile.write("     <boolean name=\"twoStage\" value=\"%s\"/>\n" % iPrimarySampleSpaceMetropolisLightTransportTwoStageText)
+    outFile.write("     <float name=\"pLarge\" value=\"" + str(iPrimarySampleSpaceMetropolisLightTransportPLarge) + "\"/>\n")  
+
+    outFile.write(" </integrator>\n\n\n")
+
 def writeIntegrator(outFile):
     renderSettings = MitsubaRenderSettingsUI.renderSettings
     integratorMaya = cmds.getAttr("%s.%s" % (renderSettings, "integrator")).replace('_', ' ')
@@ -570,7 +596,7 @@ def writeIntegrator(outFile):
         "Stochastic Progressive Photon Map" : "sppm",
         "Primary Sample Space Metropolis Light Transport" : "pssmlt",
         "Path Space Metropolis Light Transport" : "mlt",
-        "Energy Redistribution Path Tracer" : "mlt",
+        "Energy Redistribution Path Tracer" : "erpt",
         "Adjoint Particle Tracer" : "mlt",
         "Virtual Point Lights" : "vpl"
     }
@@ -604,6 +630,9 @@ def writeIntegrator(outFile):
           integratorMaya == "Stochastic Progressive Photon Map" ):
         writeIntegratorProgressivePhotonMap(outFile, renderSettings, integratorMitsuba)
 
+    elif integratorMaya == "Primary Sample Space Metropolis Light Transport":
+        writeIntegratorPrimarySampleSpaceMetropolisLightTransport(outFile, renderSettings, integratorMitsuba)
+
     else:
         writeIntegratorUsingUI(outFile)
 
@@ -636,62 +665,8 @@ def writeIntegratorUsingUI(outFile):
 
     #print( "Active Integrator : %s" % activeIntegrator )
 
-    #Write pssmlt
-    if activeIntegrator=="Primary_Sample_Space_Metropolis_Light_Transport" or activeIntegrator=="Primary Sample Space Metropolis Light Transport":
-        '''
-        The order for this integrator is:
-        0. checkBox bidirectional
-        1. checkBox to use infinite depth
-        2. intFieldGrp maxDepth
-        3. checkBox to use automatic directSamples
-        4. intFieldGrp directSamples
-        5. intFieldGrp luminanceSamples
-        6. checkBox twoStage
-        7. checkBox hideEmitters
-        8. intFieldGrp rrDepth
-        9. floatFieldGrp pLarge
-        '''
-        outFile.write(" <integrator type=\"pssmlt\">\n")
-        integratorSettings = cmds.frameLayout(activeSettings, query=True, childArray=True)
-
-        if cmds.checkBox(integratorSettings[0], query=True, value=True):
-            outFile.write("     <boolean name=\"bidirectional\" value=\"true\"/>\n")
-        else:
-            outFile.write("     <boolean name=\"bidirectional\" value=\"false\"/>\n")
-
-        if cmds.checkBox(integratorSettings[1], query=True, value=True):
-            outFile.write("     <integer name=\"maxDepth\" value=\"-1\"/>\n")
-        else:
-            maxDepth = cmds.intFieldGrp(integratorSettings[2], query=True, value1=True)
-            outFile.write("     <integer name=\"maxDepth\" value=\"" + str(maxDepth) + "\"/>\n")
-
-        if cmds.checkBox(integratorSettings[3], query=True, value=True):
-            outFile.write("     <integer name=\"directSamples\" value=\"-1\"/>\n")
-        else:
-            directSamples = cmds.intFieldGrp(integratorSettings[4], query=True, value1=True)
-            outFile.write("     <integer name=\"directSamples\" value=\"" + str(directSamples) + "\"/>\n")
-
-        luminanceSamples = cmds.intFieldGrp(integratorSettings[5], query=True, value1=True)
-        outFile.write("     <integer name=\"luminanceSamples\" value=\"" + str(luminanceSamples) + "\"/>\n")
-
-        if cmds.checkBox(integratorSettings[6], query=True, value=True):
-            outFile.write("     <boolean name=\"twoStage\" value=\"true\"/>\n")
-        else:
-            outFile.write("     <boolean name=\"twoStage\" value=\"false\"/>\n")
-
-        if cmds.checkBox(integratorSettings[7], query=True, value=True):
-            outFile.write("     <boolean name=\"hideEmitters\" value=\"true\"/>\n")
-        else:
-            outFile.write("     <boolean name=\"hideEmitters\" value=\"false\"/>\n")
-
-        rrDepth = cmds.intFieldGrp(integratorSettings[8], query=True, value1=True)
-        outFile.write("     <integer name=\"rrDepth\" value=\"" + str(rrDepth) + "\"/>\n")
-
-        pLarge = cmds.floatFieldGrp(integratorSettings[9], query=True, value1=True)
-        outFile.write("     <float name=\"pLarge\" value=\"" + str(pLarge) + "\"/>\n")
-
     #Write psmlt
-    elif activeIntegrator=="Path_Space_Metropolis_Light_Transport" or activeIntegrator=="Path Space Metropolis Light Transport":
+    if activeIntegrator=="Path_Space_Metropolis_Light_Transport" or activeIntegrator=="Path Space Metropolis Light Transport":
         '''
         The order for this integrator is:
         0. checkBox to use infinite depth
