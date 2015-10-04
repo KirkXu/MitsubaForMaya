@@ -671,6 +671,23 @@ def writeIntegratorAdjointParticleTracer(outFile, renderSettings, integratorMits
     outFile.write(" </integrator>\n\n\n")
 
 
+def writeIntegratorVirtualPointLight(outFile, renderSettings, integratorMitsuba):
+    iVirtualPointLightUseInfiniteDepth = cmds.getAttr("%s.%s" % (renderSettings, "iVirtualPointLightUseInfiniteDepth"))
+    iVirtualPointLightMaxDepth = cmds.getAttr("%s.%s" % (renderSettings, "iVirtualPointLightMaxDepth"))
+    iVirtualPointLightShadowMapResolution = cmds.getAttr("%s.%s" % (renderSettings, "iVirtualPointLightShadowMapResolution"))
+    iVirtualPointLightClamping = cmds.getAttr("%s.%s" % (renderSettings, "iVirtualPointLightClamping"))
+
+    iVirtualPointLightMaxDepth = -1 if iVirtualPointLightUseInfiniteDepth else iVirtualPointLightMaxDepth
+
+    outFile.write(" <integrator type=\"%s\">\n" % integratorMitsuba)
+
+    outFile.write("     <integer name=\"maxDepth\" value=\"" + str(iVirtualPointLightMaxDepth) + "\"/>\n")
+    outFile.write("     <integer name=\"shadowMapResolution\" value=\"" + str(iVirtualPointLightShadowMapResolution) + "\"/>\n")
+    outFile.write("     <float name=\"clamping\" value=\"" + str(iVirtualPointLightClamping) + "\"/>\n")
+
+    outFile.write(" </integrator>\n\n\n")
+
+
 def writeIntegrator(outFile):
     renderSettings = MitsubaRenderSettingsUI.renderSettings
     integratorMaya = cmds.getAttr("%s.%s" % (renderSettings, "integrator")).replace('_', ' ')
@@ -733,44 +750,11 @@ def writeIntegrator(outFile):
     elif integratorMaya == "Adjoint Particle Tracer":
         writeIntegratorAdjointParticleTracer(outFile, renderSettings, integratorMitsuba)
 
+    elif integratorMaya == "Virtual Point Lights":
+        writeIntegratorVirtualPointLight(outFile, renderSettings, integratorMitsuba)
+
     else:
-        writeIntegratorUsingUI(outFile)
-
-def writeIntegratorUsingUI(outFile):
-    #
-    # Integrators that still need to pull settings from the UI
-    #
-
-    # To free the export from process from it's ties to the UI
-    # 1. Add attributes to the MitsubaRenderSettings node for each integrator-specific settings
-    # 2. Change this function to query the RenderSettings node rather than the UI elements
-    # 3. Add callbacks to the UI definitions to drive changes from the Render Settings UI to the 
-    #     Render Settings node
-
-    #Write the integrator########################################################################
-    integratorMenu = MitsubaRenderSettingsUI.integratorMenu
-    integratorFrames = MitsubaRenderSettingsUI.integratorFrames
-
-    #activeIntegrator = integrator
-    activeIntegrator = cmds.optionMenu(integratorMenu, query=True, value=True)
-
-    #print( "integrator menu : %s" % integratorMenu )
-    #print( "integrator frames : %s" % integratorFrames )
-    #print( "active integrator : %s" % activeIntegrator )
-
-    #Find the active integrator's settings frame layout
-    for frame in integratorFrames:
-        if cmds.frameLayout(frame, query=True, visible=True):
-            activeSettings = frame
-
-    #print( "Active Integrator : %s" % activeIntegrator )
-
-    #Write vpl
-    if activeIntegrator=="Virtual_Point_Lights" or activeIntegrator=="Virtual Point Lights":
-        print "vpl"
-
-    outFile.write(" </integrator>\n\n\n")
-    #############################################################################################
+        print( "Unsupported Integrator : %s" % integratorMaya)
 
 '''
 Write image sample generator

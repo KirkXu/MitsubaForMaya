@@ -147,6 +147,12 @@ class MitsubaRenderSetting(OpenMayaMPx.MPxNode):
     mAdjointParticleTracerGranularity = OpenMaya.MObject()
     mAdjointParticleTracerBruteForce = OpenMaya.MObject()
 
+    # Integrator - Virtual Point Light variables
+    mVirtualPointLightUseInfiniteDepth = OpenMaya.MObject()
+    mVirtualPointLightMaxDepth = OpenMaya.MObject()
+    mVirtualPointLightShadowMapResolution = OpenMaya.MObject()
+    mVirtualPointLightClamping = OpenMaya.MObject()
+
     def __init__(self):
         OpenMayaMPx.MPxNode.__init__(self)
 
@@ -338,6 +344,12 @@ def nodeInitializer():
         MitsubaRenderSetting.addIntegerAttribute(nAttr, "mAdjointParticleTracerGranularity", "iAdjointParticleTracerGranularity", "iaptg", 200000)
         MitsubaRenderSetting.addBooleanAttribute(nAttr, "mAdjointParticleTracerBruteForce", "iAdjointParticleTracerBruteForce", "iaptbf", False)
 
+        # Integrator - Virtual Point Light variables
+        MitsubaRenderSetting.addBooleanAttribute(nAttr, "mVirtualPointLightUseInfiniteDepth", "iVirtualPointLightUseInfiniteDepth", "ivpluid", True)
+        MitsubaRenderSetting.addIntegerAttribute(nAttr, "mVirtualPointLightMaxDepth", "iVirtualPointLightMaxDepth", "ivplmd", -1)
+        MitsubaRenderSetting.addIntegerAttribute(nAttr, "mVirtualPointLightShadowMapResolution", "iVirtualPointLightShadowMapResolution", "ivplsmr", 512)
+        MitsubaRenderSetting.addFloatAttribute(nAttr,   "mVirtualPointLightClamping", "iVirtualPointLightClamping", "ivplc", 0.1)
+
     except:
         sys.stderr.write("Failed to create and add attributes\n")
         raise
@@ -480,6 +492,12 @@ def nodeInitializer():
         MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mAdjointParticleTracerRRDepth)
         MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mAdjointParticleTracerGranularity)
         MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mAdjointParticleTracerBruteForce)
+
+        # Integrator - Virtual Point Light variables
+        MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mVirtualPointLightUseInfiniteDepth)
+        MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mVirtualPointLightMaxDepth)
+        MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mVirtualPointLightShadowMapResolution)
+        MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mVirtualPointLightClamping)
 
     except:
         sys.stderr.write("Failed to add attributes\n")

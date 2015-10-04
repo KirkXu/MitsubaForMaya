@@ -44,14 +44,14 @@ def createIntegratorFrameAmbientOcclusion():
 
     aoSettings = cmds.frameLayout(label="Ambient Occlusion", cll=True, visible=False)
 
-    ss = cmds.intFieldGrp(numberOfFields=1, label="Shading Samples", value1=existingShadingSamples,
+    cmds.intFieldGrp(numberOfFields=1, label="Shading Samples", value1=existingShadingSamples,
         changeCommand=lambda (x): getIntFieldGroup(None, "iAmbientOcclusionShadingSamples", x))
 
-    uarl = cmds.checkBox("Use Automatic Ray Length", value=existingUseAutomaticRayLength, 
+    cmds.checkBox("Use Automatic Ray Length", value=existingUseAutomaticRayLength, 
         changeCommand=lambda (x): getCheckBox(None, "iAmbientOcclusionUseAutomaticRayLength", x))
 
-    rl = cmds.floatFieldGrp(numberOfFields=1, label="Ray Length", value1=existingRayLength,
-        changeCommand=lambda (x): getIntFieldGroup(None, "iAmbientOcclusionRayLength", x))
+    cmds.floatFieldGrp(numberOfFields=1, label="Ray Length", value1=existingRayLength,
+        changeCommand=lambda (x): getFloatFieldGroup(None, "iAmbientOcclusionRayLength", x))
 
     cmds.setParent('..')
 
@@ -67,22 +67,22 @@ def createIntegratorFrameDirectIllumination():
 
     diSettings = cmds.frameLayout(label="Direct Illumination", cll=True, visible=False)
 
-    ss = cmds.intFieldGrp(numberOfFields=1, label="Shading Samples", value1=iDirectIlluminationShadingSamples, 
+    cmds.intFieldGrp(numberOfFields=1, label="Shading Samples", value1=iDirectIlluminationShadingSamples, 
         changeCommand=lambda (x): getIntFieldGroup(None, "iDirectIlluminationShadingSamples", x))
 
-    uebs = cmds.checkBox(label = "Use Emitter and BSDF Samples", value=iDirectIlluminationUseEmitterAndBSDFSamples, 
+    cmds.checkBox(label = "Use Emitter and BSDF Samples", value=iDirectIlluminationUseEmitterAndBSDFSamples, 
         changeCommand=lambda (x): getCheckBox(None, "iDirectIlluminationUseEmitterAndBSDFSamples", x))
 
-    es = cmds.intFieldGrp(numberOfFields=1, label="Emitter Samples", value1=iDirectIlluminationEmitterSamples, 
+    cmds.intFieldGrp(numberOfFields=1, label="Emitter Samples", value1=iDirectIlluminationEmitterSamples, 
         changeCommand=lambda (x): getIntFieldGroup(None, "iDirectIlluminationEmitterSamples", x))
 
-    bs = cmds.intFieldGrp(numberOfFields=1, label="BSDF Samples", value1=iDirectIlluminationBSDFSamples, 
+    cmds.intFieldGrp(numberOfFields=1, label="BSDF Samples", value1=iDirectIlluminationBSDFSamples, 
         changeCommand=lambda (x): getIntFieldGroup(None, "iDirectIlluminationBSDFSamples", x))
 
-    sn = cmds.checkBox(label = "Strict Normals", value=iDirectIlluminationStrictNormals, 
+    cmds.checkBox(label = "Strict Normals", value=iDirectIlluminationStrictNormals, 
         changeCommand=lambda (x): getCheckBox(None, "iDirectIlluminationStrictNormals", x))
 
-    he = cmds.checkBox(label = "Hide Visible Emitters", value=iDirectIlluminationStrictNormals, 
+    cmds.checkBox(label = "Hide Visible Emitters", value=iDirectIlluminationStrictNormals, 
         changeCommand=lambda (x): getCheckBox(None, "iDirectIlluminationStrictNormals", x))    
 
     cmds.setParent('..')
@@ -98,19 +98,19 @@ def createIntegratorFramePathTracer():
 
     pSettings = cmds.frameLayout(label="Path Tracer", cll=True)
 
-    uid = cmds.checkBox("Use Infinite Depth", value=existingUseInfiniteDepth, 
+    cmds.checkBox("Use Infinite Depth", value=existingUseInfiniteDepth, 
         changeCommand=lambda (x): getCheckBox(None, "iPathTracerUseInfiniteDepth", x))
 
-    md = cmds.intFieldGrp(numberOfFields=1, label="Max Depth", value1=existingMaxDepth, 
+    cmds.intFieldGrp(numberOfFields=1, label="Max Depth", value1=existingMaxDepth, 
         changeCommand=lambda (x): getIntFieldGroup(None, "iPathTracerMaxDepth", x))
 
-    rrd = cmds.intFieldGrp(numberOfFields=1, label="Russian Roulette Depth", value1=existingRRDepth, 
+    cmds.intFieldGrp(numberOfFields=1, label="Russian Roulette Depth", value1=existingRRDepth, 
         changeCommand=lambda (x): getIntFieldGroup(None, "iPathTracerRRDepth", x))
 
-    sn = cmds.checkBox(label = "Strict Normals", value=existingStrictNormals, 
+    cmds.checkBox(label = "Strict Normals", value=existingStrictNormals, 
         changeCommand=lambda (x): getCheckBox(None, "iPathTracerStrictNormals", x))
 
-    he = cmds.checkBox(label = "Hide Visible Emitters", value=existingHideEmitters, 
+    cmds.checkBox(label = "Hide Visible Emitters", value=existingHideEmitters, 
         changeCommand=lambda (x): getCheckBox(None, "iPathTracerHideEmitters", x))    
 
     cmds.setParent('..')
@@ -126,19 +126,19 @@ def createIntegratorFrameSimpleVolumetricPathTracer():
 
     vpsSettings = cmds.frameLayout(label="Simple Volumetric Path Tracer", cll=True, visible=False)
 
-    uid = cmds.checkBox("Use Infinite Depth", value=existingUseInfiniteDepth, 
+    cmds.checkBox("Use Infinite Depth", value=existingUseInfiniteDepth, 
         changeCommand=lambda (x): getCheckBox(None, "iSimpleVolumetricPathTracerUseInfiniteDepth", x))
 
-    md = cmds.intFieldGrp(numberOfFields=1, label="Max Depth", value1=existingMaxDepth, 
+    cmds.intFieldGrp(numberOfFields=1, label="Max Depth", value1=existingMaxDepth, 
         changeCommand=lambda (x): getIntFieldGroup(None, "iSimpleVolumetricPathTracerMaxDepth", x))
 
-    rrd = cmds.intFieldGrp(numberOfFields=1, label="Russian Roulette Depth", value1=existingRRDepth, 
+    cmds.intFieldGrp(numberOfFields=1, label="Russian Roulette Depth", value1=existingRRDepth, 
         changeCommand=lambda (x): getIntFieldGroup(None, "iSimpleVolumetricPathTracerRRDepth", x))
 
-    sn = cmds.checkBox(label = "Strict Normals", value=existingStrictNormals, 
+    cmds.checkBox(label = "Strict Normals", value=existingStrictNormals, 
         changeCommand=lambda (x): getCheckBox(None, "iSimpleVolumetricPathTracerStrictNormals", x))
 
-    he = cmds.checkBox(label = "Hide Visible Emitters", value=existingHideEmitters, 
+    cmds.checkBox(label = "Hide Visible Emitters", value=existingHideEmitters, 
         changeCommand=lambda (x): getCheckBox(None, "iSimpleVolumetricPathTracerHideEmitters", x))    
 
     cmds.setParent('..')
@@ -154,19 +154,19 @@ def createIntegratorFrameVolumetricPathTracer():
 
     vpSettings = cmds.frameLayout(label="Volumetric Path Tracer", cll=True, visible=False)
 
-    uid = cmds.checkBox("Use Infinite Depth", value=existingUseInfiniteDepth, 
+    cmds.checkBox("Use Infinite Depth", value=existingUseInfiniteDepth, 
         changeCommand=lambda (x): getCheckBox(None, "iVolumetricPathTracerUseInfiniteDepth", x))
 
-    md = cmds.intFieldGrp(numberOfFields=1, label="Max Depth", value1=existingMaxDepth, 
+    cmds.intFieldGrp(numberOfFields=1, label="Max Depth", value1=existingMaxDepth, 
         changeCommand=lambda (x): getIntFieldGroup(None, "iVolumetricPathTracerMaxDepth", x))
 
-    rrd = cmds.intFieldGrp(numberOfFields=1, label="Russian Roulette Depth", value1=existingRRDepth, 
+    cmds.intFieldGrp(numberOfFields=1, label="Russian Roulette Depth", value1=existingRRDepth, 
         changeCommand=lambda (x): getIntFieldGroup(None, "iVolumetricPathTracerRRDepth", x))
 
-    sn = cmds.checkBox(label = "Strict Normals", value=existingStrictNormals, 
+    cmds.checkBox(label = "Strict Normals", value=existingStrictNormals, 
         changeCommand=lambda (x): getCheckBox(None, "iVolumetricPathTracerStrictNormals", x))
 
-    he = cmds.checkBox(label = "Hide Visible Emitters", value=existingHideEmitters, 
+    cmds.checkBox(label = "Hide Visible Emitters", value=existingHideEmitters, 
         changeCommand=lambda (x): getCheckBox(None, "iVolumetricPathTracerHideEmitters", x))    
 
     cmds.setParent('..')
@@ -182,19 +182,19 @@ def createIntegratorFrameBidirectionalPathTracer():
 
     bdptSettings = cmds.frameLayout(label="Bidirectional Path Tracer", cll=True, visible=False)
 
-    uid = cmds.checkBox("Use Infinite Depth", value=existingUseInfiniteDepth,
+    cmds.checkBox("Use Infinite Depth", value=existingUseInfiniteDepth,
         changeCommand=lambda (x): getCheckBox(None, "iBidrectionalPathTracerUseInfiniteDepth", x))
 
-    md = cmds.intFieldGrp(numberOfFields=1, label="Max Depth", value1=existingMaxDepth,
+    cmds.intFieldGrp(numberOfFields=1, label="Max Depth", value1=existingMaxDepth,
         changeCommand=lambda (x): getIntFieldGroup(None, "iBidrectionalPathTracerMaxDepth", x))
 
-    sn = cmds.checkBox(label = "Use Light Images", value=existingLightImage,
+    cmds.checkBox(label = "Use Light Images", value=existingLightImage,
         changeCommand=lambda (x): getCheckBox(None, "iBidrectionalPathTracerLightImage", x))  
 
-    he = cmds.checkBox(label = "Enable direct sampling strategies", value=existingSampleDirect,
+    cmds.checkBox(label = "Enable direct sampling strategies", value=existingSampleDirect,
         changeCommand=lambda (x): getCheckBox(None, "iBidrectionalPathTracerSampleDirect", x))   
 
-    rrd = cmds.intFieldGrp(numberOfFields=1, label="Russian Roulette Depth", value1=existingRRDepth,
+    cmds.intFieldGrp(numberOfFields=1, label="Russian Roulette Depth", value1=existingRRDepth,
         changeCommand=lambda (x): getIntFieldGroup(None, "iBidrectionalPathTracerRRDepth", x))
 
     cmds.setParent('..')
@@ -240,10 +240,10 @@ def createIntegratorFramePhotonMap():
         changeCommand=lambda (x): getIntFieldGroup(None, "iPhotonMapVolumePhotons", x))
 
     cmds.floatFieldGrp(numberOfFields=1, label="Global Lookup Radius", value1=iPhotonMapGlobalLookupRadius,
-        changeCommand=lambda (x): getIntFieldGroup(None, "iPhotonMapGlobalLookupRadius", x))
+        changeCommand=lambda (x): getFloatFieldGroup(None, "iPhotonMapGlobalLookupRadius", x))
 
     cmds.floatFieldGrp(numberOfFields=1, label="Caustic Lookup Radius", value1=iPhotonMapCausticLookupRadius,
-        changeCommand=lambda (x): getIntFieldGroup(None, "iPhotonMapCausticLookupRadius", x))
+        changeCommand=lambda (x): getFloatFieldGroup(None, "iPhotonMapCausticLookupRadius", x))
 
     cmds.intFieldGrp(numberOfFields=1, label="Lookup Size", value1=iPhotonMapLookupSize,
         changeCommand=lambda (x): getIntFieldGroup(None, "iPhotonMapLookupSize", x))
@@ -283,10 +283,10 @@ def createIntegratorFrameProgressivePhotonMap():
         changeCommand=lambda (x): getIntFieldGroup(None, "iProgressivePhotonMapPhotonCount", x))
 
     cmds.floatFieldGrp(numberOfFields=1, label="Initial Radius", value1=iProgressivePhotonMapInitialRadius,
-        changeCommand=lambda (x): getIntFieldGroup(None, "iProgressivePhotonMapInitialRadius", x))
+        changeCommand=lambda (x): getFloatFieldGroup(None, "iProgressivePhotonMapInitialRadius", x))
 
     cmds.floatFieldGrp(numberOfFields=1, label="Alpha", value1=iProgressivePhotonMapAlpha,
-        changeCommand=lambda (x): getIntFieldGroup(None, "iProgressivePhotonMapAlpha", x))
+        changeCommand=lambda (x): getFloatFieldGroup(None, "iProgressivePhotonMapAlpha", x))
 
     cmds.intFieldGrp(numberOfFields=1, label="Granularity", value1=iProgressivePhotonMapGranularity,
         changeCommand=lambda (x): getIntFieldGroup(None, "iProgressivePhotonMapGranularity", x))
@@ -323,10 +323,10 @@ def createIntegratorFrameStochasticProgressivePhotonMap():
         changeCommand=lambda (x): getIntFieldGroup(None, "iStochasticProgressivePhotonMapPhotonCount", x))
 
     cmds.floatFieldGrp(numberOfFields=1, label="Initial Radius", value1=iStochasticProgressivePhotonMapInitialRadius,
-        changeCommand=lambda (x): getIntFieldGroup(None, "iStochasticProgressivePhotonMapInitialRadius", x))
+        changeCommand=lambda (x): getFloatFieldGroup(None, "iStochasticProgressivePhotonMapInitialRadius", x))
 
     cmds.floatFieldGrp(numberOfFields=1, label="Alpha", value1=iStochasticProgressivePhotonMapAlpha,
-        changeCommand=lambda (x): getIntFieldGroup(None, "iStochasticProgressivePhotonMapAlpha", x))
+        changeCommand=lambda (x): getFloatFieldGroup(None, "iStochasticProgressivePhotonMapAlpha", x))
 
     cmds.intFieldGrp(numberOfFields=1, label="Granularity", value1=iStochasticProgressivePhotonMapGranularity,
         changeCommand=lambda (x): getIntFieldGroup(None, "iStochasticProgressivePhotonMapGranularity", x))
@@ -375,7 +375,7 @@ def createIntegratorFramePrimarySampleSpaceMetropolisLightTransport():
         changeCommand=lambda (x): getCheckBox(None, "iPrimarySampleSpaceMetropolisLightTransportTwoStage", x))   
 
     cmds.floatFieldGrp(numberOfFields=1, label="P Large", value1=iPrimarySampleSpaceMetropolisLightTransportPLarge,
-        changeCommand=lambda (x): getIntFieldGroup(None, "iPrimarySampleSpaceMetropolisLightTransportPLarge", x))
+        changeCommand=lambda (x): getFloatFieldGroup(None, "iPrimarySampleSpaceMetropolisLightTransportPLarge", x))
 
     cmds.setParent('..')
 
@@ -427,7 +427,7 @@ def createIntegratorFramePathSpaceMetropolisLightTransport():
         changeCommand=lambda (x): getCheckBox(None, "iPathSpaceMetropolisLightTransportManifoldPurturbation", x))   
 
     cmds.floatFieldGrp(numberOfFields=1, label="Lambda", value1=iPathSpaceMetropolisLightTransportLambda,
-        changeCommand=lambda (x): getIntFieldGroup(None, "iPathSpaceMetropolisLightTransportLambda", x))
+        changeCommand=lambda (x): getFloatFieldGroup(None, "iPathSpaceMetropolisLightTransportLambda", x))
 
     cmds.setParent('..')
 
@@ -455,7 +455,7 @@ def createIntegratorFrameEnergyRedistributionPathTracing():
         changeCommand=lambda (x): getIntFieldGroup(None, "iEnergyRedistributionPathTracingMaxDepth", x))
 
     cmds.floatFieldGrp(numberOfFields=1, label="Num Chains", value1=iEnergyRedistributionPathTracingNumChains,
-        changeCommand=lambda (x): getIntFieldGroup(None, "iEnergyRedistributionPathTracingNumChains", x))
+        changeCommand=lambda (x): getFloatFieldGroup(None, "iEnergyRedistributionPathTracingNumChains", x))
 
     cmds.intFieldGrp(numberOfFields=1, label="Max Chains", value1=iEnergyRedistributionPathTracingMaxChains,
         changeCommand=lambda (x): getIntFieldGroup(None, "iEnergyRedistributionPathTracingMaxChains", x))
@@ -479,7 +479,7 @@ def createIntegratorFrameEnergyRedistributionPathTracing():
         changeCommand=lambda (x): getCheckBox(None, "iEnergyRedistributionPathTracingManifoldPerturbation", x))   
 
     cmds.floatFieldGrp(numberOfFields=1, label="Lambda", value1=iEnergyRedistributionPathTracingLambda,
-        changeCommand=lambda (x): getIntFieldGroup(None, "iEnergyRedistributionPathTracingLambda", x))
+        changeCommand=lambda (x): getFloatFieldGroup(None, "iEnergyRedistributionPathTracingLambda", x))
 
     cmds.setParent('..')
 
@@ -491,7 +491,6 @@ def createIntegratorFrameAdjointParticleTracer():
     iAdjointParticleTracerRRDepth = cmds.getAttr("%s.%s" % (renderSettings, "iAdjointParticleTracerRRDepth"))
     iAdjointParticleTracerGranularity = cmds.getAttr("%s.%s" % (renderSettings, "iAdjointParticleTracerGranularity"))
     iAdjointParticleTracerBruteForce = cmds.getAttr("%s.%s" % (renderSettings, "iAdjointParticleTracerBruteForce"))
-
 
     ptrSettings = cmds.frameLayout(label="Adjoint Particle Tracer", cll=True, visible=False)
 
@@ -513,6 +512,30 @@ def createIntegratorFrameAdjointParticleTracer():
     cmds.setParent('..')
 
     return ptrSettings
+
+def createIntegratorFrameVirtualPointLights():
+    iVirtualPointLightUseInfiniteDepth = cmds.getAttr("%s.%s" % (renderSettings, "iVirtualPointLightUseInfiniteDepth"))
+    iVirtualPointLightMaxDepth = cmds.getAttr("%s.%s" % (renderSettings, "iVirtualPointLightMaxDepth"))
+    iVirtualPointLightShadowMapResolution = cmds.getAttr("%s.%s" % (renderSettings, "iVirtualPointLightShadowMapResolution"))
+    iVirtualPointLightClamping = cmds.getAttr("%s.%s" % (renderSettings, "iVirtualPointLightClamping"))
+
+    vplSettings = cmds.frameLayout(label="Virtual Point Lights", cll=True, visible=False)
+
+    cmds.checkBox(label = "Use Infinite Depth", value=iVirtualPointLightUseInfiniteDepth,
+        changeCommand=lambda (x): getCheckBox(None, "iVirtualPointLightUseInfiniteDepth", x))   
+
+    cmds.intFieldGrp(numberOfFields=1, label="Max Depth", value1=iVirtualPointLightMaxDepth,
+        changeCommand=lambda (x): getIntFieldGroup(None, "iVirtualPointLightMaxDepth", x))
+
+    cmds.intFieldGrp(numberOfFields=1, label="Shadow Map Resolution", value1=iVirtualPointLightShadowMapResolution,
+        changeCommand=lambda (x): getIntFieldGroup(None, "iVirtualPointLightShadowMapResolution", x))
+
+    cmds.floatFieldGrp(numberOfFields=1, label="Clamping", value1=iVirtualPointLightClamping,
+        changeCommand=lambda (x): getFloatFieldGroup(None, "iVirtualPointLightClamping", x))
+
+    cmds.setParent('..')
+
+    return vplSettings
 
 def createIntegratorFrames():
     #Make the integrator specific settings
@@ -559,6 +582,9 @@ def createIntegratorFrames():
     # Adjoint Particle Tracer Settings
     ptrSettings = createIntegratorFrameAdjointParticleTracer()
 
+    # Virtual Point Lights Settings
+    #vplSettings = createIntegratorFrameVirtualPointLights()
+
     integratorFrames.append(aoSettings)
     integratorFrames.append(diSettings)
     integratorFrames.append(pSettings)
@@ -572,6 +598,7 @@ def createIntegratorFrames():
     integratorFrames.append(mltSettings)
     integratorFrames.append(erptSettings)
     integratorFrames.append(ptrSettings)
+    #integratorFrames.append(vplSettings)
 
 def createSamplerFrames():
     global samplerFrames
@@ -704,7 +731,7 @@ def createRenderSettingsUI():
     cmds.menuItem('Path Space Metropolis Light Transport')
     cmds.menuItem('Energy Redistribution Path Tracer')
     cmds.menuItem('Adjoint Particle Tracer')
-    cmds.menuItem('Virtual Point Lights')
+    #cmds.menuItem('Virtual Point Lights')
 
     createIntegratorFrames()
     if existingIntegrator not in ["", None]:
