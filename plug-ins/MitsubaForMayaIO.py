@@ -394,8 +394,6 @@ def writeShader(material, materialName, outFile, tabbedSpace):
 Write the appropriate integrator
 '''
 def writeIntegratorPathTracer(outFile, renderSettings, integratorMitsuba):
-    outFile.write(" <integrator type=\"%s\">\n" % integratorMitsuba)
-
     attrPrefixes = { 
         "path" : "", 
         "volpath" : "Volumetric", 
@@ -410,21 +408,19 @@ def writeIntegratorPathTracer(outFile, renderSettings, integratorMitsuba):
     iPathTracerHideEmitters = cmds.getAttr("%s.%s" % (renderSettings, "i%sPathTracerHideEmitters" % attrPrefix))
 
     iPathTracerMaxDepth = -1 if iPathTracerUseInfiniteDepth else iPathTracerMaxDepth
-    outFile.write("     <integer name=\"maxDepth\" value=\"" + str(iPathTracerMaxDepth) + "\"/>\n")
-
-    outFile.write("     <integer name=\"rrDepth\" value=\"" + str(iPathTracerRRDepth) + "\"/>\n")            
-
     iPathTracerStrictNormalsText = 'true' if iPathTracerStrictNormals else 'false'
-    outFile.write("     <boolean name=\"strictNormals\" value=\"%s\"/>\n" % iPathTracerStrictNormalsText)
-
     iPathTracerHideEmittersText = 'true' if iPathTracerHideEmitters else 'false'
+
+    outFile.write(" <integrator type=\"%s\">\n" % integratorMitsuba)
+
+    outFile.write("     <integer name=\"maxDepth\" value=\"" + str(iPathTracerMaxDepth) + "\"/>\n")
+    outFile.write("     <integer name=\"rrDepth\" value=\"" + str(iPathTracerRRDepth) + "\"/>\n")            
+    outFile.write("     <boolean name=\"strictNormals\" value=\"%s\"/>\n" % iPathTracerStrictNormalsText)
     outFile.write("     <boolean name=\"hideEmitters\" value=\"%s\"/>\n" % iPathTracerHideEmittersText)
 
     outFile.write(" </integrator>\n\n\n")
 
 def writeIntegratorBidirectionalPathTracer(outFile, renderSettings, integratorMitsuba):
-    outFile.write(" <integrator type=\"%s\">\n" % integratorMitsuba)
-
     iBidrectionalPathTracerUseInfiniteDepth = cmds.getAttr("%s.%s" % (renderSettings, "iBidrectionalPathTracerUseInfiniteDepth"))
     iBidrectionalPathTracerMaxDepth = cmds.getAttr("%s.%s" % (renderSettings, "iBidrectionalPathTracerMaxDepth"))
     iBidrectionalPathTracerRRDepth = cmds.getAttr("%s.%s" % (renderSettings, "iBidrectionalPathTracerRRDepth"))
@@ -432,35 +428,33 @@ def writeIntegratorBidirectionalPathTracer(outFile, renderSettings, integratorMi
     iBidrectionalPathTracerSampleDirect = cmds.getAttr("%s.%s" % (renderSettings, "iBidrectionalPathTracerSampleDirect"))
 
     iBidrectionalPathTracerMaxDepth = -1 if iBidrectionalPathTracerUseInfiniteDepth else iBidrectionalPathTracerMaxDepth
-    outFile.write("     <integer name=\"maxDepth\" value=\"" + str(iBidrectionalPathTracerMaxDepth) + "\"/>\n")
-
-    outFile.write("     <integer name=\"rrDepth\" value=\"" + str(iBidrectionalPathTracerRRDepth) + "\"/>\n")            
-
     iBidrectionalPathTracerLightImageText = 'true' if iBidrectionalPathTracerLightImage else 'false'
-    outFile.write("     <boolean name=\"lightImage\" value=\"%s\"/>\n" % iBidrectionalPathTracerLightImageText)
-
     iBidrectionalPathTracerSampleDirectText = 'true' if iBidrectionalPathTracerSampleDirect else 'false'
+
+    outFile.write(" <integrator type=\"%s\">\n" % integratorMitsuba)
+
+    outFile.write("     <integer name=\"maxDepth\" value=\"" + str(iBidrectionalPathTracerMaxDepth) + "\"/>\n")
+    outFile.write("     <integer name=\"rrDepth\" value=\"" + str(iBidrectionalPathTracerRRDepth) + "\"/>\n")            
+    outFile.write("     <boolean name=\"lightImage\" value=\"%s\"/>\n" % iBidrectionalPathTracerLightImageText)
     outFile.write("     <boolean name=\"sampleDirect\" value=\"%s\"/>\n" % iBidrectionalPathTracerSampleDirectText)
 
     outFile.write(" </integrator>\n\n\n")
 
 def writeIntegratorAmbientOcclusion(outFile, renderSettings, integratorMitsuba):
-    outFile.write(" <integrator type=\"%s\">\n" % integratorMitsuba)
-
     iAmbientOcclusionShadingSamples = cmds.getAttr("%s.%s" % (renderSettings, "iAmbientOcclusionShadingSamples"))
     iAmbientOcclusionUseAutomaticRayLength = cmds.getAttr("%s.%s" % (renderSettings, "iAmbientOcclusionUseAutomaticRayLength"))
     iAmbientOcclusionRayLength = cmds.getAttr("%s.%s" % (renderSettings, "iAmbientOcclusionRayLength"))
 
-    outFile.write("     <integer name=\"shadingSamples\" value=\"" + str(iAmbientOcclusionShadingSamples) + "\"/>\n")
-
     iAmbientOcclusionRayLength = -1 if iAmbientOcclusionUseAutomaticRayLength else iAmbientOcclusionRayLength
+
+    outFile.write(" <integrator type=\"%s\">\n" % integratorMitsuba)
+
+    outFile.write("     <integer name=\"shadingSamples\" value=\"" + str(iAmbientOcclusionShadingSamples) + "\"/>\n")
     outFile.write("     <float name=\"rayLength\" value=\"" + str(-1) + "\"/>\n")
 
     outFile.write(" </integrator>\n\n\n")
 
 def writeIntegratorDirectIllumination(outFile, renderSettings, integratorMitsuba):
-    outFile.write(" <integrator type=\"%s\">\n" % integratorMitsuba)
-
     iDirectIlluminationShadingSamples = cmds.getAttr("%s.%s" % (renderSettings, "iDirectIlluminationShadingSamples"))
     iDirectIlluminationUseEmitterAndBSDFSamples = cmds.getAttr("%s.%s" % (renderSettings, "iDirectIlluminationUseEmitterAndBSDFSamples"))
     iDirectIlluminationEmitterSamples = cmds.getAttr("%s.%s" % (renderSettings, "iDirectIlluminationEmitterSamples"))
@@ -468,24 +462,23 @@ def writeIntegratorDirectIllumination(outFile, renderSettings, integratorMitsuba
     iDirectIlluminationStrictNormals = cmds.getAttr("%s.%s" % (renderSettings, "iDirectIlluminationStrictNormals"))
     iDirectIlluminationHideEmitters = cmds.getAttr("%s.%s" % (renderSettings, "iDirectIlluminationHideEmitters"))
 
+    iDirectIlluminationStrictNormalsText = 'true' if iDirectIlluminationStrictNormals else 'false'
+    iDirectIlluminationHideEmittersText = 'true' if iDirectIlluminationHideEmitters else 'false'
+
+    outFile.write(" <integrator type=\"%s\">\n" % integratorMitsuba)
+
     if iDirectIlluminationUseEmitterAndBSDFSamples:
         outFile.write("     <integer name=\"emitterSamples\" value=\"" + str(iDirectIlluminationEmitterSamples) + "\"/>\n")
         outFile.write("     <integer name=\"bsdfSamples\" value=\"" + str(iDirectIlluminationBSDFSamples) + "\"/>\n")
-
     else:
         outFile.write("     <integer name=\"shadingSamples\" value=\"" + str(iDirectIlluminationShadingSamples) + "\"/>\n")
 
-    iDirectIlluminationStrictNormalsText = 'true' if iDirectIlluminationStrictNormals else 'false'
     outFile.write("     <boolean name=\"strictNormals\" value=\"%s\"/>\n" % iDirectIlluminationStrictNormalsText)
-
-    iDirectIlluminationHideEmittersText = 'true' if iDirectIlluminationHideEmitters else 'false'
     outFile.write("     <boolean name=\"hideEmitters\" value=\"%s\"/>\n" % iDirectIlluminationHideEmittersText)
 
     outFile.write(" </integrator>\n\n\n")
 
 def writeIntegratorPhotonMap(outFile, renderSettings, integratorMitsuba):
-    outFile.write(" <integrator type=\"%s\">\n" % integratorMitsuba)
-
     iPhotonMapDirectSamples = cmds.getAttr("%s.%s" % (renderSettings, "iPhotonMapDirectSamples"))
     iPhotonMapGlossySamples = cmds.getAttr("%s.%s" % (renderSettings, "iPhotonMapGlossySamples"))
     iPhotonMapUseInfiniteDepth = cmds.getAttr("%s.%s" % (renderSettings, "iPhotonMapUseInfiniteDepth"))
@@ -500,32 +493,27 @@ def writeIntegratorPhotonMap(outFile, renderSettings, integratorMitsuba):
     iPhotonMapHideEmitters = cmds.getAttr("%s.%s" % (renderSettings, "iPhotonMapHideEmitters"))
     iPhotonMapRRDepth = cmds.getAttr("%s.%s" % (renderSettings, "iPhotonMapRRDepth"))
 
+    iPhotonMapMaxDepth = -1 if iPhotonMapUseInfiniteDepth else iPhotonMapMaxDepth
+    iPhotonMapHideEmittersText = "true" if iPhotonMapHideEmitters else "false"
+
+    outFile.write(" <integrator type=\"%s\">\n" % integratorMitsuba)
+
     outFile.write("     <integer name=\"directSamples\" value=\"" + str(iPhotonMapDirectSamples) + "\"/>\n")
     outFile.write("     <integer name=\"glossySamples\" value=\"" + str(iPhotonMapGlossySamples) + "\"/>\n")
-
-    iPhotonMapMaxDepth = -1 if iPhotonMapUseInfiniteDepth else iPhotonMapMaxDepth
     outFile.write("     <integer name=\"maxDepth\" value=\"" + str(iPhotonMapMaxDepth) + "\"/>\n")
-
     outFile.write("     <integer name=\"globalPhotons\" value=\"" + str(iPhotonMapGlobalPhotons) + "\"/>\n")
     outFile.write("     <integer name=\"causticPhotons\" value=\"" + str(iPhotonMapCausticPhotons) + "\"/>\n")
     outFile.write("     <integer name=\"volumePhotons\" value=\"" + str(iPhotonMapVolumePhotons) + "\"/>\n")
-
     outFile.write("     <float name=\"globalLookupRadius\" value=\"" + str(iPhotonMapGlobalLookupRadius) + "\"/>\n")  
     outFile.write("     <float name=\"causticLookupRadius\" value=\"" + str(iPhotonMapCausticLookupRadius) + "\"/>\n")            
     outFile.write("     <integer name=\"lookupSize\" value=\"" + str(iPhotonMapLookupSize) + "\"/>\n")
-
     outFile.write("     <integer name=\"granularity\" value=\"" + str(iPhotonMapGranularity) + "\"/>\n")
-
-    iPhotonMapHideEmittersText = "true" if iPhotonMapHideEmitters else "false"
     outFile.write("     <boolean name=\"hideEmitters\" value=\"%s\"/>\n" % iPhotonMapHideEmittersText)
-
     outFile.write("     <integer name=\"rrDepth\" value=\"" + str(iPhotonMapRRDepth) + "\"/>\n")    
 
     outFile.write(" </integrator>\n\n\n")
 
 def writeIntegratorProgressivePhotonMap(outFile, renderSettings, integratorMitsuba):
-    outFile.write(" <integrator type=\"%s\">\n" % integratorMitsuba)
-
     attrPrefixes = { 
         "ppm" : "", 
         "sppm" : "Stochastic", 
@@ -542,11 +530,12 @@ def writeIntegratorProgressivePhotonMap(outFile, renderSettings, integratorMitsu
     iProgressivePhotonMapMaxPasses = cmds.getAttr("%s.%s" % (renderSettings, "i%sProgressivePhotonMapMaxPasses" % attrPrefix))
 
     iProgressivePhotonMapMaxDepth = -1 if iProgressivePhotonMapUseInfiniteDepth else iProgressivePhotonMapMaxDepth
-    outFile.write("     <integer name=\"maxDepth\" value=\"" + str(iProgressivePhotonMapMaxDepth) + "\"/>\n")
 
+    outFile.write(" <integrator type=\"%s\">\n" % integratorMitsuba)
+
+    outFile.write("     <integer name=\"maxDepth\" value=\"" + str(iProgressivePhotonMapMaxDepth) + "\"/>\n")
     outFile.write("     <integer name=\"photonCount\" value=\"" + str(iProgressivePhotonMapPhotonCount) + "\"/>\n")
     outFile.write("     <float name=\"initialRadius\" value=\"" + str(iProgressivePhotonMapInitialRadius) + "\"/>\n")
-
     outFile.write("     <float name=\"alpha\" value=\"" + str(iProgressivePhotonMapAlpha) + "\"/>\n")
     outFile.write("     <integer name=\"granularity\" value=\"" + str(iProgressivePhotonMapGranularity) + "\"/>\n")
     outFile.write("     <integer name=\"rrDepth\" value=\"" + str(iProgressivePhotonMapRRDepth) + "\"/>\n")    
@@ -555,8 +544,6 @@ def writeIntegratorProgressivePhotonMap(outFile, renderSettings, integratorMitsu
     outFile.write(" </integrator>\n\n\n")
 
 def writeIntegratorPrimarySampleSpaceMetropolisLightTransport(outFile, renderSettings, integratorMitsuba):
-    outFile.write(" <integrator type=\"%s\">\n" % integratorMitsuba)
-
     iPrimarySampleSpaceMetropolisLightTransportBidirectional = cmds.getAttr("%s.%s" % (renderSettings, "iPrimarySampleSpaceMetropolisLightTransportBidirectional"))
     iPrimarySampleSpaceMetropolisLightTransportUseInfiniteDepth = cmds.getAttr("%s.%s" % (renderSettings, "iPrimarySampleSpaceMetropolisLightTransportUseInfiniteDepth"))
     iPrimarySampleSpaceMetropolisLightTransportMaxDepth = cmds.getAttr("%s.%s" % (renderSettings, "iPrimarySampleSpaceMetropolisLightTransportMaxDepth"))
@@ -570,6 +557,8 @@ def writeIntegratorPrimarySampleSpaceMetropolisLightTransport(outFile, renderSet
     iPrimarySampleSpaceMetropolisLightTransportBidirectionalText = 'true' if iPrimarySampleSpaceMetropolisLightTransportBidirectional else 'false'
     iPrimarySampleSpaceMetropolisLightTransportTwoStageText = 'true' if iPrimarySampleSpaceMetropolisLightTransportTwoStage else 'false'
 
+    outFile.write(" <integrator type=\"%s\">\n" % integratorMitsuba)
+
     outFile.write("     <boolean name=\"bidirectional\" value=\"%s\"/>\n" % iPrimarySampleSpaceMetropolisLightTransportBidirectionalText)
     outFile.write("     <integer name=\"maxDepth\" value=\"" + str(iPrimarySampleSpaceMetropolisLightTransportMaxDepth) + "\"/>\n")
     outFile.write("     <integer name=\"directSamples\" value=\"" + str(iPrimarySampleSpaceMetropolisLightTransportDirectSamples) + "\"/>\n")
@@ -579,6 +568,44 @@ def writeIntegratorPrimarySampleSpaceMetropolisLightTransport(outFile, renderSet
     outFile.write("     <float name=\"pLarge\" value=\"" + str(iPrimarySampleSpaceMetropolisLightTransportPLarge) + "\"/>\n")  
 
     outFile.write(" </integrator>\n\n\n")
+
+def writeIntegratorPathSpaceMetropolisLightTransport(outFile, renderSettings, integratorMitsuba):
+    iPathSpaceMetropolisLightTransportUseInfiniteDepth = cmds.getAttr("%s.%s" % (renderSettings, "iPathSpaceMetropolisLightTransportUseInfiniteDepth"))
+    iPathSpaceMetropolisLightTransportMaxDepth = cmds.getAttr("%s.%s" % (renderSettings, "iPathSpaceMetropolisLightTransportMaxDepth"))
+    iPathSpaceMetropolisLightTransportDirectSamples = cmds.getAttr("%s.%s" % (renderSettings, "iPathSpaceMetropolisLightTransportDirectSamples"))
+    iPathSpaceMetropolisLightTransportLuminanceSamples = cmds.getAttr("%s.%s" % (renderSettings, "iPathSpaceMetropolisLightTransportLuminanceSamples"))
+    iPathSpaceMetropolisLightTransportTwoStage = cmds.getAttr("%s.%s" % (renderSettings, "iPathSpaceMetropolisLightTransportTwoStage"))
+    iPathSpaceMetropolisLightTransportBidirectionalMutation = cmds.getAttr("%s.%s" % (renderSettings, "iPathSpaceMetropolisLightTransportBidirectionalMutation"))
+    iPathSpaceMetropolisLightTransportLensPurturbation = cmds.getAttr("%s.%s" % (renderSettings, "iPathSpaceMetropolisLightTransportLensPurturbation"))
+    iPathSpaceMetropolisLightTransportMultiChainPurturbation = cmds.getAttr("%s.%s" % (renderSettings, "iPathSpaceMetropolisLightTransportMultiChainPurturbation"))
+    iPathSpaceMetropolisLightTransportCausticPurturbation = cmds.getAttr("%s.%s" % (renderSettings, "iPathSpaceMetropolisLightTransportCausticPurturbation"))
+    iPathSpaceMetropolisLightTransportManifoldPurturbation = cmds.getAttr("%s.%s" % (renderSettings, "iPathSpaceMetropolisLightTransportManifoldPurturbation"))
+    iPathSpaceMetropolisLightTransportLambda = cmds.getAttr("%s.%s" % (renderSettings, "iPathSpaceMetropolisLightTransportLambda"))
+
+    iPathSpaceMetropolisLightTransportMaxDepth = -1 if iPathSpaceMetropolisLightTransportUseInfiniteDepth else iPathSpaceMetropolisLightTransportMaxDepth
+
+    iPathSpaceMetropolisLightTransportTwoStageText = 'true' if iPathSpaceMetropolisLightTransportTwoStage else 'false'
+    iPathSpaceMetropolisLightTransportBidirectionalMutationText = 'true' if iPathSpaceMetropolisLightTransportBidirectionalMutation else 'false'
+    iPathSpaceMetropolisLightTransportLensPurturbationText = 'true' if iPathSpaceMetropolisLightTransportLensPurturbation else 'false'
+    iPathSpaceMetropolisLightTransportMultiChainPurturbationText = 'true' if iPathSpaceMetropolisLightTransportMultiChainPurturbation else 'false'
+    iPathSpaceMetropolisLightTransportCausticPurturbationText = 'true' if iPathSpaceMetropolisLightTransportCausticPurturbation else 'false'
+    iPathSpaceMetropolisLightTransportManifoldPurturbationText = 'true' if iPathSpaceMetropolisLightTransportManifoldPurturbation else 'false'
+
+    outFile.write(" <integrator type=\"%s\">\n" % integratorMitsuba)
+
+    outFile.write("     <integer name=\"maxDepth\" value=\"" + str(iPathSpaceMetropolisLightTransportMaxDepth) + "\"/>\n")
+    outFile.write("     <integer name=\"directSamples\" value=\"" + str(iPathSpaceMetropolisLightTransportDirectSamples) + "\"/>\n")
+    outFile.write("     <integer name=\"luminanceSamples\" value=\"" + str(iPathSpaceMetropolisLightTransportLuminanceSamples) + "\"/>\n")
+    outFile.write("     <boolean name=\"twoStage\" value=\"%s\"/>\n" % iPathSpaceMetropolisLightTransportTwoStageText)
+    outFile.write("     <boolean name=\"bidirectionalMutation\" value=\"%s\"/>\n" % iPathSpaceMetropolisLightTransportBidirectionalMutationText)
+    outFile.write("     <boolean name=\"lensPerturbation\" value=\"%s\"/>\n" % iPathSpaceMetropolisLightTransportLensPurturbationText)
+    outFile.write("     <boolean name=\"multiChainPerturbation\" value=\"%s\"/>\n" % iPathSpaceMetropolisLightTransportMultiChainPurturbationText)
+    outFile.write("     <boolean name=\"causticPerturbation\" value=\"%s\"/>\n" % iPathSpaceMetropolisLightTransportCausticPurturbationText)
+    outFile.write("     <boolean name=\"manifoldPerturbation\" value=\"%s\"/>\n" % iPathSpaceMetropolisLightTransportManifoldPurturbationText)
+    outFile.write("     <float name=\"lambda\" value=\"" + str(iPathSpaceMetropolisLightTransportLambda) + "\"/>\n")  
+
+    outFile.write(" </integrator>\n\n\n")
+
 
 def writeIntegrator(outFile):
     renderSettings = MitsubaRenderSettingsUI.renderSettings
@@ -633,6 +660,9 @@ def writeIntegrator(outFile):
     elif integratorMaya == "Primary Sample Space Metropolis Light Transport":
         writeIntegratorPrimarySampleSpaceMetropolisLightTransport(outFile, renderSettings, integratorMitsuba)
 
+    elif integratorMaya == "Path Space Metropolis Light Transport":
+        writeIntegratorPathSpaceMetropolisLightTransport(outFile, renderSettings, integratorMitsuba)
+
     else:
         writeIntegratorUsingUI(outFile)
 
@@ -665,82 +695,8 @@ def writeIntegratorUsingUI(outFile):
 
     #print( "Active Integrator : %s" % activeIntegrator )
 
-    #Write psmlt
-    if activeIntegrator=="Path_Space_Metropolis_Light_Transport" or activeIntegrator=="Path Space Metropolis Light Transport":
-        '''
-        The order for this integrator is:
-        0. checkBox to use infinite depth
-        1. intFieldGrp maxDepth
-        2. checkBox to use automatic directSamples
-        3. intFieldGrp directSamples
-        4. intFieldGrp luminanceSamples
-        5. checkBox twoStage
-        6. checkBox bidirectionalMutation
-        7. checkBox lensPerturbation
-        8. checkBox multiChainPerturbation
-        9. checkBox causticPerturbation
-        10. checkBox manifoldPerturbation
-        11. checkBox hideEmitters
-        12. floatFieldGrp lambda
-        '''
-        outFile.write(" <integrator type=\"mlt\">\n")
-        integratorSettings = cmds.frameLayout(activeSettings, query=True, childArray=True)
-
-        if cmds.checkBox(integratorSettings[0], query=True, value=True):
-            outFile.write("     <integer name=\"maxDepth\" value=\"-1\"/>\n")
-        else:
-            maxDepth = cmds.intFieldGrp(integratorSettings[1], query=True, value1=True)
-            outFile.write("     <integer name=\"maxDepth\" value=\"" + str(maxDepth) + "\"/>\n")
-
-        if cmds.checkBox(integratorSettings[2], query=True, value=True):
-            outFile.write("     <integer name=\"directSamples\" value=\"-1\"/>\n")
-        else:
-            directSamples = cmds.intFieldGrp(integratorSettings[3], query=True, value1=True)
-            outFile.write("     <integer name=\"directSamples\" value=\"" + str(directSamples) + "\"/>\n")
-
-        luminanceSamples = cmds.intFieldGrp(integratorSettings[4], query=True, value1=True)
-        outFile.write("     <integer name=\"luminanceSamples\" value=\"" + str(luminanceSamples) + "\"/>\n")
-
-        if cmds.checkBox(integratorSettings[5], query=True, value=True):
-            outFile.write("     <boolean name=\"twoStage\" value=\"true\"/>\n")
-        else:
-            outFile.write("     <boolean name=\"twoStage\" value=\"false\"/>\n")
-
-        if cmds.checkBox(integratorSettings[6], query=True, value=True):
-            outFile.write("     <boolean name=\"bidirectionalMutation\" value=\"true\"/>\n")
-        else:
-            outFile.write("     <boolean name=\"bidirectionalMutation\" value=\"false\"/>\n")
-
-        if cmds.checkBox(integratorSettings[7], query=True, value=True):
-            outFile.write("     <boolean name=\"lensPerturbation\" value=\"true\"/>\n")
-        else:
-            outFile.write("     <boolean name=\"lensPerturbation\" value=\"false\"/>\n")
-
-        if cmds.checkBox(integratorSettings[8], query=True, value=True):
-            outFile.write("     <boolean name=\"multiChainPerturbation\" value=\"true\"/>\n")
-        else:
-            outFile.write("     <boolean name=\"multiChainPerturbation\" value=\"false\"/>\n")
-
-        if cmds.checkBox(integratorSettings[9], query=True, value=True):
-            outFile.write("     <boolean name=\"causticPerturbation\" value=\"true\"/>\n")
-        else:
-            outFile.write("     <boolean name=\"causticPerturbation\" value=\"false\"/>\n")
-
-        if cmds.checkBox(integratorSettings[9], query=True, value=True):
-            outFile.write("     <boolean name=\"manifoldPerturbation\" value=\"true\"/>\n")
-        else:
-            outFile.write("     <boolean name=\"manifoldPerturbation\" value=\"false\"/>\n")
-
-        if cmds.checkBox(integratorSettings[11], query=True, value=True):
-            outFile.write("     <boolean name=\"hideEmitters\" value=\"true\"/>\n")
-        else:
-            outFile.write("     <boolean name=\"hideEmitters\" value=\"false\"/>\n")
-
-        mtsLambda = cmds.floatFieldGrp(integratorSettings[12], query=True, value1=True)
-        outFile.write("     <float name=\"lambda\" value=\"" + str(mtsLambda) + "\"/>\n")
-
     #Write erpt
-    elif activeIntegrator=="Energy_Redistribution_Path_Tracer" or activeIntegrator=="Energy Redistribution Path Tracer":
+    if activeIntegrator=="Energy_Redistribution_Path_Tracer" or activeIntegrator=="Energy Redistribution Path Tracer":
         '''
         The order for this integrator is:
         0. checkBox to use infinite depth

@@ -114,6 +114,19 @@ class MitsubaRenderSetting(OpenMayaMPx.MPxNode):
     mPrimarySampleSpaceMetropolisLightTransportTwoStage = OpenMaya.MObject()
     mPrimarySampleSpaceMetropolisLightTransportPLarge = OpenMaya.MObject()
 
+    # Integrator - Path Space Metropolis Light Transport variables
+    mPathSpaceMetropolisLightTransportUseInfiniteDepth = OpenMaya.MObject()
+    mPathSpaceMetropolisLightTransportMaxDepth = OpenMaya.MObject()
+    mPathSpaceMetropolisLightTransportDirectSamples = OpenMaya.MObject()
+    mPathSpaceMetropolisLightTransportLuminanceSamples = OpenMaya.MObject()
+    mPathSpaceMetropolisLightTransportTwoStage = OpenMaya.MObject()
+    mPathSpaceMetropolisLightTransportBidirectionalMutation = OpenMaya.MObject()
+    mPathSpaceMetropolisLightTransportLensPurturbation = OpenMaya.MObject()
+    mPathSpaceMetropolisLightTransportMultiChainPurturbation = OpenMaya.MObject()
+    mPathSpaceMetropolisLightTransportCausticPurturbation = OpenMaya.MObject()
+    mPathSpaceMetropolisLightTransportManifoldPurturbation = OpenMaya.MObject()
+    mPathSpaceMetropolisLightTransportLambda = OpenMaya.MObject()
+
     def __init__(self):
         OpenMayaMPx.MPxNode.__init__(self)
 
@@ -262,7 +275,6 @@ def nodeInitializer():
         MitsubaRenderSetting.addIntegerAttribute(nAttr, "mStochasticProgressivePhotonMapRRDepth", "iStochasticProgressivePhotonMapRRDepth", "isppmrrd", 5)
         MitsubaRenderSetting.addIntegerAttribute(nAttr, "mStochasticProgressivePhotonMapMaxPasses", "iStochasticProgressivePhotonMapMaxPasses", "isppmmp", 10)
 
-
         # Integrator - Primary Sample Space Metropolis Light Transport variables
         MitsubaRenderSetting.addBooleanAttribute(nAttr, "mPrimarySampleSpaceMetropolisLightTransportBidirectional", "iPrimarySampleSpaceMetropolisLightTransportBidirectional", "ipssmltb", True)
         MitsubaRenderSetting.addBooleanAttribute(nAttr, "mPrimarySampleSpaceMetropolisLightTransportUseInfiniteDepth", "iPrimarySampleSpaceMetropolisLightTransportUseInfiniteDepth", "ipssmltuid", True)
@@ -272,6 +284,19 @@ def nodeInitializer():
         MitsubaRenderSetting.addIntegerAttribute(nAttr, "mPrimarySampleSpaceMetropolisLightTransportLuminanceSamples", "iPrimarySampleSpaceMetropolisLightTransportLuminanceSamples", "ipssmltls", 100000)
         MitsubaRenderSetting.addBooleanAttribute(nAttr, "mPrimarySampleSpaceMetropolisLightTransportTwoStage", "iPrimarySampleSpaceMetropolisLightTransportTwoStage", "ipssmltts", False)
         MitsubaRenderSetting.addFloatAttribute(nAttr,   "mPrimarySampleSpaceMetropolisLightTransportPLarge", "iPrimarySampleSpaceMetropolisLightTransportPLarge", "ipssmltpl", 0.3)
+
+        # Integrator - Path Space Metropolis Light Transport variables
+        MitsubaRenderSetting.addBooleanAttribute(nAttr, "mPathSpaceMetropolisLightTransportUseInfiniteDepth", "iPathSpaceMetropolisLightTransportUseInfiniteDepth", "ipsmlttuid", True)
+        MitsubaRenderSetting.addIntegerAttribute(nAttr, "mPathSpaceMetropolisLightTransportMaxDepth", "iPathSpaceMetropolisLightTransportMaxDepth", "ipsmltmd", -1)
+        MitsubaRenderSetting.addIntegerAttribute(nAttr, "mPathSpaceMetropolisLightTransportDirectSamples", "iPathSpaceMetropolisLightTransportDirectSamples", "ipsmltds", 16)
+        MitsubaRenderSetting.addIntegerAttribute(nAttr, "mPathSpaceMetropolisLightTransportLuminanceSamples", "iPathSpaceMetropolisLightTransportLuminanceSamples", "ipsmltls", 100000)
+        MitsubaRenderSetting.addBooleanAttribute(nAttr, "mPathSpaceMetropolisLightTransportTwoStage", "iPathSpaceMetropolisLightTransportTwoStage", "ipsmltts", False)
+        MitsubaRenderSetting.addBooleanAttribute(nAttr, "mPathSpaceMetropolisLightTransportBidirectionalMutation", "iPathSpaceMetropolisLightTransportBidirectionalMutation", "ipsmltbm", True)
+        MitsubaRenderSetting.addBooleanAttribute(nAttr, "mPathSpaceMetropolisLightTransportLensPurturbation", "iPathSpaceMetropolisLightTransportLensPurturbation", "ipsmltlp", True)
+        MitsubaRenderSetting.addBooleanAttribute(nAttr, "mPathSpaceMetropolisLightTransportMultiChainPurturbation", "iPathSpaceMetropolisLightTransportMultiChainPurturbation", "ipsmltmcp", True)
+        MitsubaRenderSetting.addBooleanAttribute(nAttr, "mPathSpaceMetropolisLightTransportCausticPurturbation", "iPathSpaceMetropolisLightTransportCausticPurturbation", "ipsmltcp", True)
+        MitsubaRenderSetting.addBooleanAttribute(nAttr, "mPathSpaceMetropolisLightTransportManifoldPurturbation", "iPathSpaceMetropolisLightTransportManifoldPurturbation", "ipsmltmp", False)
+        MitsubaRenderSetting.addFloatAttribute(nAttr,   "mPathSpaceMetropolisLightTransportLambda", "iPathSpaceMetropolisLightTransportLambda", "ipsmltl", 50)
 
     except:
         sys.stderr.write("Failed to create and add attributes\n")
@@ -382,6 +407,19 @@ def nodeInitializer():
         MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mPrimarySampleSpaceMetropolisLightTransportLuminanceSamples)
         MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mPrimarySampleSpaceMetropolisLightTransportTwoStage)
         MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mPrimarySampleSpaceMetropolisLightTransportPLarge)
+
+        # Integrator - Path Space Metropolis Light Transport variables
+        MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mPathSpaceMetropolisLightTransportUseInfiniteDepth)
+        MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mPathSpaceMetropolisLightTransportMaxDepth)
+        MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mPathSpaceMetropolisLightTransportDirectSamples)
+        MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mPathSpaceMetropolisLightTransportLuminanceSamples)
+        MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mPathSpaceMetropolisLightTransportTwoStage)
+        MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mPathSpaceMetropolisLightTransportBidirectionalMutation)
+        MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mPathSpaceMetropolisLightTransportLensPurturbation)
+        MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mPathSpaceMetropolisLightTransportMultiChainPurturbation)
+        MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mPathSpaceMetropolisLightTransportCausticPurturbation)
+        MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mPathSpaceMetropolisLightTransportManifoldPurturbation)
+        MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mPathSpaceMetropolisLightTransportLambda)
 
     except:
         sys.stderr.write("Failed to add attributes\n")

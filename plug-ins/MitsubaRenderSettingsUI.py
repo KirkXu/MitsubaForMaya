@@ -38,11 +38,11 @@ global fileNameField
 global hideEmitters
 
 def createIntegratorFrameAmbientOcclusion():
-    aoSettings = cmds.frameLayout(label="Ambient Occlusion", cll=True, visible=False)
-
     existingShadingSamples = cmds.getAttr( "%s.%s" % (renderSettings, "iAmbientOcclusionShadingSamples"))
     existingUseAutomaticRayLength = cmds.getAttr( "%s.%s" % (renderSettings, "iAmbientOcclusionUseAutomaticRayLength"))
     existingRayLength = cmds.getAttr( "%s.%s" % (renderSettings, "iAmbientOcclusionRayLength"))
+
+    aoSettings = cmds.frameLayout(label="Ambient Occlusion", cll=True, visible=False)
 
     ss = cmds.intFieldGrp(numberOfFields=1, label="Shading Samples", value1=existingShadingSamples,
         changeCommand=lambda (x): getIntFieldGroup(None, "iAmbientOcclusionShadingSamples", x))
@@ -58,14 +58,14 @@ def createIntegratorFrameAmbientOcclusion():
     return aoSettings
 
 def createIntegratorFrameDirectIllumination():
-    diSettings = cmds.frameLayout(label="Direct Illumination", cll=True, visible=False)
-
     iDirectIlluminationShadingSamples = cmds.getAttr("%s.%s" % (renderSettings, "iDirectIlluminationShadingSamples"))
     iDirectIlluminationUseEmitterAndBSDFSamples = cmds.getAttr("%s.%s" % (renderSettings, "iDirectIlluminationUseEmitterAndBSDFSamples"))
     iDirectIlluminationEmitterSamples = cmds.getAttr("%s.%s" % (renderSettings, "iDirectIlluminationEmitterSamples"))
     iDirectIlluminationBSDFSamples = cmds.getAttr("%s.%s" % (renderSettings, "iDirectIlluminationBSDFSamples"))
     iDirectIlluminationStrictNormals = cmds.getAttr("%s.%s" % (renderSettings, "iDirectIlluminationStrictNormals"))
     iDirectIlluminationHideEmitters = cmds.getAttr("%s.%s" % (renderSettings, "iDirectIlluminationHideEmitters"))
+
+    diSettings = cmds.frameLayout(label="Direct Illumination", cll=True, visible=False)
 
     ss = cmds.intFieldGrp(numberOfFields=1, label="Shading Samples", value1=iDirectIlluminationShadingSamples, 
         changeCommand=lambda (x): getIntFieldGroup(None, "iDirectIlluminationShadingSamples", x))
@@ -90,13 +90,13 @@ def createIntegratorFrameDirectIllumination():
     return diSettings
 
 def createIntegratorFramePathTracer():
-    pSettings = cmds.frameLayout(label="Path Tracer", cll=True)
-
     existingUseInfiniteDepth = cmds.getAttr( "%s.%s" % (renderSettings, "iPathTracerUseInfiniteDepth"))
     existingMaxDepth = cmds.getAttr( "%s.%s" % (renderSettings, "iPathTracerMaxDepth"))
     existingRRDepth = cmds.getAttr( "%s.%s" % (renderSettings, "iPathTracerRRDepth"))
     existingStrictNormals = cmds.getAttr( "%s.%s" % (renderSettings, "iPathTracerStrictNormals"))
     existingHideEmitters = cmds.getAttr( "%s.%s" % (renderSettings, "iPathTracerHideEmitters"))
+
+    pSettings = cmds.frameLayout(label="Path Tracer", cll=True)
 
     uid = cmds.checkBox("Use Infinite Depth", value=existingUseInfiniteDepth, 
         changeCommand=lambda (x): getCheckBox(None, "iPathTracerUseInfiniteDepth", x))
@@ -118,13 +118,13 @@ def createIntegratorFramePathTracer():
     return pSettings
 
 def createIntegratorFrameSimpleVolumetricPathTracer():
-    vpsSettings = cmds.frameLayout(label="Simple Volumetric Path Tracer", cll=True, visible=False)
-
     existingUseInfiniteDepth = cmds.getAttr( "%s.%s" % (renderSettings, "iSimpleVolumetricPathTracerUseInfiniteDepth"))
     existingMaxDepth = cmds.getAttr( "%s.%s" % (renderSettings, "iSimpleVolumetricPathTracerMaxDepth"))
     existingRRDepth = cmds.getAttr( "%s.%s" % (renderSettings, "iSimpleVolumetricPathTracerRRDepth"))
     existingStrictNormals = cmds.getAttr( "%s.%s" % (renderSettings, "iSimpleVolumetricPathTracerStrictNormals"))
     existingHideEmitters = cmds.getAttr( "%s.%s" % (renderSettings, "iSimpleVolumetricPathTracerHideEmitters"))
+
+    vpsSettings = cmds.frameLayout(label="Simple Volumetric Path Tracer", cll=True, visible=False)
 
     uid = cmds.checkBox("Use Infinite Depth", value=existingUseInfiniteDepth, 
         changeCommand=lambda (x): getCheckBox(None, "iSimpleVolumetricPathTracerUseInfiniteDepth", x))
@@ -146,13 +146,13 @@ def createIntegratorFrameSimpleVolumetricPathTracer():
     return vpsSettings
 
 def createIntegratorFrameVolumetricPathTracer():
-    vpSettings = cmds.frameLayout(label="Volumetric Path Tracer", cll=True, visible=False)
-
     existingUseInfiniteDepth = cmds.getAttr( "%s.%s" % (renderSettings, "iVolumetricPathTracerUseInfiniteDepth"))
     existingMaxDepth = cmds.getAttr( "%s.%s" % (renderSettings, "iVolumetricPathTracerMaxDepth"))
     existingRRDepth = cmds.getAttr( "%s.%s" % (renderSettings, "iVolumetricPathTracerRRDepth"))
     existingStrictNormals = cmds.getAttr( "%s.%s" % (renderSettings, "iVolumetricPathTracerStrictNormals"))
     existingHideEmitters = cmds.getAttr( "%s.%s" % (renderSettings, "iVolumetricPathTracerHideEmitters"))
+
+    vpSettings = cmds.frameLayout(label="Volumetric Path Tracer", cll=True, visible=False)
 
     uid = cmds.checkBox("Use Infinite Depth", value=existingUseInfiniteDepth, 
         changeCommand=lambda (x): getCheckBox(None, "iVolumetricPathTracerUseInfiniteDepth", x))
@@ -174,13 +174,13 @@ def createIntegratorFrameVolumetricPathTracer():
     return vpSettings
 
 def createIntegratorFrameBidirectionalPathTracer():
-    bdptSettings = cmds.frameLayout(label="Bidirectional Path Tracer", cll=True, visible=False)
-
     existingUseInfiniteDepth = cmds.getAttr( "%s.%s" % (renderSettings, "iBidrectionalPathTracerUseInfiniteDepth"))
     existingMaxDepth = cmds.getAttr( "%s.%s" % (renderSettings, "iBidrectionalPathTracerMaxDepth"))
     existingRRDepth = cmds.getAttr( "%s.%s" % (renderSettings, "iBidrectionalPathTracerRRDepth"))
     existingLightImage = cmds.getAttr( "%s.%s" % (renderSettings, "iBidrectionalPathTracerLightImage"))
     existingSampleDirect = cmds.getAttr( "%s.%s" % (renderSettings, "iBidrectionalPathTracerSampleDirect"))
+
+    bdptSettings = cmds.frameLayout(label="Bidirectional Path Tracer", cll=True, visible=False)
 
     uid = cmds.checkBox("Use Infinite Depth", value=existingUseInfiniteDepth,
         changeCommand=lambda (x): getCheckBox(None, "iBidrectionalPathTracerUseInfiniteDepth", x))
@@ -202,8 +202,6 @@ def createIntegratorFrameBidirectionalPathTracer():
     return bdptSettings
 
 def createIntegratorFramePhotonMap():
-    pmSettings = cmds.frameLayout(label="Photon Map", cll=True, visible=False)
-
     iPhotonMapDirectSamples = cmds.getAttr( "%s.%s" % (renderSettings, "iPhotonMapDirectSamples"))
     iPhotonMapGlossySamples = cmds.getAttr( "%s.%s" % (renderSettings, "iPhotonMapGlossySamples"))
     iPhotonMapUseInfiniteDepth = cmds.getAttr( "%s.%s" % (renderSettings, "iPhotonMapUseInfiniteDepth"))
@@ -217,6 +215,8 @@ def createIntegratorFramePhotonMap():
     iPhotonMapGranularity = cmds.getAttr( "%s.%s" % (renderSettings, "iPhotonMapGranularity"))
     iPhotonMapHideEmitters = cmds.getAttr( "%s.%s" % (renderSettings, "iPhotonMapHideEmitters"))
     iPhotonMapRRDepth = cmds.getAttr( "%s.%s" % (renderSettings, "iPhotonMapRRDepth"))
+
+    pmSettings = cmds.frameLayout(label="Photon Map", cll=True, visible=False)
 
     cmds.intFieldGrp(numberOfFields=1, label="Direct Samples", value1=iPhotonMapDirectSamples,
         changeCommand=lambda (x): getIntFieldGroup(None, "iPhotonMapDirectSamples", x))
@@ -262,8 +262,6 @@ def createIntegratorFramePhotonMap():
     return pmSettings
 
 def createIntegratorFrameProgressivePhotonMap():
-    ppmSettings = cmds.frameLayout(label="Progressive Photon Map", cll=True, visible=False)
-
     iProgressivePhotonMapUseInfiniteDepth = cmds.getAttr("%s.%s" % (renderSettings, "iProgressivePhotonMapUseInfiniteDepth"))
     iProgressivePhotonMapMaxDepth = cmds.getAttr("%s.%s" % (renderSettings, "iProgressivePhotonMapMaxDepth"))
     iProgressivePhotonMapPhotonCount = cmds.getAttr("%s.%s" % (renderSettings, "iProgressivePhotonMapPhotonCount"))
@@ -272,6 +270,8 @@ def createIntegratorFrameProgressivePhotonMap():
     iProgressivePhotonMapGranularity = cmds.getAttr("%s.%s" % (renderSettings, "iProgressivePhotonMapGranularity"))
     iProgressivePhotonMapRRDepth = cmds.getAttr("%s.%s" % (renderSettings, "iProgressivePhotonMapRRDepth"))
     iProgressivePhotonMapMaxPasses = cmds.getAttr("%s.%s" % (renderSettings, "iProgressivePhotonMapMaxPasses"))
+
+    ppmSettings = cmds.frameLayout(label="Progressive Photon Map", cll=True, visible=False)
 
     cmds.checkBox(label = "Use Infinite Depth", value=iProgressivePhotonMapUseInfiniteDepth,
         changeCommand=lambda (x): getCheckBox(None, "iProgressivePhotonMapUseInfiniteDepth", x))   
@@ -302,8 +302,6 @@ def createIntegratorFrameProgressivePhotonMap():
     return ppmSettings
 
 def createIntegratorFrameStochasticProgressivePhotonMap():
-    sppmSettings = cmds.frameLayout(label="Stochastic Progressive Photon Map", cll=True, visible=False)
-
     iStochasticProgressivePhotonMapUseInfiniteDepth = cmds.getAttr("%s.%s" % (renderSettings, "iStochasticProgressivePhotonMapUseInfiniteDepth"))
     iStochasticProgressivePhotonMapMaxDepth = cmds.getAttr("%s.%s" % (renderSettings, "iStochasticProgressivePhotonMapMaxDepth"))
     iStochasticProgressivePhotonMapPhotonCount = cmds.getAttr("%s.%s" % (renderSettings, "iStochasticProgressivePhotonMapPhotonCount"))
@@ -312,6 +310,8 @@ def createIntegratorFrameStochasticProgressivePhotonMap():
     iStochasticProgressivePhotonMapGranularity = cmds.getAttr("%s.%s" % (renderSettings, "iStochasticProgressivePhotonMapGranularity"))
     iStochasticProgressivePhotonMapRRDepth = cmds.getAttr("%s.%s" % (renderSettings, "iStochasticProgressivePhotonMapRRDepth"))
     iStochasticProgressivePhotonMapMaxPasses = cmds.getAttr("%s.%s" % (renderSettings, "iStochasticProgressivePhotonMapMaxPasses"))
+
+    sppmSettings = cmds.frameLayout(label="Stochastic Progressive Photon Map", cll=True, visible=False)
 
     cmds.checkBox(label = "Use Infinite Depth", value=iStochasticProgressivePhotonMapUseInfiniteDepth,
         changeCommand=lambda (x): getCheckBox(None, "iStochasticProgressivePhotonMapUseInfiniteDepth", x))   
@@ -342,8 +342,6 @@ def createIntegratorFrameStochasticProgressivePhotonMap():
     return sppmSettings
 
 def createIntegratorFramePrimarySampleSpaceMetropolisLightTransport():
-    pssmltSettings = cmds.frameLayout(label="Primary Sample Space Metropolis Light Transport", cll=True, visible=False)
-
     iPrimarySampleSpaceMetropolisLightTransportBidirectional = cmds.getAttr("%s.%s" % (renderSettings, "iPrimarySampleSpaceMetropolisLightTransportBidirectional"))
     iPrimarySampleSpaceMetropolisLightTransportUseInfiniteDepth = cmds.getAttr("%s.%s" % (renderSettings, "iPrimarySampleSpaceMetropolisLightTransportUseInfiniteDepth"))
     iPrimarySampleSpaceMetropolisLightTransportMaxDepth = cmds.getAttr("%s.%s" % (renderSettings, "iPrimarySampleSpaceMetropolisLightTransportMaxDepth"))
@@ -352,6 +350,8 @@ def createIntegratorFramePrimarySampleSpaceMetropolisLightTransport():
     iPrimarySampleSpaceMetropolisLightTransportLuminanceSamples = cmds.getAttr("%s.%s" % (renderSettings, "iPrimarySampleSpaceMetropolisLightTransportLuminanceSamples"))
     iPrimarySampleSpaceMetropolisLightTransportTwoStage = cmds.getAttr("%s.%s" % (renderSettings, "iPrimarySampleSpaceMetropolisLightTransportTwoStage"))
     iPrimarySampleSpaceMetropolisLightTransportPLarge = cmds.getAttr("%s.%s" % (renderSettings, "iPrimarySampleSpaceMetropolisLightTransportPLarge"))
+
+    pssmltSettings = cmds.frameLayout(label="Primary Sample Space Metropolis Light Transport", cll=True, visible=False)
 
     cmds.checkBox(label = "Bidirectional", value=iPrimarySampleSpaceMetropolisLightTransportBidirectional,
         changeCommand=lambda (x): getCheckBox(None, "iPrimarySampleSpaceMetropolisLightTransportBidirectional", x))   
@@ -381,6 +381,59 @@ def createIntegratorFramePrimarySampleSpaceMetropolisLightTransport():
 
     return pssmltSettings
 
+def createIntegratorFramePathSpaceMetropolisLightTransport():
+    iPathSpaceMetropolisLightTransportUseInfiniteDepth = cmds.getAttr("%s.%s" % (renderSettings, "iPathSpaceMetropolisLightTransportUseInfiniteDepth"))
+    iPathSpaceMetropolisLightTransportMaxDepth = cmds.getAttr("%s.%s" % (renderSettings, "iPathSpaceMetropolisLightTransportMaxDepth"))
+    iPathSpaceMetropolisLightTransportDirectSamples = cmds.getAttr("%s.%s" % (renderSettings, "iPathSpaceMetropolisLightTransportDirectSamples"))
+    iPathSpaceMetropolisLightTransportLuminanceSamples = cmds.getAttr("%s.%s" % (renderSettings, "iPathSpaceMetropolisLightTransportLuminanceSamples"))
+    iPathSpaceMetropolisLightTransportTwoStage = cmds.getAttr("%s.%s" % (renderSettings, "iPathSpaceMetropolisLightTransportTwoStage"))
+    iPathSpaceMetropolisLightTransportBidirectionalMutation = cmds.getAttr("%s.%s" % (renderSettings, "iPathSpaceMetropolisLightTransportBidirectionalMutation"))
+    iPathSpaceMetropolisLightTransportLensPurturbation = cmds.getAttr("%s.%s" % (renderSettings, "iPathSpaceMetropolisLightTransportLensPurturbation"))
+    iPathSpaceMetropolisLightTransportMultiChainPurturbation = cmds.getAttr("%s.%s" % (renderSettings, "iPathSpaceMetropolisLightTransportMultiChainPurturbation"))
+    iPathSpaceMetropolisLightTransportCausticPurturbation = cmds.getAttr("%s.%s" % (renderSettings, "iPathSpaceMetropolisLightTransportCausticPurturbation"))
+    iPathSpaceMetropolisLightTransportManifoldPurturbation = cmds.getAttr("%s.%s" % (renderSettings, "iPathSpaceMetropolisLightTransportManifoldPurturbation"))
+    iPathSpaceMetropolisLightTransportLambda = cmds.getAttr("%s.%s" % (renderSettings, "iPathSpaceMetropolisLightTransportLambda"))
+
+    mltSettings = cmds.frameLayout(label="Path Space Metropolis Light Transport", cll=True, visible=False)
+
+
+    cmds.checkBox(label = "Use Infinite Depth", value=iPathSpaceMetropolisLightTransportUseInfiniteDepth,
+        changeCommand=lambda (x): getCheckBox(None, "iPathSpaceMetropolisLightTransportUseInfiniteDepth", x))   
+
+    cmds.intFieldGrp(numberOfFields=1, label="Max Depth", value1=iPathSpaceMetropolisLightTransportMaxDepth,
+        changeCommand=lambda (x): getIntFieldGroup(None, "iPathSpaceMetropolisLightTransportMaxDepth", x))
+
+
+    cmds.intFieldGrp(numberOfFields=1, label="Direct Samples", value1=iPathSpaceMetropolisLightTransportDirectSamples,
+        changeCommand=lambda (x): getIntFieldGroup(None, "iPathSpaceMetropolisLightTransportDirectSamples", x))
+
+    cmds.intFieldGrp(numberOfFields=1, label="Luminance Samples", value1=iPathSpaceMetropolisLightTransportLuminanceSamples,
+        changeCommand=lambda (x): getIntFieldGroup(None, "iPathSpaceMetropolisLightTransportLuminanceSamples", x))
+
+    cmds.checkBox(label = "Two Stage", value=iPathSpaceMetropolisLightTransportTwoStage,
+        changeCommand=lambda (x): getCheckBox(None, "iPathSpaceMetropolisLightTransportTwoStage", x))   
+
+    cmds.checkBox(label = "Bidirectional Mutation", value=iPathSpaceMetropolisLightTransportBidirectionalMutation,
+        changeCommand=lambda (x): getCheckBox(None, "iPathSpaceMetropolisLightTransportBidirectionalMutation", x))   
+
+    cmds.checkBox(label = "Lens Purturbation", value=iPathSpaceMetropolisLightTransportLensPurturbation,
+        changeCommand=lambda (x): getCheckBox(None, "iPathSpaceMetropolisLightTransportLensPurturbation", x))   
+
+    cmds.checkBox(label = "MultiChain Perturbation", value=iPathSpaceMetropolisLightTransportMultiChainPurturbation,
+        changeCommand=lambda (x): getCheckBox(None, "iPathSpaceMetropolisLightTransportMultiChainPurturbation", x))   
+
+    cmds.checkBox(label = "Caustic Perturbation", value=iPathSpaceMetropolisLightTransportCausticPurturbation,
+        changeCommand=lambda (x): getCheckBox(None, "iPathSpaceMetropolisLightTransportCausticPurturbation", x))   
+
+    cmds.checkBox(label = "Manifold Perturbation", value=iPathSpaceMetropolisLightTransportManifoldPurturbation,
+        changeCommand=lambda (x): getCheckBox(None, "iPathSpaceMetropolisLightTransportManifoldPurturbation", x))   
+
+    cmds.floatFieldGrp(numberOfFields=1, label="Lambda", value1=iPathSpaceMetropolisLightTransportLambda,
+        changeCommand=lambda (x): getIntFieldGroup(None, "iPathSpaceMetropolisLightTransportLambda", x))
+
+    cmds.setParent('..')
+
+    return mltSettings
 
 def createIntegratorFrames():
     #Make the integrator specific settings
@@ -418,21 +471,8 @@ def createIntegratorFrames():
     # Primary Sample Space Metropolis Light Transport Settings
     pssmltSettings = createIntegratorFramePrimarySampleSpaceMetropolisLightTransport()
 
-    mltSettings = cmds.frameLayout(label="Path Space Metropolis Light Transport", cll=True, visible=False)
-    cmds.checkBox(label = "Use infinite depth", value=True)
-    cmds.intFieldGrp(numberOfFields=1, label="maxDepth", value1=1)
-    cmds.checkBox(label = "Use automatic direct samples")
-    cmds.intFieldGrp(numberOfFields=1, label="directSamples", value1=16)
-    cmds.intFieldGrp(numberOfFields=1, label="luminanceSamples", value1=100000)
-    cmds.checkBox(label = "twoStage", value=False)
-    cmds.checkBox(label = "bidirectionalMutation", value=True)
-    cmds.checkBox(label = "lensPerturbation", value=True)
-    cmds.checkBox(label = "multiChainPerturbation", value=True)
-    cmds.checkBox(label = "causticPerturbation", value=True)
-    cmds.checkBox(label = "manifoldPerturbation", value=False)
-    cmds.checkBox(label = "hideEmitters", value=True)
-    cmds.floatFieldGrp(numberOfFields=1, label="lambda", value1=0.3)
-    cmds.setParent('..')
+    # Path Space Metropolis Light Transport Settings
+    mltSettings = createIntegratorFramePathSpaceMetropolisLightTransport()
 
     erptSettings = cmds.frameLayout(label="Energy Redistribution Path Tracer", cll=True, visible=False)
     cmds.checkBox(label = "Use infinite depth", value=True)
