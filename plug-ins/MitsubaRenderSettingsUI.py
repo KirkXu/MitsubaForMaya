@@ -485,6 +485,34 @@ def createIntegratorFrameEnergyRedistributionPathTracing():
 
     return erptSettings
 
+def createIntegratorFrameAdjointParticleTracer():
+    iAdjointParticleTracerUseInfiniteDepth = cmds.getAttr("%s.%s" % (renderSettings, "iAdjointParticleTracerUseInfiniteDepth"))
+    iAdjointParticleTracerMaxDepth = cmds.getAttr("%s.%s" % (renderSettings, "iAdjointParticleTracerMaxDepth"))
+    iAdjointParticleTracerRRDepth = cmds.getAttr("%s.%s" % (renderSettings, "iAdjointParticleTracerRRDepth"))
+    iAdjointParticleTracerGranularity = cmds.getAttr("%s.%s" % (renderSettings, "iAdjointParticleTracerGranularity"))
+    iAdjointParticleTracerBruteForce = cmds.getAttr("%s.%s" % (renderSettings, "iAdjointParticleTracerBruteForce"))
+
+
+    ptrSettings = cmds.frameLayout(label="Adjoint Particle Tracer", cll=True, visible=False)
+
+    cmds.checkBox(label = "Use Infinite Depth", value=iAdjointParticleTracerUseInfiniteDepth,
+        changeCommand=lambda (x): getCheckBox(None, "iAdjointParticleTracerUseInfiniteDepth", x))   
+
+    cmds.intFieldGrp(numberOfFields=1, label="Max Depth", value1=iAdjointParticleTracerMaxDepth,
+        changeCommand=lambda (x): getIntFieldGroup(None, "iAdjointParticleTracerMaxDepth", x))
+
+    cmds.intFieldGrp(numberOfFields=1, label="Russian Roulette Depth", value1=iAdjointParticleTracerRRDepth,
+        changeCommand=lambda (x): getIntFieldGroup(None, "iAdjointParticleTracerRRDepth", x))
+
+    cmds.intFieldGrp(numberOfFields=1, label="Granularity", value1=iAdjointParticleTracerGranularity,
+        changeCommand=lambda (x): getIntFieldGroup(None, "iAdjointParticleTracerGranularity", x))
+
+    cmds.checkBox(label = "Brute Force", value=iAdjointParticleTracerBruteForce,
+        changeCommand=lambda (x): getCheckBox(None, "iAdjointParticleTracerBruteForce", x))   
+
+    cmds.setParent('..')
+
+    return ptrSettings
 
 def createIntegratorFrames():
     #Make the integrator specific settings
@@ -528,14 +556,8 @@ def createIntegratorFrames():
     # Energy Redistribution Path Tracing Settings
     erptSettings = createIntegratorFrameEnergyRedistributionPathTracing()
 
-    ptrSettings = cmds.frameLayout(label="Adjoint Particle Tracer", cll=True, visible=False)
-    cmds.checkBox(label = "Use infinite depth", value=True)
-    cmds.intFieldGrp(numberOfFields=1, label="maxDepth", value1=1)
-    cmds.intFieldGrp(numberOfFields=1, label="rrDepth", value1=5)
-    cmds.intFieldGrp(numberOfFields=1, label="granularity", value1=200000)
-    cmds.checkBox(label = "bruteForce", value=False)
-    cmds.checkBox(label = "hideEmitters", value=True)
-    cmds.setParent('..')
+    # Adjoint Particle Tracer Settings
+    ptrSettings = createIntegratorFrameAdjointParticleTracer()
 
     integratorFrames.append(aoSettings)
     integratorFrames.append(diSettings)

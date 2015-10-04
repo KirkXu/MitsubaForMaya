@@ -651,6 +651,26 @@ def writeIntegratorEnergyRedistributionPathTracing(outFile, renderSettings, inte
     outFile.write(" </integrator>\n\n\n")
 
 
+def writeIntegratorAdjointParticleTracer(outFile, renderSettings, integratorMitsuba):
+    iAdjointParticleTracerUseInfiniteDepth = cmds.getAttr("%s.%s" % (renderSettings, "iAdjointParticleTracerUseInfiniteDepth"))
+    iAdjointParticleTracerMaxDepth = cmds.getAttr("%s.%s" % (renderSettings, "iAdjointParticleTracerMaxDepth"))
+    iAdjointParticleTracerRRDepth = cmds.getAttr("%s.%s" % (renderSettings, "iAdjointParticleTracerRRDepth"))
+    iAdjointParticleTracerGranularity = cmds.getAttr("%s.%s" % (renderSettings, "iAdjointParticleTracerGranularity"))
+    iAdjointParticleTracerBruteForce = cmds.getAttr("%s.%s" % (renderSettings, "iAdjointParticleTracerBruteForce"))
+
+    iAdjointParticleTracerMaxDepth = -1 if iAdjointParticleTracerUseInfiniteDepth else iAdjointParticleTracerMaxDepth
+    iAdjointParticleTracerBruteForceText = 'true' if iAdjointParticleTracerBruteForce else 'false'
+
+    outFile.write(" <integrator type=\"%s\">\n" % integratorMitsuba)
+
+    outFile.write("     <integer name=\"maxDepth\" value=\"" + str(iAdjointParticleTracerMaxDepth) + "\"/>\n")
+    outFile.write("     <integer name=\"rrDepth\" value=\"" + str(iAdjointParticleTracerRRDepth) + "\"/>\n")
+    outFile.write("     <integer name=\"granularity\" value=\"" + str(iAdjointParticleTracerGranularity) + "\"/>\n")
+    outFile.write("     <boolean name=\"bruteForce\" value=\"%s\"/>\n" % iAdjointParticleTracerBruteForceText)
+
+    outFile.write(" </integrator>\n\n\n")
+
+
 def writeIntegrator(outFile):
     renderSettings = MitsubaRenderSettingsUI.renderSettings
     integratorMaya = cmds.getAttr("%s.%s" % (renderSettings, "integrator")).replace('_', ' ')
@@ -668,7 +688,7 @@ def writeIntegrator(outFile):
         "Primary Sample Space Metropolis Light Transport" : "pssmlt",
         "Path Space Metropolis Light Transport" : "mlt",
         "Energy Redistribution Path Tracer" : "erpt",
-        "Adjoint Particle Tracer" : "mlt",
+        "Adjoint Particle Tracer" : "ptracer",
         "Virtual Point Lights" : "vpl"
     }
 
@@ -710,6 +730,9 @@ def writeIntegrator(outFile):
     elif integratorMaya == "Energy Redistribution Path Tracer":
         writeIntegratorEnergyRedistributionPathTracing(outFile, renderSettings, integratorMitsuba)
 
+    elif integratorMaya == "Adjoint Particle Tracer":
+        writeIntegratorAdjointParticleTracer(outFile, renderSettings, integratorMitsuba)
+
     else:
         writeIntegratorUsingUI(outFile)
 
@@ -742,44 +765,8 @@ def writeIntegratorUsingUI(outFile):
 
     #print( "Active Integrator : %s" % activeIntegrator )
 
-    #Write ptracer
-    if activeIntegrator=="Adjoint_Particle_Tracer" or activeIntegrator=="Adjoint Particle Tracer":
-        '''
-        The order for this integrator is:
-        0. checkBox to use infinite depth
-        1. intFieldGrp maxDepth
-        2. intFieldGrp rrDepth
-        3. intFieldGrp granularity
-        4. checkBox bruteForce
-        5. checkBox hideEmitters
-        '''
-        outFile.write(" <integrator type=\"mlt\">\n")
-        integratorSettings = cmds.frameLayout(activeSettings, query=True, childArray=True)
-
-        if cmds.checkBox(integratorSettings[0], query=True, value=True):
-            outFile.write("     <integer name=\"maxDepth\" value=\"-1\"/>\n")
-        else:
-            maxDepth = cmds.intFieldGrp(integratorSettings[1], query=True, value1=True)
-            outFile.write("     <integer name=\"maxDepth\" value=\"" + str(maxDepth) + "\"/>\n")
-
-        rrDepth = cmds.intFieldGrp(integratorSettings[2], query=True, value1=True)
-        outFile.write("     <integer name=\"rrDepth\" value=\"" + str(rrDepth) + "\"/>\n")
-
-        granularity = cmds.intFieldGrp(integratorSettings[3], query=True, value1=True)
-        outFile.write("     <integer name=\"granularity\" value=\"" + str(granularity) + "\"/>\n")
-
-        if cmds.checkBox(integratorSettings[4], query=True, value=True):
-            outFile.write("     <boolean name=\"bruteForce\" value=\"true\"/>\n")
-        else:
-            outFile.write("     <boolean name=\"bruteForce\" value=\"false\"/>\n")
-
-        if cmds.checkBox(integratorSettings[5], query=True, value=True):
-            outFile.write("     <boolean name=\"hideEmitters\" value=\"true\"/>\n")
-        else:
-            outFile.write("     <boolean name=\"hideEmitters\" value=\"false\"/>\n")
-
     #Write vpl
-    elif activeIntegrator=="Virtual_Point_Lights" or activeIntegrator=="Virtual Point Lights":
+    if activeIntegrator=="Virtual_Point_Lights" or activeIntegrator=="Virtual Point Lights":
         print "vpl"
 
     outFile.write(" </integrator>\n\n\n")

@@ -140,6 +140,13 @@ class MitsubaRenderSetting(OpenMayaMPx.MPxNode):
     mEnergyRedistributionPathTracingManifoldPerturbation = OpenMaya.MObject()
     mEnergyRedistributionPathTracingLambda = OpenMaya.MObject()
 
+    # Integrator - Adjoint Particle Tracer variables
+    mAdjointParticleTracerUseInfiniteDepth = OpenMaya.MObject()
+    mAdjointParticleTracerMaxDepth = OpenMaya.MObject()
+    mAdjointParticleTracerRRDepth = OpenMaya.MObject()
+    mAdjointParticleTracerGranularity = OpenMaya.MObject()
+    mAdjointParticleTracerBruteForce = OpenMaya.MObject()
+
     def __init__(self):
         OpenMayaMPx.MPxNode.__init__(self)
 
@@ -324,6 +331,13 @@ def nodeInitializer():
         MitsubaRenderSetting.addBooleanAttribute(nAttr, "mEnergyRedistributionPathTracingManifoldPerturbation", "iEnergyRedistributionPathTracingManifoldPerturbation", "ierptmp", False)
         MitsubaRenderSetting.addFloatAttribute(nAttr,   "mEnergyRedistributionPathTracingLambda", "iEnergyRedistributionPathTracingLambda", "ierptl", 50)
 
+        # Integrator - Adjoint Particle Tracer variables
+        MitsubaRenderSetting.addBooleanAttribute(nAttr, "mAdjointParticleTracerUseInfiniteDepth", "iAdjointParticleTracerUseInfiniteDepth", "iaptuid", True)
+        MitsubaRenderSetting.addIntegerAttribute(nAttr, "mAdjointParticleTracerMaxDepth", "iAdjointParticleTracerMaxDepth", "iaptmd", -1)
+        MitsubaRenderSetting.addIntegerAttribute(nAttr, "mAdjointParticleTracerRRDepth", "iAdjointParticleTracerRRDepth", "iaptrrd", 5)
+        MitsubaRenderSetting.addIntegerAttribute(nAttr, "mAdjointParticleTracerGranularity", "iAdjointParticleTracerGranularity", "iaptg", 200000)
+        MitsubaRenderSetting.addBooleanAttribute(nAttr, "mAdjointParticleTracerBruteForce", "iAdjointParticleTracerBruteForce", "iaptbf", False)
+
     except:
         sys.stderr.write("Failed to create and add attributes\n")
         raise
@@ -459,6 +473,13 @@ def nodeInitializer():
         MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mEnergyRedistributionPathTracingCausticPerturbation)
         MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mEnergyRedistributionPathTracingManifoldPerturbation)
         MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mEnergyRedistributionPathTracingLambda)
+
+        # Integrator - Adjoint Particle Tracer variables
+        MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mAdjointParticleTracerUseInfiniteDepth)
+        MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mAdjointParticleTracerMaxDepth)
+        MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mAdjointParticleTracerRRDepth)
+        MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mAdjointParticleTracerGranularity)
+        MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mAdjointParticleTracerBruteForce)
 
     except:
         sys.stderr.write("Failed to add attributes\n")
