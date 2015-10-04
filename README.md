@@ -21,31 +21,49 @@ Installation and Usage
 
 	- Windows: ex. C:/path/where/you/downloaded/Mitsuba 0.5.0 64bit/Mitsuba 0.5.0/mitsuba.exe
 
-- ****VERY IMPORTANT**** 
-- If you use an Integrator other than Path Tracer, the Render Settings' Mitsuba tab has to have been displayed before a render can start
-	- If you use a different integrator, you'll have to click on the Mitsuba tab in Render Settings before you can render.
+- Currently, only Mitsuba Lights and Materials are supported. These can be found and assigned using the Hypershade
 
-Environment
+Application Environment
 - 
 The path to the Mitsuba binary has to be specified, either in the Render Settings manually or by using the Maya.env or other environment setup file.
 
 - The environment variable to set is MITSUBA_PATH 
-
-- Maya.env files can be saved in the following folders
-
-	- Windows: C:\Users\username\Documents\maya\<mayaVersion>
-
-	- Mac: /Users/username/Library/Preferences/Autodesk/maya/<mayaVersion>
-
-	- Linux: /home/username/maya/<mayaVersion>
-
-- Example Maya.env settings follow:
 
 	- Windows: MITSUBA_PATH = C:\path\to\Mitsuba 0.5.0\mitsuba.exe
 
 	- Mac: MITSUBA_PATH = /path/to/Mitsuba.app/Contents/MacOS/mitsuba
 
 	- Linux: MITSUBA_PATH = /path/to/mitsuba
+
+In order to render in Batch mode, you'll need to set two environment variables
+
+- MAYA_RENDER_DESC_PATH has to point to the folder containing the MitsubaRenderer.xml file.
+
+- MAYA_PLUG_IN_PATH has to point to the MitsubaForMaya plug-ins folder
+
+- Example Maya.env settings for Windows:
+
+	- MAYA_RENDER_DESC_PATH = C:\path\to\MitsubaForMaya
+
+	- MAYA_PLUG_IN_PATH = C:\path\to\MitsubaForMaya\plug-ins
+
+Maya.env
+-
+
+Maya.env files can be saved in the following folders
+
+- Windows: C:\Users\username\Documents\maya\<mayaVersion>
+
+- Mac: /Users/username/Library/Preferences/Autodesk/maya/<mayaVersion>
+
+- Linux: /home/username/maya/<mayaVersion>
+
+*Autodesk Reference links*
+
+- [Setting the Maya.env](http://help.autodesk.com/view/MAYAUL/2016/ENU/?guid=GUID-8EFB1AC1-ED7D-4099-9EEE-624097872C04)
+
+- [Brief description of MAYA_RENDER_DESC_PATH](http://knowledge.autodesk.com/support/maya/learn-explore/caas/CloudHelp/cloudhelp/2016/ENU/Maya/files/GUID-AF8A7EA4-DEEF-49EF-A18C-CDA72B4F9E1E-htm.html)
+
 
 Rendering in Batch
 -
@@ -54,24 +72,6 @@ Rendering an animation in Batch mode works, with a couple of caveats
 - Batch renders can't be canceled from the UI
 
 - Animated parameters on Mitsuba shading, lighting and volume nodes aren't supported
-
-In order to render in Batch mode, you'll need to set two environment variables
-
-- MAYA_RENDER_DESC_PATH has to point to the folder containing the MitsubaRenderer.xml file.
-
-- MAYA_PLUG_IN_PATH has to point to the MitsubaForMaya plug-ins folder
-
-- Example Maya.env settings for Windows follow:
-
-	- MAYA_RENDER_DESC_PATH = C:\path\to\MitsubaForMaya
-
-	- MAYA_PLUG_IN_PATH = C:\path\to\MitsubaForMaya\plug-ins
-
-- *Autodesk Reference links*
-
-	- [Setting the Maya.env](http://help.autodesk.com/view/MAYAUL/2016/ENU/?guid=GUID-8EFB1AC1-ED7D-4099-9EEE-624097872C04)
-
-	- [Brief description of MAYA_RENDER_DESC_PATH](http://knowledge.autodesk.com/support/maya/learn-explore/caas/CloudHelp/cloudhelp/2016/ENU/Maya/files/GUID-AF8A7EA4-DEEF-49EF-A18C-CDA72B4F9E1E-htm.html)
 
 Notes
 -

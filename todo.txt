@@ -35,6 +35,7 @@ x add support for persisting render settings
  x integrators - Path Tracer
  x The rest of the integrators
 
+add support for tiled rendering
 support render cancel
 support batch render cancel
 support using Mitsuba GUI for in-progress render viewing
