@@ -13,6 +13,9 @@ kPluginCmdName = "Mitsuba"
 pluginDir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
 sys.path.append(pluginDir)
 
+sys.path.append(os.path.abspath(
+    os.path.join(os.path.dirname(__file__), '..', 'util')))
+
 from process import Process
 
 # Import modules for settings, material, lights and volumes
@@ -25,13 +28,13 @@ renderSettings = None
 #
 # IO
 #
-import MitsubaForMayaIO
+import MitsubaRendererIO
 
 #
 # Utility functions
 #
 def registMaterialNodeType(materialNodeType):
-    MitsubaForMayaIO.materialNodeTypes.append(materialNodeType)
+    MitsubaRendererIO.materialNodeTypes.append(materialNodeType)
 
 def createRenderSettingsNode():
     global renderSettings
@@ -57,7 +60,7 @@ def updateRenderSettings():
 #
 # UI
 #
-import MitsubaRenderSettingsUI
+import MitsubaRendererUI
 
 #
 # Renderer functions
@@ -180,7 +183,7 @@ class mitsubaForMaya(OpenMayaMPx.MPxCommand):
                 print( "Rendering frame " + str(frame) + " - frame set" )
 
                 # Export scene and geometry
-                geometryFiles = MitsubaForMayaIO.writeScene(outFileName, projectDir, renderSettings)
+                geometryFiles = MitsubaRendererIO.writeScene(outFileName, projectDir, renderSettings)
         
                 # Render scene, delete scene and geometry
                 imageName = renderScene(outFileName, projectDir, mitsubaPath, 
@@ -191,7 +194,7 @@ class mitsubaForMaya(OpenMayaMPx.MPxCommand):
             print( "Animation finished" )
         else:
             # Export scene and geometry
-            geometryFiles = MitsubaForMayaIO.writeScene(outFileName, projectDir, renderSettings)
+            geometryFiles = MitsubaRendererIO.writeScene(outFileName, projectDir, renderSettings)
 
             # Render scene
             # Clean up scene and geometry
@@ -199,7 +202,7 @@ class mitsubaForMaya(OpenMayaMPx.MPxCommand):
                 mtsDir, keepTempFiles, geometryFiles, verbose=verbose)
 
             # Display the render
-            MitsubaRenderSettingsUI.showRender(imageName)
+            MitsubaRendererUI.showRender(imageName)
 
         if cmds.about(batch=True):
             print( "End of Batch Render" )

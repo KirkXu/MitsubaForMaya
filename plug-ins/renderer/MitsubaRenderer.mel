@@ -1,7 +1,7 @@
 global proc mitsubaCreateRenderSettings() {
 	string $python = "";
-	$python += "import MitsubaRenderSettingsUI;";
-	$python += "MitsubaRenderSettingsUI.createRenderSettings()";
+	$python += "import MitsubaRendererUI;";
+	$python += "MitsubaRendererUI.createRenderSettings()";
 
 	python( $python );
 }
