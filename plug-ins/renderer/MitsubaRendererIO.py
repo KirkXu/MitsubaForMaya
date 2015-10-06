@@ -908,34 +908,45 @@ def writeSensor(outFile, frameNumber, renderSettings):
         camUp = camera.getWorldUp()
 
     #Type
-    camType="perspective"
+    camType = "perspective"
     if cmds.getAttr(rCamShape+".depthOfField"):
-        camType="thinlens"
+        camType = "thinlens"
+    elif cmds.getAttr(rCamShape+".orthographic"):
+        camType = "orthographic"
 
     #dof stuff
     apertureRadius = 1
     focusDistance = 1
-    if camType=="thinlens":
+    if camType == "thinlens":
         apertureRadius = cmds.getAttr(rCamShape+".focusRegionScale")
         focusDistance = cmds.getAttr(rCamShape+".focusDistance")
 
     #fov
     fov = cmds.camera(rCamShape, query=True, horizontalFieldOfView=True)
 
+    # orthographic
+    orthographicWidth = cmds.getAttr( rCamShape + ".orthographicWidth")
+    orthographicWidth /= 2.0
+
     #near clip plane
     nearClip = cmds.getAttr(rCamShape+".nearClipPlane")
 
     outFile.write(" <sensor type=\"" + camType + "\">\n")
-    if camType=="thinlens":
-        outFile.write("         <float name=\"apertureRadius\" value=\"" + str(apertureRadius) + "\"/>\n")
-        outFile.write("         <float name=\"focusDistance\" value=\"" + str(focusDistance) + "\"/>\n")    
-    outFile.write("         <float name=\"fov\" value=\"" + str(fov) + "\"/>\n")
-    outFile.write("         <string name=\"fovAxis\" value=\"x\"/>\n")
+    if camType in ["thinlens", "perspective"]:
+        if camType == "thinlens":
+            outFile.write("         <float name=\"apertureRadius\" value=\"" + str(apertureRadius) + "\"/>\n")
+            outFile.write("         <float name=\"focusDistance\" value=\"" + str(focusDistance) + "\"/>\n")    
+        outFile.write("         <float name=\"fov\" value=\"" + str(fov) + "\"/>\n")
+        outFile.write("         <string name=\"fovAxis\" value=\"x\"/>\n")
+
     outFile.write("         <float name=\"nearClip\" value=\"" + str(nearClip) + "\"/>\n")
+
     outFile.write("         <transform name=\"toWorld\">\n")
     if camAimUp:
         outFile.write("             <lookat target=\"" + str(camAim[0]) + " " + str(camAim[1]) + " " + str(camAim[2]) + "\" origin=\"" + str(camPos[0]) + " " + str(camPos[1]) + " " + str(camPos[2]) + "\" up=\"" + str(camUp[0]-camPos[0]) + " " + str(camUp[1]-camPos[1]) + " " + str(camUp[2]-camPos[2]) + "\"/>\n")
     else:
+        if camType == "orthographic":
+            outFile.write("             <scale x=\"%s\" y=\"%s\"/>\n" % (orthographicWidth, orthographicWidth) )
         outFile.write("             <lookat target=\"" + str(camAim[0]) + " " + str(camAim[1]) + " " + str(camAim[2]) + "\" origin=\"" + str(camPos[0]) + " " + str(camPos[1]) + " " + str(camPos[2]) + "\" up=\"" + str(camUp[0]) + " " + str(camUp[1]) + " " + str(camUp[2]) + "\"/>\n")
     outFile.write("         </transform>\n")
     outFile.write("\n")
