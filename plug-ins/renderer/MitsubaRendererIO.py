@@ -976,6 +976,187 @@ def writeSensor(outFile, frameNumber, renderSettings):
     outFile.write(" </sensor>\n")
     outFile.write("\n")
 
+def writeLightDirectional(outFile, light):
+    intensity = cmds.getAttr(light+".intensity")
+    color = cmds.getAttr(light+".color")[0]
+    irradiance = [0,0,0]
+    for i in range(3):
+        irradiance[i] = intensity*color[i]
+
+    matrix = cmds.getAttr(light+".worldMatrix")
+    lightDir = [-matrix[8],-matrix[9],-matrix[10]]
+
+    outFile.write(" <emitter type=\"directional\">\n")
+    outFile.write("     <srgb name=\"irradiance\" value=\"" + str(irradiance[0]) + " " + str(irradiance[1]) + " " + str(irradiance[2]) + "\"/>\n")
+    outFile.write("     <vector name=\"direction\" x=\"" + str(lightDir[0]) + "\" y=\"" + str(lightDir[1]) + "\" z=\"" + str(lightDir[2]) + "\"/>\n")
+    outFile.write(" </emitter>\n")
+
+def writeLightPoint(outFile, light):
+    intensity = cmds.getAttr(light+".intensity")
+    color = cmds.getAttr(light+".color")[0]
+    irradiance = [0,0,0]
+    for i in range(3):
+        irradiance[i] = intensity*color[i]
+
+    matrix = cmds.getAttr(light+".worldMatrix")
+    position = [matrix[12],matrix[13],matrix[14]]
+
+    outFile.write(" <emitter type=\"point\">\n")
+    outFile.write("     <srgb name=\"intensity\" value=\"" + str(irradiance[0]) + " " + str(irradiance[1]) + " " + str(irradiance[2]) + "\"/>\n")
+    outFile.write("     <point name=\"position\" x=\"" + str(position[0]) + "\" y=\"" + str(position[1]) + "\" z=\"" + str(position[2]) + "\"/>\n")
+    outFile.write(" </emitter>\n")
+
+def writeLightSpot(outFile, light):
+    intensity = cmds.getAttr(light+".intensity")
+    color = cmds.getAttr(light+".color")[0]
+    irradiance = [0,0,0]
+    for i in range(3):
+        irradiance[i] = intensity*color[i]
+
+    coneAngle = float(cmds.getAttr(light+".coneAngle"))/2.0
+    penumbraAngle = float(cmds.getAttr(light+".penumbraAngle"))
+
+    matrix = cmds.getAttr(light+".worldMatrix")
+    position = [matrix[12],matrix[13],matrix[14]]
+
+    transform = cmds.listRelatives( light, parent=True )[0]
+    rotation = cmds.getAttr(transform+".rotate")[0]
+
+    outFile.write(" <emitter type=\"spot\">\n")
+    outFile.write("     <rgb name=\"intensity\" value=\"" + str(irradiance[0]) + " " + str(irradiance[1]) + " " + str(irradiance[2]) + "\"/>\n")
+    outFile.write("     <float name=\"cutoffAngle\" value=\"" + str(coneAngle + penumbraAngle) + "\"/>\n")
+    outFile.write("     <float name=\"beamWidth\" value=\"" + str(coneAngle) + "\"/>\n")
+
+    outFile.write("     <transform name=\"toWorld\">\n")
+    outFile.write("         <translate x=\"" + str(position[0]) + "\" y=\"" + str(position[1]) + "\" z=\"" + str(position[2]) + "\"/>\n")
+    outFile.write("         <rotate y=\"1\" angle=\"" + str(180.0) + "\"/>\n")
+    if rotation[0] != 0.0:
+        outFile.write("         <rotate x=\"1\" angle=\"" + str(rotation[0]) + "\"/>\n")
+    if rotation[1] != 0.0:
+        outFile.write("         <rotate y=\"1\" angle=\"" + str(rotation[1]) + "\"/>\n")
+    if rotation[2] != 0.0:
+        outFile.write("         <rotate z=\"1\" angle=\"" + str(rotation[2]) + "\"/>\n")
+    outFile.write("     </transform>\n")
+
+    outFile.write(" </emitter>\n")
+
+def writeLightSunSky(outFile, sunsky):
+    sun = cmds.getAttr(sunsky+".useSun")
+    sky = cmds.getAttr(sunsky+".useSky")
+    if sun and sky:
+        outFile.write(" <emitter type=\"sunsky\">\n")
+    elif sun:
+        outFile.write(" <emitter type=\"sun\">\n")
+    elif sky:
+        outFile.write(" <emitter type=\"sky\">\n")
+    else:
+        print "Must use either sun or sky, defaulting to sunsky"
+        outFile.write(" <emitter type=\"sunsky\">\n")
+
+    turbidity = cmds.getAttr(sunsky+".turbidity")
+    albedo = cmds.getAttr(sunsky+".albedo")
+    date = cmds.getAttr(sunsky+".date")
+    time = cmds.getAttr(sunsky+".time")
+    latitude = cmds.getAttr(sunsky+".latitude")
+    longitude = cmds.getAttr(sunsky+".longitude")
+    timezone = cmds.getAttr(sunsky+".timezone")
+    stretch = cmds.getAttr(sunsky+".stretch")
+    resolution = cmds.getAttr(sunsky+".resolution")
+    sunScale = cmds.getAttr(sunsky+".sunScale")
+    skyScale = cmds.getAttr(sunsky+".skyScale")
+    sunRadiusScale = cmds.getAttr(sunsky+".sunRadiusScale")
+
+    outFile.write("     <float name=\"turbidity\" value=\"" + str(turbidity) + "\"/>\n")
+    outFile.write("     <srgb name=\"albedo\" value=\"" + str(albedo[0][0]) + " " + str(albedo[0][1]) + " " + str(albedo[0][2]) + "\"/>\n")
+    outFile.write("     <integer name=\"year\" value=\"" + str(date[0][0]) + "\"/>\n")
+    outFile.write("     <integer name=\"month\" value=\"" + str(date[0][1]) + "\"/>\n")
+    outFile.write("     <integer name=\"day\" value=\"" + str(date[0][2]) + "\"/>\n")
+    outFile.write("     <float name=\"hour\" value=\"" + str(time[0][0]) + "\"/>\n")
+    outFile.write("     <float name=\"minute\" value=\"" + str(time[0][1]) + "\"/>\n")
+    outFile.write("     <float name=\"second\" value=\"" + str(time[0][2]) + "\"/>\n")
+    outFile.write("     <float name=\"latitude\" value=\"" + str(latitude) + "\"/>\n")
+    outFile.write("     <float name=\"longitude\" value=\"" + str(longitude) + "\"/>\n")
+    outFile.write("     <float name=\"timezone\" value=\"" + str(timezone) + "\"/>\n")
+    outFile.write("     <float name=\"stretch\" value=\"" + str(stretch) + "\"/>\n")
+    outFile.write("     <integer name=\"resolutionX\" value=\"" + str(resolution[0][1]) + "\"/>\n")
+    outFile.write("     <integer name=\"resolutionY\" value=\"" + str(resolution[0][1]) + "\"/>\n")
+    outFile.write("     <float name=\"sunScale\" value=\"" + str(sunScale) + "\"/>\n")
+    outFile.write("     <float name=\"skyScale\" value=\"" + str(skyScale) + "\"/>\n")
+    outFile.write("     <float name=\"sunRadiusScale\" value=\"" + str(sunRadiusScale) + "\"/>\n")
+
+    outFile.write(" </emitter>\n")
+
+def writeLightEnvMap(outFile, envmap):
+    connections = cmds.listConnections(envmap, plugs=False, c=True)
+    fileName = ""
+    hasFile = False
+    correctFormat = True
+
+    if connections:
+        connectionAttr = "source"
+        fileName = getTextureFile(envmap, connectionAttr)
+
+        '''
+        for i in range(len(connections)):
+            connection = connections[i]
+            if connection == envmap+".source":
+                inConnection = connections[i+1]
+                if cmds.nodeType(inConnection) == "file":
+                    fileName = cmds.getAttr(inConnection+".fileTextureName")
+        '''
+
+        if fileName:
+            extension = fileName[len(fileName)-3:len(fileName)]
+            if extension == "hdr" or extension == "exr":
+                hasFile = True
+            else:
+                print "file must be hdr or exr"
+                correctFormat = False
+        else:
+            print "Please supply a fileName if you plan to use an environment map"
+            correctFormat = False
+    
+    if correctFormat:
+        if hasFile:
+            scale = cmds.getAttr(envmap+".scale")
+            gamma = cmds.getAttr(envmap+".gamma")
+            cache = cmds.getAttr(envmap+".cache")
+
+            samplingWeight = cmds.getAttr(envmap+".samplingWeight")
+            rotate = cmds.getAttr(envmap+".rotate")[0]
+
+            #print( "\n\n\n\n")
+            #print( "envmap::rotate : %3.3f %3.3f %3.3f" % (rotate[0], rotate[1], rotate[2]))
+            #print( "\n\n\n\n")
+
+            outFile.write(" <emitter type=\"envmap\">\n")
+            outFile.write("     <string name=\"filename\" value=\"" + fileName + "\"/>\n")
+            outFile.write("     <float name=\"scale\" value=\"" + str(scale) + "\"/>\n")
+            outFile.write("     <float name=\"gamma\" value=\"" + str(gamma) + "\"/>\n")
+            if cache:
+                outFile.write("     <boolean name=\"cache\" value=\"true\"/>\n")
+            else:
+                outFile.write("     <boolean name=\"cache\" value=\"false\"/>\n")
+
+            outFile.write("     <float name=\"samplingWeight\" value=\"" + str(samplingWeight) + "\"/>\n")
+
+            outFile.write("     <transform name=\"toWorld\">\n")
+            outFile.write("         <rotate x=\"1\" angle=\"" + str(rotate[0]) + "\"/>\n")
+            outFile.write("         <rotate y=\"1\" angle=\"" + str(rotate[1]) + "\"/>\n")
+            outFile.write("         <rotate z=\"1\" angle=\"" + str(rotate[2]) + "\"/>\n")
+            outFile.write("     </transform>\n")
+            outFile.write(" </emitter>\n")
+
+        else:
+            radiance = cmds.getAttr(envmap+".source")
+            samplingWeight = cmds.getAttr(envmap+".samplingWeight")
+            
+            outFile.write(" <emitter type=\"constant\">\n")
+            outFile.write("     <srgb name=\"radiance\" value=\"" + str(radiance[0][0]) + " " + str(radiance[0][1]) + " " + str(radiance[0][2]) + "\"/>\n")
+            outFile.write("     <float name=\"samplingWeight\" value=\"" + str(samplingWeight) + "\"/>\n")
+            outFile.write(" </emitter>\n")
+
+
 '''
 Write lights
 '''
@@ -992,137 +1173,21 @@ def writeLights(outFile):
     for light in lights:
         lightType = cmds.nodeType(light)
         if lightType == "directionalLight":
-            intensity = cmds.getAttr(light+".intensity")
-            color = cmds.getAttr(light+".color")[0]
-            irradiance = [0,0,0]
-            for i in range(3):
-                irradiance[i] = intensity*color[i]
-            matrix = cmds.getAttr(light+".worldMatrix")
-            lightDir = [-matrix[8],-matrix[9],-matrix[10]]
-            outFile.write(" <emitter type=\"directional\">\n")
-            outFile.write("     <vector name=\"direction\" x=\"" + str(lightDir[0]) + "\" y=\"" + str(lightDir[1]) + "\" z=\"" + str(lightDir[2]) + "\"/>\n")
-            outFile.write("     <srgb name=\"irradiance\" value=\"" + str(irradiance[0]) + " " + str(irradiance[1]) + " " + str(irradiance[2]) + "\"/>\n")
-            outFile.write(" </emitter>\n")
+            writeLightDirectional(outFile, light)
+        elif lightType == "pointLight":
+            writeLightPoint(outFile, light)
+        elif lightType == "spotLight":
+            writeLightSpot(outFile, light)
 
     #Sunsky light
     if sunskyLights:
         sunsky = sunskyLights[0]
-        sun = cmds.getAttr(sunsky+".useSun")
-        sky = cmds.getAttr(sunsky+".useSky")
-        if sun and sky:
-            outFile.write(" <emitter type=\"sunsky\">\n")
-        elif sun:
-            outFile.write(" <emitter type=\"sun\">\n")
-        elif sky:
-            outFile.write(" <emitter type=\"sky\">\n")
-        else:
-            print "Must use either sun or sky, defaulting to sunsky"
-            outFile.write(" <emitter type=\"sunsky\">\n")
-
-        turbidity = cmds.getAttr(sunsky+".turbidity")
-        albedo = cmds.getAttr(sunsky+".albedo")
-        date = cmds.getAttr(sunsky+".date")
-        time = cmds.getAttr(sunsky+".time")
-        latitude = cmds.getAttr(sunsky+".latitude")
-        longitude = cmds.getAttr(sunsky+".longitude")
-        timezone = cmds.getAttr(sunsky+".timezone")
-        stretch = cmds.getAttr(sunsky+".stretch")
-        resolution = cmds.getAttr(sunsky+".resolution")
-        sunScale = cmds.getAttr(sunsky+".sunScale")
-        skyScale = cmds.getAttr(sunsky+".skyScale")
-        sunRadiusScale = cmds.getAttr(sunsky+".sunRadiusScale")
-
-        outFile.write("     <float name=\"turbidity\" value=\"" + str(turbidity) + "\"/>\n")
-        outFile.write("     <srgb name=\"albedo\" value=\"" + str(albedo[0][0]) + " " + str(albedo[0][1]) + " " + str(albedo[0][2]) + "\"/>\n")
-        outFile.write("     <integer name=\"year\" value=\"" + str(date[0][0]) + "\"/>\n")
-        outFile.write("     <integer name=\"month\" value=\"" + str(date[0][1]) + "\"/>\n")
-        outFile.write("     <integer name=\"day\" value=\"" + str(date[0][2]) + "\"/>\n")
-        outFile.write("     <float name=\"hour\" value=\"" + str(time[0][0]) + "\"/>\n")
-        outFile.write("     <float name=\"minute\" value=\"" + str(time[0][1]) + "\"/>\n")
-        outFile.write("     <float name=\"second\" value=\"" + str(time[0][2]) + "\"/>\n")
-        outFile.write("     <float name=\"latitude\" value=\"" + str(latitude) + "\"/>\n")
-        outFile.write("     <float name=\"longitude\" value=\"" + str(longitude) + "\"/>\n")
-        outFile.write("     <float name=\"timezone\" value=\"" + str(timezone) + "\"/>\n")
-        outFile.write("     <float name=\"stretch\" value=\"" + str(stretch) + "\"/>\n")
-        outFile.write("     <integer name=\"resolutionX\" value=\"" + str(resolution[0][1]) + "\"/>\n")
-        outFile.write("     <integer name=\"resolutionY\" value=\"" + str(resolution[0][1]) + "\"/>\n")
-        outFile.write("     <float name=\"sunScale\" value=\"" + str(sunScale) + "\"/>\n")
-        outFile.write("     <float name=\"skyScale\" value=\"" + str(skyScale) + "\"/>\n")
-        outFile.write("     <float name=\"sunRadiusScale\" value=\"" + str(sunRadiusScale) + "\"/>\n")
-
-        outFile.write(" </emitter>\n")
+        writeLightSunSky(outFile, sunsky)
 
     #Area lights
     if envLights:
         envmap = envLights[0]
-        connections = cmds.listConnections(envmap, plugs=False, c=True)
-        fileName = ""
-        hasFile = False
-        correctFormat = True
-
-        if connections:
-            connectionAttr = "source"
-            fileName = getTextureFile(envmap, connectionAttr)
-
-            '''
-            for i in range(len(connections)):
-                connection = connections[i]
-                if connection == envmap+".source":
-                    inConnection = connections[i+1]
-                    if cmds.nodeType(inConnection) == "file":
-                        fileName = cmds.getAttr(inConnection+".fileTextureName")
-            '''
-
-            if fileName:
-                extension = fileName[len(fileName)-3:len(fileName)]
-                if extension == "hdr" or extension == "exr":
-                    hasFile = True
-                else:
-                    print "file must be hdr or exr"
-                    correctFormat = False
-            else:
-                print "Please supply a fileName if you plan to use an environment map"
-                correctFormat = False
-        
-        if correctFormat:
-            if hasFile:
-                scale = cmds.getAttr(envmap+".scale")
-                gamma = cmds.getAttr(envmap+".gamma")
-                cache = cmds.getAttr(envmap+".cache")
-
-                samplingWeight = cmds.getAttr(envmap+".samplingWeight")
-                rotate = cmds.getAttr(envmap+".rotate")[0]
-
-                #print( "\n\n\n\n")
-                #print( "envmap::rotate : %3.3f %3.3f %3.3f" % (rotate[0], rotate[1], rotate[2]))
-                #print( "\n\n\n\n")
-
-                outFile.write(" <emitter type=\"envmap\">\n")
-                outFile.write("     <string name=\"filename\" value=\"" + fileName + "\"/>\n")
-                outFile.write("     <float name=\"scale\" value=\"" + str(scale) + "\"/>\n")
-                outFile.write("     <float name=\"gamma\" value=\"" + str(gamma) + "\"/>\n")
-                if cache:
-                    outFile.write("     <boolean name=\"cache\" value=\"true\"/>\n")
-                else:
-                    outFile.write("     <boolean name=\"cache\" value=\"false\"/>\n")
-
-                outFile.write("     <float name=\"samplingWeight\" value=\"" + str(samplingWeight) + "\"/>\n")
-
-                outFile.write("     <transform name=\"toWorld\">\n")
-                outFile.write("         <rotate x=\"1\" angle=\"" + str(rotate[0]) + "\"/>\n")
-                outFile.write("         <rotate y=\"1\" angle=\"" + str(rotate[1]) + "\"/>\n")
-                outFile.write("         <rotate z=\"1\" angle=\"" + str(rotate[2]) + "\"/>\n")
-                outFile.write("     </transform>\n")
-                outFile.write(" </emitter>\n")
-
-            else:
-                radiance = cmds.getAttr(envmap+".source")
-                samplingWeight = cmds.getAttr(envmap+".samplingWeight")
-                
-                outFile.write(" <emitter type=\"constant\">\n")
-                outFile.write("     <srgb name=\"radiance\" value=\"" + str(radiance[0][0]) + " " + str(radiance[0][1]) + " " + str(radiance[0][2]) + "\"/>\n")
-                outFile.write("     <float name=\"samplingWeight\" value=\"" + str(samplingWeight) + "\"/>\n")
-                outFile.write(" </emitter>\n")
+        writeLightEnvMap(outFile, envmap)
 
     outFile.write("\n")
     outFile.write("<!-- End of lights -->")

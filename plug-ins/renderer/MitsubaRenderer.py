@@ -126,9 +126,6 @@ class mitsubaForMaya(OpenMayaMPx.MPxCommand):
         # Create a render settings node
         createRenderSettingsNode()
 
-        #existingSettings = cmds.ls(type='MitsubaRenderSettings')
-        #print( "Existing Mitsuba Settings nodes: %s" % existingSettings )
-
         print "Rendering with Mitsuba..."
 
         #Save the user's selection
@@ -202,7 +199,8 @@ class mitsubaForMaya(OpenMayaMPx.MPxCommand):
                 mtsDir, keepTempFiles, geometryFiles, verbose=verbose)
 
             # Display the render
-            MitsubaRendererUI.showRender(imageName)
+            if not cmds.about(batch=True):
+                MitsubaRendererUI.showRender(imageName)
 
         if cmds.about(batch=True):
             print( "End of Batch Render" )
