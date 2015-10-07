@@ -857,111 +857,11 @@ def writeSampler(outFile, frameNumber, renderSettings):
 
     outFile.write("         </sampler>\n")
     outFile.write("\n")
-
-'''
-Write sensor, which include camera, image sampler, and film
-'''
-def writeSensor(outFile, frameNumber, renderSettings):
-    outFile.write(" <!-- Camera -->\n")
-
-    cams = cmds.ls(type="camera")
-    rCamShape = ""
-    for cam in cams:
-        isRenderable = cmds.getAttr(cam+".renderable")
-        if isRenderable:
-            print( "Render Settings - Camera          : %s" % cam )
-            rCamShape = cam
-            break
-
-    if rCamShape == "":
-        print( "No renderable camera found. Rendering with first camera : %s" % cams[0] )
-        rCamShape = cams[0]
-    
-    camAimUp = False
-    camConnections = cmds.listConnections(rCamShape)
-    if camConnections:
-        rGroup = cmds.listConnections(rCamShape)[0]
-
-        rGroupRels = cmds.listRelatives(rGroup)
-
-        rCam = rGroupRels[0]
-        rAim = rGroupRels[1]
-        rUp  = rGroupRels[2]
-
-        camPos = cmds.getAttr(rCam+".translate")[0]
-        camAim = cmds.getAttr(rAim+".translate")[0]
-        camUp  = cmds.getAttr(rUp+".translate")[0]
-
-        camAimUp = True
-    else:
-        yup = pymel.core.general.upAxis(q=True, ax=True) == 'y'
-
-        def vec(v, yup):
-            if not yup:
-                v = [v[0], v[2], -v[1]]
-            #return ' '.join(str(x) for x in v)
-            return v
-
-        camera = pymel.core.PyNode(rCamShape)
-        camAim = camera.getWorldCenterOfInterest()
-        camPos = camera.getEyePoint('world')
-        camUp = camera.getWorldUp()
-
-    #Type
-    camType = "perspective"
-    if cmds.getAttr(rCamShape+".depthOfField"):
-        camType = "thinlens"
-    elif cmds.getAttr(rCamShape+".orthographic"):
-        camType = "orthographic"
-
-    #dof stuff
-    apertureRadius = 1
-    focusDistance = 1
-    if camType == "thinlens":
-        apertureRadius = cmds.getAttr(rCamShape+".focusRegionScale")
-        focusDistance = cmds.getAttr(rCamShape+".focusDistance")
-
-    #fov
-    fov = cmds.camera(rCamShape, query=True, horizontalFieldOfView=True)
-
-    # orthographic
-    orthographicWidth = cmds.getAttr( rCamShape + ".orthographicWidth")
-    orthographicWidth /= 2.0
-
-    #near clip plane
-    nearClip = cmds.getAttr(rCamShape+".nearClipPlane")
-
-    outFile.write(" <sensor type=\"" + camType + "\">\n")
-    if camType in ["thinlens", "perspective"]:
-        if camType == "thinlens":
-            outFile.write("         <float name=\"apertureRadius\" value=\"" + str(apertureRadius) + "\"/>\n")
-            outFile.write("         <float name=\"focusDistance\" value=\"" + str(focusDistance) + "\"/>\n")    
-        outFile.write("         <float name=\"fov\" value=\"" + str(fov) + "\"/>\n")
-        outFile.write("         <string name=\"fovAxis\" value=\"x\"/>\n")
-
-    outFile.write("         <float name=\"nearClip\" value=\"" + str(nearClip) + "\"/>\n")
-
-    outFile.write("         <transform name=\"toWorld\">\n")
-    if camAimUp:
-        outFile.write("             <lookat target=\"" + str(camAim[0]) + " " + str(camAim[1]) + " " + str(camAim[2]) + "\" origin=\"" + str(camPos[0]) + " " + str(camPos[1]) + " " + str(camPos[2]) + "\" up=\"" + str(camUp[0]-camPos[0]) + " " + str(camUp[1]-camPos[1]) + " " + str(camUp[2]-camPos[2]) + "\"/>\n")
-    else:
-        if camType == "orthographic":
-            outFile.write("             <scale x=\"%s\" y=\"%s\"/>\n" % (orthographicWidth, orthographicWidth) )
-        outFile.write("             <lookat target=\"" + str(camAim[0]) + " " + str(camAim[1]) + " " + str(camAim[2]) + "\" origin=\"" + str(camPos[0]) + " " + str(camPos[1]) + " " + str(camPos[2]) + "\" up=\"" + str(camUp[0]) + " " + str(camUp[1]) + " " + str(camUp[2]) + "\"/>\n")
-    outFile.write("         </transform>\n")
-    outFile.write("\n")
-    
-    #write sampler generator:
-    writeSampler(outFile, frameNumber, renderSettings)
-
-    #Film
-    outFile.write("     <film type=\"hdrfilm\">\n")
-    
+   
+def writeFilm(outFile, frameNumber, renderSettings):
     #Resolution
     imageWidth = cmds.getAttr("defaultResolution.width")
     imageHeight = cmds.getAttr("defaultResolution.height")
-    outFile.write("         <integer name=\"height\" value=\"" + str(imageHeight) + "\"/>\n")
-    outFile.write("         <integer name=\"width\" value=\"" + str(imageWidth) + "\"/>\n")
 
     #Filter
     reconstructionFilterMaya = cmds.getAttr("%s.%s" % (renderSettings, "reconstructionFilter")).replace('_' ,' ')
@@ -981,9 +881,93 @@ def writeSensor(outFile, frameNumber, renderSettings):
 
     #print( "Reconstruction Filter : %s" % reconstructionFilterMitsuba )
 
+    outFile.write("     <film type=\"hdrfilm\">\n")    
+    outFile.write("         <integer name=\"height\" value=\"" + str(imageHeight) + "\"/>\n")
+    outFile.write("         <integer name=\"width\" value=\"" + str(imageWidth) + "\"/>\n")
     outFile.write("         <rfilter type=\"" + reconstructionFilterMitsuba + "\"/>\n")
     outFile.write("         <boolean name=\"banner\" value=\"false\"/>\n")
     outFile.write("     </film>\n")
+
+'''
+Write sensor, which include camera, image sampler, and film
+'''
+def getRenderableCamera():
+    cams = cmds.ls(type="camera")
+    rCamShape = ""
+    for cam in cams:
+        isRenderable = cmds.getAttr(cam+".renderable")
+        if isRenderable:
+            print( "Render Settings - Camera          : %s" % cam )
+            rCamShape = cam
+            break
+
+    if rCamShape == "":
+        print( "No renderable camera found. Rendering with first camera : %s" % cams[0] )
+        rCamShape = cams[0]
+
+    return rCamShape
+
+def writeSensor(outFile, frameNumber, renderSettings):
+    # Find renderable camera
+    rCamShape = getRenderableCamera()
+
+    # Type
+    camType = "perspective"
+    if cmds.getAttr(rCamShape+".depthOfField"):
+        camType = "thinlens"
+    elif cmds.getAttr(rCamShape+".orthographic"):
+        camType = "orthographic"
+
+    # Orientation    
+    camera = pymel.core.PyNode(rCamShape)
+    camAim = camera.getWorldCenterOfInterest()
+    camPos = camera.getEyePoint('world')
+    camUp = camera.getWorldUp()
+
+    # DoF
+    apertureRadius = 1
+    focusDistance = 1
+    if camType == "thinlens":
+        apertureRadius = cmds.getAttr(rCamShape+".focusRegionScale")
+        focusDistance = cmds.getAttr(rCamShape+".focusDistance")
+
+    # FoV
+    fov = cmds.camera(rCamShape, query=True, horizontalFieldOfView=True)
+
+    # Orthographic
+    orthographicWidth = cmds.getAttr( rCamShape + ".orthographicWidth")
+    orthographicWidth /= 2.0
+
+    # Near Clip Plane
+    nearClip = cmds.getAttr(rCamShape+".nearClipPlane")
+
+    # Write Camera
+    outFile.write(" <!-- Camera -->\n")
+
+    outFile.write(" <sensor type=\"" + camType + "\">\n")
+    if camType in ["thinlens", "perspective"]:
+        if camType == "thinlens":
+            outFile.write("         <float name=\"apertureRadius\" value=\"" + str(apertureRadius) + "\"/>\n")
+            outFile.write("         <float name=\"focusDistance\" value=\"" + str(focusDistance) + "\"/>\n")    
+        outFile.write("         <float name=\"fov\" value=\"" + str(fov) + "\"/>\n")
+        outFile.write("         <string name=\"fovAxis\" value=\"x\"/>\n")
+
+    outFile.write("         <float name=\"nearClip\" value=\"" + str(nearClip) + "\"/>\n")
+
+    outFile.write("         <transform name=\"toWorld\">\n")
+    if camType == "orthographic":
+        outFile.write("             <scale x=\"%s\" y=\"%s\"/>\n" % (orthographicWidth, orthographicWidth) )
+    outFile.write("             <lookat target=\"" + str(camAim[0]) + " " + str(camAim[1]) + " " + str(camAim[2]) + "\" origin=\"" + str(camPos[0]) + " " + str(camPos[1]) + " " + str(camPos[2]) + "\" up=\"" + str(camUp[0]) + " " + str(camUp[1]) + " " + str(camUp[2]) + "\"/>\n")
+
+    outFile.write("         </transform>\n")
+    outFile.write("\n")
+
+    # Write Sampler
+    writeSampler(outFile, frameNumber, renderSettings)
+
+    # Write Film
+    writeFilm(outFile, frameNumber, renderSettings)
+
     outFile.write(" </sensor>\n")
     outFile.write("\n")
 
@@ -1107,15 +1091,6 @@ def writeLightEnvMap(outFile, envmap):
         connectionAttr = "source"
         fileName = getTextureFile(envmap, connectionAttr)
 
-        '''
-        for i in range(len(connections)):
-            connection = connections[i]
-            if connection == envmap+".source":
-                inConnection = connections[i+1]
-                if cmds.nodeType(inConnection) == "file":
-                    fileName = cmds.getAttr(inConnection+".fileTextureName")
-        '''
-
         if fileName:
             extension = fileName[len(fileName)-3:len(fileName)]
             if extension == "hdr" or extension == "exr":
@@ -1204,8 +1179,8 @@ def writeLights(outFile):
     outFile.write("<!-- End of lights -->")
     outFile.write("\n\n\n")
 
-
-def writeGeometryAndMaterials(outFile, cwd):
+def getRenderableGeometry():
+    # Build list of visible geometry
     transforms = cmds.ls(type="transform")
     geoms = []
 
@@ -1222,6 +1197,9 @@ def writeGeometryAndMaterials(outFile, cwd):
                     if visible:
                         geoms.append(transform)
 
+    return geoms
+
+def writeMaterials(outFile, geoms):
     #Write the material for each piece of geometry in the scene
     writtenMaterials = []
     for geom in geoms:
@@ -1242,52 +1220,68 @@ def writeGeometryAndMaterials(outFile, cwd):
     outFile.write("<!-- End of materials -->")
     outFile.write("\n\n\n")
 
-    objFiles = []
+    return writtenMaterials
 
-    #Write each piece of geometry
+def exportGeometry(geom, cwd):
+    output = os.path.join(cwd, "renderData", geom + ".obj")
+    cmds.select(geom)
+    objFile = cmds.file(output, op=True, typ="OBJexport", options="groups=1;ptgroups=1;materials=0;smoothing=1;normals=1", exportSelected=True, force=True)
+    return objFile
+
+def findAndWriteMedium(outFile, geom, shader):
+    #check for a homogeneous material
+    #this checks if there is a homogeneous medium, and returns the attribute that it
+    #is connected to if there is one
+    connections = cmds.listConnections(shader, type="HomogeneousParticipatingMedium", connections=True)
+    #We want to make sure it is connected to the ".material" attribute
+    hasMedium = False
+    medium = ""
+    if connections and connections[0]==shader+".material":
+        hasMedium = True
+        medium = connections[1]
+    if hasMedium:
+        writeMedium(medium, outFile, "    ")
+
+def writeShape(outFile, geom, shader):
+    outFile.write("    <shape type=\"obj\">\n")
+    outFile.write("        <string name=\"filename\" value=\"" + geom + ".obj\"/>\n")
+
+    if cmds.nodeType(shader) in materialNodeTypes:
+        # Check for area lights
+        if cmds.nodeType(shader) == "MitsubaObjectAreaLightShader":
+            writeShader(shader, shader, outFile, "")
+        # Otherwise refer to the already written material
+        else:
+            outFile.write("        <ref id=\"" + shader + "\"/>\n")
+
+        # Write volume definition, if one exists
+        findAndWriteMedium(outFile, geom, shader)
+
+    elif cmds.nodeType(shader) == "MitsubaVolume":
+        writeVolume(outFile, cwd, "    ", shader, geom)
+    
+    outFile.write("    </shape>\n\n")
+
+def writeGeometryAndMaterials(outFile, cwd):
+    geoms = getRenderableGeometry()
+
+    writtenMaterials = writeMaterials(outFile, geoms)
+
+    geoFiles = []
+
+    #Write each piece of geometry with references to materials
     for geom in geoms:
         shader = getShader(geom)
-        if cmds.nodeType(shader) in materialNodeTypes:
-            output = os.path.join(cwd, "renderData", geom + ".obj")
-            cmds.select(geom)
-            objFiles.append(cmds.file(output, op=True, typ="OBJexport", options="groups=1;ptgroups=1;materials=0;smoothing=1;normals=1", exportSelected=True, force=True))
-            outFile.write("    <shape type=\"obj\">\n")
-            outFile.write("        <string name=\"filename\" value=\"" + geom + ".obj\"/>\n")
-            # Check for area lights
-            if cmds.nodeType(shader) == "MitsubaObjectAreaLightShader":
-                writeShader(shader, shader, outFile, "")
-            else:
-                outFile.write("        <ref id=\"" + shader + "\"/>\n")
-            
-            #check for a homogeneous material
-            #this checks if there is a homogeneous medium, and returns the attribute that it
-            #is connected to if there is one
-            connections = cmds.listConnections(shader, type="HomogeneousParticipatingMedium", connections=True)
-            #We want to make sure it is connected to the ".material" attribute
-            hasMedium = False
-            medium = ""
-            if connections and connections[0]==shader+".material":
-                hasMedium = True
-                medium = connections[1]
-            if hasMedium:
-                writeMedium(medium, outFile, "    ")
 
-            outFile.write("    </shape>\n\n")
-        elif cmds.nodeType(shader) == "MitsubaVolume":
-            output = os.path.join(cwd, "renderData", geom + ".obj")
-            cmds.select(geom)
-            objFiles.append(cmds.file(output, op=True, typ="OBJexport", options="groups=1;ptgroups=1;materials=0;smoothing=1;normals=1", exportSelected=True, force=True))
-            outFile.write("    <shape type=\"obj\">\n")
-            outFile.write("        <string name=\"filename\" value=\"" + geom + ".obj\"/>\n")
+        exportedGeo = exportGeometry(geom, cwd)
+        geoFiles.append( exportedGeo )
 
-            writeVolume(outFile, cwd, "    ", shader, geom)
-
-            outFile.write("    </shape>\n\n")
-            
+        writeShape(outFile, geom, shader)
 
     outFile.write("<!-- End of geometry -->")
     outFile.write("\n\n\n")
-    return objFiles
+
+    return geoFiles
 
 def getVtxPos(shapeNode):
     vtxWorldPosition = []    # will contain positions un space of all object vertex
@@ -1297,6 +1291,9 @@ def getVtxPos(shapeNode):
         vtxWorldPosition.append( curPointPosition )
     return vtxWorldPosition
 
+#
+# Needs to be generalized
+#
 def writeVolume(outFile, cwd, tabbedSpace, material, geom):
     #sourceFileName = "smoke_source\\text\\smoke_test_"
     hasFile = False
