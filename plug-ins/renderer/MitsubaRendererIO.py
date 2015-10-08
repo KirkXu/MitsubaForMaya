@@ -12,6 +12,45 @@ import pymel.core
 materialNodeTypes = []
 
 #
+# Formatted printing
+#
+def writeElementText(element, depth=0):
+    #print( "element : %s" % str(element) )
+
+    if 'attributes' in element:
+        attributes = element['attributes']
+    else:
+        attributes = {}
+    if 'children' in element:
+        children = element['children']
+    else:
+        children = []
+    typeName = element['type']
+
+    spacing = '\t'*depth
+
+    element = ""
+    element += spacing + "<%s" % typeName
+    for key, value in attributes.iteritems():
+        element += " %s=\"%s\"" % (key, value)
+    if children:
+        element += ">\n"
+        for child in children:
+            #print( "child : %s" % str(child) )
+            element += writeElementText(child, depth+1)
+            #element += "\n"
+        element  += spacing + "</%s>\n" % typeName
+    else:
+        element += "/>\n"
+    
+    return element
+
+# Other options to be provided later
+def writeElement(outFile, element, depth=0):
+    elementText = writeElementText(element, depth)
+    outFile.write(elementText)
+
+#
 # IO functions
 #
 '''
@@ -29,25 +68,54 @@ def getShader(geom):
 Writes a homogeneous medium to a Mitsuba scene file (outFile)
 tabbedSpace is a string of blank space to account for recursive xml
 '''
-def writeMedium(medium, outFile, tabbedSpace):
+def writeMedium(medium, outFile, tabbedSpace="     ", depth=1):
+    sigmaAS = cmds.getAttr(medium+".sigmaAS")
+    sigmaA = cmds.getAttr(medium+".sigmaA")
+    sigmaS = cmds.getAttr(medium+".sigmaS")
+    sigmaT = cmds.getAttr(medium+".sigmaT")
+    albedo = cmds.getAttr(medium+".albedo")
+    scale = cmds.getAttr(medium+".scale")    
+
+    '''
     outFile.write(tabbedSpace + " <medium type=\"homogeneous\" name=\"interior\">\n")
     
     #check if we want to use sigmaA and sigmaT or sigmaT and albedo
-    sigmaAS = cmds.getAttr(medium+".sigmaAS")
     if sigmaAS:
-        sigmaA = cmds.getAttr(medium+".sigmaA")
-        sigmaS = cmds.getAttr(medium+".sigmaS")
         outFile.write(tabbedSpace + "      <rgb name=\"sigmaA\" value=\"" + str(sigmaA[0][0]) + " " + str(sigmaA[0][1]) + " " + str(sigmaA[0][2]) + "\"/>\n")
         outFile.write(tabbedSpace + "      <rgb name=\"sigmaS\" value=\"" + str(sigmaS[0][0]) + " " + str(sigmaS[0][1]) + " " + str(sigmaS[0][2]) + "\"/>\n")
     else:
-        sigmaT = cmds.getAttr(medium+".sigmaT")
-        albedo = cmds.getAttr(medium+".albedo")
         outFile.write(tabbedSpace + "      <rgb name=\"sigmaT\" value=\"" + str(sigmaT[0][0]) + " " + str(sigmaT[0][1]) + " " + str(sigmaT[0][2]) + "\"/>\n")
         outFile.write(tabbedSpace + "      <rgb name=\"albedo\" value=\"" + str(albedo[0][0]) + " " + str(albedo[0][1]) + " " + str(albedo[0][2]) + "\"/>\n")
 
-    scale = cmds.getAttr(medium+".scale")    
     outFile.write(tabbedSpace + "      <float name=\"scale\" value=\"" + str(scale) + "\"/>\n")
     outFile.write(tabbedSpace + " </medium>\n")
+    '''
+
+    # Create a structure to be written
+    elementDict = {'type':'medium'}
+    elementDict['attributes'] = {'type':'homogeneous', 'name':'interior'}
+
+    elementDict['children'] = []
+
+    if sigmaAS:
+        elementDict['children'].append( { 'type':'rgb', 
+            'attributes':{ 'name':'sigmaA', 'value':str(sigmaA[0][0]) + " " + str(sigmaA[0][1]) + " " + str(sigmaA[0][2]) } } )
+        elementDict['children'].append( { 'type':'rgb', 
+            'attributes':{ 'name':'sigmaS', 'value':str(sigmaS[0][0]) + " " + str(sigmaS[0][1]) + " " + str(sigmaS[0][2]) } } )
+    else:
+        elementDict['children'].append( { 'type':'rgb', 
+            'attributes':{ 'name':'sigmaT', 'value':str(sigmaT[0][0]) + " " + str(sigmaT[0][1]) + " " + str(sigmaT[0][2]) } } )
+        elementDict['children'].append( { 'type':'rgb', 
+            'attributes':{ 'name':'albedo', 'value':str(albedo[0][0]) + " " + str(albedo[0][1]) + " " + str(albedo[0][2]) } } )
+
+    elementDict['children'].append( { 'type':'float', 
+        'attributes':{ 'name':'scale', 'value':str(scale) } } )
+
+    # Write structure
+    #writeElement(outFile, elementDict, depth)
+
+    return elementDict
+
 
 def getTextureFile(material, connectionAttr):
     connections = cmds.listConnections(material, connections=True)
@@ -73,13 +141,14 @@ def getTextureFile(material, connectionAttr):
 
     return fileTexture
 
-def writeShaderSmoothCoating(material, materialName, outFile, tabbedSpace):
+def writeShaderSmoothCoating(material, materialName, outFile, tabbedSpace="     ", depth=1):
     intIOR = cmds.getAttr(material+".intIOR")
     extIOR = cmds.getAttr(material+".extIOR")
     thickness = cmds.getAttr(material+".thickness")
     sigmaA = cmds.getAttr(material+".sigmaA")
     specularReflectance = cmds.getAttr(material+".specularReflectance")
 
+    '''
     outFile.write(tabbedSpace + " <bsdf type=\"coating\" id=\"" + materialName + "\">\n")
     outFile.write(tabbedSpace + "     <float name=\"intIOR\" value=\"" + str(intIOR) + "\"/>\n")
     outFile.write(tabbedSpace + "     <float name=\"extIOR\" value=\"" + str(extIOR) + "\"/>\n")
@@ -96,7 +165,7 @@ def writeShaderSmoothCoating(material, materialName, outFile, tabbedSpace):
             connectionType = cmds.nodeType(connection)
             if connectionType in materialNodeTypes and connections[i-1]==material+".bsdf":
                 #We've found the nested bsdf, so write it
-                writeShader(connection, connection, outFile, tabbedSpace+"    ")
+                writeShader(connection, connection, outFile, tabbedSpace+"    ", depth+1)
                 hasNestedBSDF = True
 
     if not hasNestedBSDF:
@@ -107,74 +176,237 @@ def writeShaderSmoothCoating(material, materialName, outFile, tabbedSpace):
         outFile.write(tabbedSpace + "     </bsdf>\n")
 
     outFile.write(tabbedSpace + " </bsdf>\n")
+    '''
 
-def writeShaderConductor(material, materialName, outFile, tabbedSpace):
+    # Create a structure to be written
+    elementDict = {'type':'bsdf'}
+    elementDict['attributes'] = {'type':'coating', 'id':materialName}
+
+    elementDict['children'] = []
+    elementDict['children'].append( { 'type':'float', 
+        'attributes':{ 'name':'intIOR', 'value':str(intIOR) } } )
+    elementDict['children'].append( { 'type':'float', 
+        'attributes':{ 'name':'extIOR', 'value':str(extIOR) } } )
+    elementDict['children'].append( { 'type':'float', 
+        'attributes':{ 'name':'thickness', 'value':str(thickness) } } )
+    elementDict['children'].append( { 'type':'srgb', 
+        'attributes':{ 'name':'sigmaA', 'value':str(sigmaA[0][0]) + " " + str(sigmaA[0][1]) + " " + str(sigmaA[0][2]) } } )
+    elementDict['children'].append( { 'type':'srgb', 
+        'attributes':{ 'name':'specularReflectance', 'value':str(specularReflectance[0][0]) + " " + str(specularReflectance[0][1]) + " " + str(specularReflectance[0][2]) } } )
+
+    #Nested bsdf
+    hasNestedBSDF = False
+    connections = cmds.listConnections(material, connections=True)
+    for i in range(len(connections)):
+        if i%2==1:
+            connection = connections[i]
+            connectionType = cmds.nodeType(connection)
+            if connectionType in materialNodeTypes and connections[i-1]==material+".bsdf":
+                #We've found the nested bsdf, so write it
+                shaderElement = writeShader(connection, connection, outFile, tabbedSpace+"    ", depth+1)
+                elementDict['children'].append(shaderElement)
+                hasNestedBSDF = True
+
+    if not hasNestedBSDF:
+        bsdf = cmds.getAttr(material+".bsdf")
+        nestedBSDFElement = {'type':'bsdf'}
+        nestedBSDFElement['attributes'] = {'type':'diffuse'}
+
+        nestedBSDFElement['children'] = []
+        nestedBSDFElement['children'].append( { 'type':'srgb', 
+            'attributes':{ 'name':'reflectance', 'value':str(bsdf[0][0]) + " " + str(bsdf[0][1]) + " " + str(bsdf[0][2]) } } )
+
+        elementDict['children'].append( nestedBSDFElement )
+
+    return elementDict
+
+def writeShaderConductor(material, materialName, outFile, tabbedSpace="     ", depth=1):
     conductorMaterial = cmds.getAttr(material+".material", asString=True)
     extEta = cmds.getAttr(material+".extEta")
+
+    '''
     outFile.write(tabbedSpace + " <bsdf type=\"conductor\"   id=\"" + materialName + "\">\n")
     outFile.write(tabbedSpace + "     <string name=\"material\" value=\"" + str(conductorMaterial) + "\"/>\n")
     outFile.write(tabbedSpace + "     <float name=\"extEta\" value=\"" + str(extEta) + "\"/>\n")
     outFile.write(tabbedSpace + " </bsdf>\n")
+    '''
 
-def writeShaderDielectric(material, materialName, outFile, tabbedSpace):
+    # Create a structure to be written
+    elementDict = {'type':'bsdf'}
+    elementDict['attributes'] = {'type':'conductor', 'id':materialName}
+
+    elementDict['children'] = []
+    elementDict['children'].append( { 'type':'string', 
+        'attributes':{ 'name':'material', 'value':str(conductorMaterial) } } )
+    elementDict['children'].append( { 'type':'float', 
+        'attributes':{ 'name':'extEta', 'value':str(extEta) } } )
+
+    # Write structure
+    #writeElement(outFile, elementDict, depth)
+
+    return elementDict
+
+def writeShaderDielectric(material, materialName, outFile, tabbedSpace="     ", depth=1):
     #Get all of the required attributes
     intIOR = cmds.getAttr(material+".intIOR")
     extIOR = cmds.getAttr(material+".extIOR")
 
+    '''
     #Write material
     outFile.write(tabbedSpace + " <bsdf type=\"dielectric\" id=\"" + materialName + "\">\n")
     outFile.write(tabbedSpace + "     <float name=\"intIOR\" value=\"" + str(intIOR) + "\"/>\n")
     outFile.write(tabbedSpace + "     <float name=\"extIOR\" value=\"" + str(extIOR) + "\"/>\n")
     outFile.write(tabbedSpace + " </bsdf>\n\n")
+    '''
 
-def writeShaderDiffuseTransmitter(material, materialName, outFile, tabbedSpace):
+    # Create a structure to be written
+    elementDict = {'type':'bsdf'}
+    elementDict['attributes'] = {'type':'dielectric', 'id':materialName}
+
+    elementDict['children'] = []
+    elementDict['children'].append( { 'type':'float', 
+        'attributes':{ 'name':'intIOR', 'value':str(intIOR) } } )
+    elementDict['children'].append( { 'type':'float', 
+        'attributes':{ 'name':'extIOR', 'value':str(extIOR) } } )
+
+    # Write structure
+    #writeElement(outFile, elementDict, depth)
+
+    return elementDict
+
+def writeShaderDiffuseTransmitter(material, materialName, outFile, tabbedSpace="     ", depth=1):
+    # Get values from the scene
     transmittance = cmds.getAttr(material+".reflectance")
+
+    '''
     outFile.write(tabbedSpace + " <bsdf type=\"diffuse\" id=\"" + materialName + "\">\n")
     outFile.write(tabbedSpace + "     <srgb name=\"reflectance\" value=\"" + str(transmittance[0][0]) + " " + str(transmittance[0][1]) + " " + str(transmittance[0][2]) + "\"/>\n")
     outFile.write(tabbedSpace + " </bsdf>\n")
+    '''
 
-def writeShaderDiffuse(material, materialName, outFile, tabbedSpace):
-    outFile.write(tabbedSpace + " <bsdf type=\"diffuse\" id=\"" + materialName + "\">\n")
+    # Create a structure to be written
+    elementDict = {'type':'bsdf'}
+    elementDict['attributes'] = {'type':'diffuse', 'id':materialName}
 
+    elementDict['children'] = []
+    elementDict['children'].append( { 'type':'srgb', 
+        'attributes':{ 'name':'reflectance', 'value':str(transmittance[0][0]) + " " + str(transmittance[0][1]) + " " + str(transmittance[0][2]) } } )
+
+    # Write structure
+    #writeElement(outFile, elementDict, depth)
+
+    return elementDict
+
+def writeShaderDiffuse(material, materialName, outFile, tabbedSpace="     ", depth=1):
+    # Get values from the scene
     #texture
     connectionAttr = "reflectance"
     fileTexture = getTextureFile(material, connectionAttr)
+    if not fileTexture:
+        reflectance = cmds.getAttr(material+".reflectance")
+
+    '''
+    outFile.write(tabbedSpace + " <bsdf type=\"diffuse\" id=\"" + materialName + "\">\n")
 
     if fileTexture:
         outFile.write(tabbedSpace + "     <texture type=\"bitmap\" name=\"reflectance\">\n")
         outFile.write(tabbedSpace + "         <string name=\"filename\" value=\"" + fileTexture + "\"/>")
         outFile.write(tabbedSpace + "     </texture>\n")
     else:
-        reflectance = cmds.getAttr(material+".reflectance")
         outFile.write(tabbedSpace + "     <srgb name=\"reflectance\" value=\"" + str(reflectance[0][0]) + " " + str(reflectance[0][1]) + " " + str(reflectance[0][2]) + "\"/>\n")
 
     outFile.write(tabbedSpace + " </bsdf>\n")
+    '''
 
-def writeShaderPhong(material, materialName, outFile, tabbedSpace):
+    # Create a structure to be written
+    elementDict = {'type':'bsdf'}
+    elementDict['attributes'] = {'type':'diffuse', 'id':materialName}
+
+    elementDict['children'] = []
+    if fileTexture:
+        textureElementDict = {'type':'texture'}
+        textureElementDict['attributes'] = {'type':'bitmap', 'name':'reflectance'}
+
+        textureElementDict['children'] = []
+        textureElementDict['children'].append( { 'type':'string', 
+            'attributes':{ 'name':'filename', 'value':fileTexture } } )
+
+        elementDict['children'].append( textureElementDict )
+    else:
+        elementDict['children'].append( { 'type':'srgb', 
+            'attributes':{ 'name':'reflectance', 'value':str(reflectance[0][0]) + " " + str(reflectance[0][1]) + " " + str(reflectance[0][2]) } } )
+
+    # Write structure
+    #writeElement(outFile, elementDict, depth)
+
+    return elementDict
+
+def writeShaderPhong(material, materialName, outFile, tabbedSpace="     ", depth=1):
     exponent = cmds.getAttr(material+".exponent")
     specularReflectance = cmds.getAttr(material+".specularReflectance")
     diffuseReflectance = cmds.getAttr(material+".diffuseReflectance")
 
+    '''
     outFile.write(tabbedSpace + " <bsdf type=\"phong\" id=\"" + materialName + "\">\n")
     outFile.write(tabbedSpace + "     <float name=\"exponent\" value=\"" + str(exponent) + "\"/>\n")
     outFile.write(tabbedSpace + "     <srgb name=\"specularReflectance\" value=\"" + str(specularReflectance[0][0]) + " " + str(specularReflectance[0][1]) + " " + str(specularReflectance[0][2]) + "\"/>\n")
     outFile.write(tabbedSpace + "     <srgb name=\"diffuseReflectance\" value=\"" + str(diffuseReflectance[0][0]) + " " + str(diffuseReflectance[0][1]) + " " + str(diffuseReflectance[0][2]) + "\"/>\n")
     outFile.write(tabbedSpace + " </bsdf>\n")
+    '''
 
-def writeShaderPlastic(material, materialName, outFile, tabbedSpace):
+    # Create a structure to be written
+    elementDict = {'type':'bsdf'}
+    elementDict['attributes'] = {'type':'phong', 'id':materialName}
+
+    elementDict['children'] = []
+    elementDict['children'].append( { 'type':'float', 
+        'attributes':{ 'name':'exponent', 'value':str(exponent) } } )
+    elementDict['children'].append( { 'type':'srgb', 
+        'attributes':{ 'name':'specularReflectance', 'value':str(specularReflectance[0][0]) + " " + str(specularReflectance[0][1]) + " " + str(specularReflectance[0][2]) } } )
+    elementDict['children'].append( { 'type':'srgb', 
+        'attributes':{ 'name':'diffuseReflectance', 'value':str(diffuseReflectance[0][0]) + " " + str(diffuseReflectance[0][1]) + " " + str(diffuseReflectance[0][2]) } } )
+
+    # Write structure
+    #writeElement(outFile, elementDict, depth)
+
+    return elementDict
+
+
+def writeShaderPlastic(material, materialName, outFile, tabbedSpace="     ", depth=1):
     intIOR = cmds.getAttr(material+".intIOR")
     extIOR = cmds.getAttr(material+".extIOR")
     specularReflectance = cmds.getAttr(material+".specularReflectance")
     diffuseReflectance = cmds.getAttr(material+".diffuseReflectance")
 
+    '''
     outFile.write(tabbedSpace + " <bsdf type=\"plastic\" id=\"" + materialName + "\">\n")
     outFile.write(tabbedSpace + "     <float name=\"intIOR\" value=\"" + str(intIOR) + "\"/>\n")
     outFile.write(tabbedSpace + "     <float name=\"extIOR\" value=\"" + str(extIOR) + "\"/>\n")
     outFile.write(tabbedSpace + "     <srgb name=\"specularReflectance\" value=\"" + str(specularReflectance[0][0]) + " " + str(specularReflectance[0][1]) + " " + str(specularReflectance[0][2]) + "\"/>\n")
     outFile.write(tabbedSpace + "     <srgb name=\"diffuseReflectance\" value=\"" + str(diffuseReflectance[0][0]) + " " + str(diffuseReflectance[0][1]) + " " + str(diffuseReflectance[0][2]) + "\"/>\n")
     outFile.write(tabbedSpace + " </bsdf>\n")
+    '''
 
-def writeShaderRoughCoating(material, materialName, outFile, tabbedSpace):
+    # Create a structure to be written
+    elementDict = {'type':'bsdf'}
+    elementDict['attributes'] = {'type':'plastic', 'id':materialName}
+
+    elementDict['children'] = []
+    elementDict['children'].append( { 'type':'float', 
+        'attributes':{ 'name':'intIOR', 'value':str(intIOR) } } )
+    elementDict['children'].append( { 'type':'float', 
+        'attributes':{ 'name':'extIOR', 'value':str(extIOR) } } )
+    elementDict['children'].append( { 'type':'srgb', 
+        'attributes':{ 'name':'specularReflectance', 'value':str(specularReflectance[0][0]) + " " + str(specularReflectance[0][1]) + " " + str(specularReflectance[0][2]) } } )
+    elementDict['children'].append( { 'type':'srgb', 
+        'attributes':{ 'name':'diffuseReflectance', 'value':str(diffuseReflectance[0][0]) + " " + str(diffuseReflectance[0][1]) + " " + str(diffuseReflectance[0][2]) } } )
+
+    # Write structure
+    #writeElement(outFile, elementDict, depth)
+
+    return elementDict
+
+def writeShaderRoughCoating(material, materialName, outFile, tabbedSpace="     ", depth=1):
     distribution = cmds.getAttr(material+".distribution", asString=True)
     alpha = cmds.getAttr(material+".alpha")
     intIOR = cmds.getAttr(material+".intIOR")
@@ -183,6 +415,7 @@ def writeShaderRoughCoating(material, materialName, outFile, tabbedSpace):
     sigmaA = cmds.getAttr(material+".sigmaA")
     specularReflectance = cmds.getAttr(material+".specularReflectance")
 
+    '''
     outFile.write(tabbedSpace + " <bsdf type=\"roughcoating\" id=\"" + materialName + "\">\n")
     outFile.write(tabbedSpace + "     <string name=\"distribution\" value=\"" + str(distribution) + "\"/>\n")
     outFile.write(tabbedSpace + "     <float name=\"alpha\" value=\"" + str(alpha) + "\"/>\n")
@@ -201,7 +434,7 @@ def writeShaderRoughCoating(material, materialName, outFile, tabbedSpace):
             connectionType = cmds.nodeType(connection)
             if connectionType in materialNodeTypes and connections[i-1]==material+".bsdf":
                 #We've found the nested bsdf, so write it
-                writeShader(connection, connection, outFile, tabbedSpace+"    ")
+                writeShader(connection, connection, outFile, tabbedSpace+"    ", depth+1)
                 hasNestedBSDF=True
     
     if not hasNestedBSDF:
@@ -212,49 +445,125 @@ def writeShaderRoughCoating(material, materialName, outFile, tabbedSpace):
         outFile.write(tabbedSpace + "     </bsdf>\n")
 
     outFile.write(tabbedSpace + " </bsdf>\n")
+    '''
 
-def writeShaderRoughConductor(material, materialName, outFile, tabbedSpace):
+    # Create a structure to be written
+    elementDict = {'type':'bsdf'}
+    elementDict['attributes'] = {'type':'coating', 'id':materialName}
+
+    elementDict['children'] = []
+    elementDict['children'].append( { 'type':'string', 
+        'attributes':{ 'name':'distribution', 'value':str(distribution) } } )
+    elementDict['children'].append( { 'type':'float', 
+        'attributes':{ 'name':'alpha', 'value':str(alpha) } } )
+    elementDict['children'].append( { 'type':'float', 
+        'attributes':{ 'name':'intIOR', 'value':str(intIOR) } } )
+    elementDict['children'].append( { 'type':'float', 
+        'attributes':{ 'name':'extIOR', 'value':str(extIOR) } } )
+    elementDict['children'].append( { 'type':'float', 
+        'attributes':{ 'name':'thickness', 'value':str(thickness) } } )
+    elementDict['children'].append( { 'type':'srgb', 
+        'attributes':{ 'name':'sigmaA', 'value':str(sigmaA[0][0]) + " " + str(sigmaA[0][1]) + " " + str(sigmaA[0][2]) } } )
+    elementDict['children'].append( { 'type':'srgb', 
+        'attributes':{ 'name':'specularReflectance', 'value':str(specularReflectance[0][0]) + " " + str(specularReflectance[0][1]) + " " + str(specularReflectance[0][2]) } } )
+
+    #Nested bsdf
+    hasNestedBSDF = False
+    connections = cmds.listConnections(material, connections=True)
+    for i in range(len(connections)):
+        if i%2==1:
+            connection = connections[i]
+            connectionType = cmds.nodeType(connection)
+            if connectionType in materialNodeTypes and connections[i-1]==material+".bsdf":
+                #We've found the nested bsdf, so write it
+                shaderElement = writeShader(connection, connection, outFile, tabbedSpace+"    ", depth+1)
+                elementDict['children'].append(shaderElement)
+                hasNestedBSDF = True
+
+    if not hasNestedBSDF:
+        bsdf = cmds.getAttr(material+".bsdf")
+        nestedBSDFElement = {'type':'bsdf'}
+        nestedBSDFElement['attributes'] = {'type':'diffuse'}
+
+        nestedBSDFElement['children'] = []
+        nestedBSDFElement['children'].append( { 'type':'srgb', 
+            'attributes':{ 'name':'reflectance', 'value':str(bsdf[0][0]) + " " + str(bsdf[0][1]) + " " + str(bsdf[0][2]) } } )
+
+        elementDict['children'].append( nestedBSDFElement )
+
+    return elementDict
+
+
+def writeShaderRoughConductor(material, materialName, outFile, tabbedSpace="     ", depth=1):
+    distribution = cmds.getAttr(material+".distribution", asString=True)
+    alphaUV = cmds.getAttr(material+".alphaUV")
+    alpha = cmds.getAttr(material+".alpha")
+    conductorMaterial = cmds.getAttr(material+".material")
+    extEta = cmds.getAttr(material+"extEta")
+
+    '''
     outFile.write(tabbedSpace + " <bsdf type=\"roughconductor\" id=\"" + materialName + "\">\n")
 
-    distribution = cmds.getAttr(material+".distribution", asString=True)
     #We have different behaviour depending on the distribution
     outFile.write(tabbedSpace + "     <string name=\"distribution\" value=\"" + str(distribution) + "\"/>\n")
     #Using Anisotropic Phong, use alphaUV
     if distribution=="as":
-        alphaUV = cmds.getAttr(material+".alphaUV")
         outFile.write(tabbedSpace + "     <float name=\"alphaU\" value=\"" + str(alphaUV[0]) + "\"/>\n")
         outFile.write(tabbedSpace + "     <float name=\"alphaV\" value=\"" + str(alphaUV[1]) + "\"/>\n")
     else:
-        alpha = cmds.getAttr(material+".alpha")
         outFile.write(tabbedSpace + "     <float name=\"alpha\" value=\"" + str(alpha) + "\"/>\n")
 
     #write the rest
-    conductorMaterial = cmds.getAttr(material+".material")
-    extEta = cmds.getAttr(material+"extEta")
     outFile.write(tabbedSpace + "     <string name=\"material\" value=\"" + str(conductorMaterial) + "\"/>\n")
     outFile.write(tabbedSpace + "     <float name=\"extEta\" value=\"" + str(extEta) + "\"/>\n")
     outFile.write(tabbedSpace + " </bsdf>\n")
+    '''
 
-def writeShaderRoughDielectric(material, materialName, outFile, tabbedSpace):
+    # Create a structure to be written
+    elementDict = {'type':'bsdf'}
+    elementDict['attributes'] = {'type':'roughconductor', 'id':materialName}
+
+    elementDict['children'] = []
+
+    elementDict['children'].append( { 'type':'string', 
+        'attributes':{ 'name':'distribution', 'value':str(distribution) } } )
+    if distribution == "as":
+        elementDict['children'].append( { 'type':'float', 
+            'attributes':{ 'name':'alphaU', 'value':str(alphaUV[0]) } } )
+        elementDict['children'].append( { 'type':'float', 
+            'attributes':{ 'name':'alphaV', 'value':str(alphaUV[1]) } } )
+    else:
+        elementDict['children'].append( { 'type':'float', 
+            'attributes':{ 'name':'alpha', 'value':str(alpha) } } )
+
+    elementDict['children'].append( { 'type':'string', 
+        'attributes':{ 'name':'material', 'value':str(conductorMaterial) } } )
+    elementDict['children'].append( { 'type':'float', 
+        'attributes':{ 'name':'extEta', 'value':str(extEta) } } )
+
+    return elementDict
+
+def writeShaderRoughDielectric(material, materialName, outFile, tabbedSpace="     ", depth=1):
     #Get all of the required attributes
     intIOR = cmds.getAttr(material+".intIOR")
     extIOR = cmds.getAttr(material+".extIOR")
     specularReflectance = cmds.getAttr(material+".specularReflectance")
     specularTransmittance = cmds.getAttr(material+".specularTransmittance")
+    distribution = cmds.getAttr(material+".distribution", asString=True)
+    alphaUV = cmds.getAttr(material+".alphaUV")
+    alpha = cmds.getAttr(material+".alpha")
 
+    '''
     #Write material
     outFile.write(tabbedSpace + " <bsdf type=\"dielectric\" id=\"" + materialName + "\">\n")
     
-    distribution = cmds.getAttr(material+".distribution", asString=True)
     #We have different behaviour depending on the distribution
     outFile.write(tabbedSpace + "     <string name=\"distribution\" value=\"" + str(distribution) + "\"/>\n")
     #Using Anisotropic Phong, use alphaUV
     if distribution=="as":
-        alphaUV = cmds.getAttr(material+".alphaUV")
         outFile.write(tabbedSpace + "     <float name=\"alphaU\" value=\"" + str(alphaUV[0]) + "\"/>\n")
         outFile.write(tabbedSpace + "     <float name=\"alphaV\" value=\"" + str(alphaUV[1]) + "\"/>\n")
     else:
-        alpha = cmds.getAttr(material+".alpha")
         outFile.write(tabbedSpace + "     <float name=\"alpha\" value=\"" + str(alpha) + "\"/>\n")
 
     outFile.write(tabbedSpace + "     <float name=\"intIOR\" value=\"" + str(intIOR) + "\"/>\n")
@@ -262,19 +571,69 @@ def writeShaderRoughDielectric(material, materialName, outFile, tabbedSpace):
     outFile.write(tabbedSpace + "     <srgb name=\"specularReflectance\" value=\"" + str(specularReflectance[0][0]) + " " + str(specularReflectance[0][1]) + " " + str(specularReflectance[0][2]) + "\"/>\n")
     outFile.write(tabbedSpace + "     <srgb name=\"specularTransmittance\" value=\"" + str(specularTransmittance[0][0]) + " " + str(specularTransmittance[0][1]) + " " + str(specularTransmittance[0][2]) + "\"/>\n")
     outFile.write(tabbedSpace + " </bsdf>\n\n")
+    '''
 
-def writeShaderRoughDiffuse(material, materialName, outFile, tabbedSpace):
+    # Create a structure to be written
+    elementDict = {'type':'bsdf'}
+    elementDict['attributes'] = {'type':'roughdielectric', 'id':materialName}
+
+    elementDict['children'] = []
+
+    elementDict['children'].append( { 'type':'string', 
+        'attributes':{ 'name':'distribution', 'value':str(distribution) } } )
+    if distribution == "as":
+        elementDict['children'].append( { 'type':'float', 
+            'attributes':{ 'name':'alphaU', 'value':str(alphaUV[0]) } } )
+        elementDict['children'].append( { 'type':'float', 
+            'attributes':{ 'name':'alphaV', 'value':str(alphaUV[1]) } } )
+    else:
+        elementDict['children'].append( { 'type':'float', 
+            'attributes':{ 'name':'alpha', 'value':str(alpha) } } )
+
+    elementDict['children'].append( { 'type':'float', 
+        'attributes':{ 'name':'intIOR', 'value':str(intIOR) } } )
+    elementDict['children'].append( { 'type':'float', 
+        'attributes':{ 'name':'extIOR', 'value':str(extIOR) } } )
+    elementDict['children'].append( { 'type':'srgb', 
+        'attributes':{ 'name':'specularReflectance', 'value':str(specularReflectance[0][0]) + " " + str(specularReflectance[0][1]) + " " + str(specularReflectance[0][2]) } } )
+    elementDict['children'].append( { 'type':'srgb', 
+        'attributes':{ 'name':'specularTransmittance', 'value':str(specularTransmittance[0][0]) + " " + str(specularTransmittance[0][1]) + " " + str(specularTransmittance[0][2]) } } )
+
+    return elementDict
+
+
+def writeShaderRoughDiffuse(material, materialName, outFile, tabbedSpace="     ", depth=1):
     reflectance = cmds.getAttr(material+".reflectance")
     alpha = cmds.getAttr(material+".alpha")
     useFastApprox = cmds.getAttr(material+".useFastApprox")
+    useFastApproxText = 'true' if useFastApprox else 'false'
 
+    '''
     outFile.write(tabbedSpace + " <bsdf type=\"roughdiffuse\" id=\"" + materialName + "\">\n")
     outFile.write(tabbedSpace + "     <srgb name=\"reflectance\" value=\"" + str(reflectance[0][0]) + " " + str(reflectance[0][1]) + " " + str(reflectance[0][2]) + "\"/>\n")
     outFile.write(tabbedSpace + "     <float name=\"alpha\" value=\"" + str(alpha) + "\"/>\n")
     outFile.write(tabbedSpace + "     <boolean name=\"useFastApprox\" value=\"" + str(useFastApprox) + "\"/>\n")
     outFile.write(tabbedSpace + " </bsdf>\n")
+    '''
 
-def writeShaderRoughPlastic(material, materialName, outFile, tabbedSpace):
+    # Create a structure to be written
+    elementDict = {'type':'bsdf'}
+    elementDict['attributes'] = {'type':'roughdiffuse', 'id':materialName}
+
+    elementDict['children'] = []
+    elementDict['children'].append( { 'type':'srgb', 
+        'attributes':{ 'name':'reflectance', 'value':str(specularReflectance[0][0]) + " " + str(specularReflectance[0][1]) + " " + str(specularReflectance[0][2]) } } )
+    elementDict['children'].append( { 'type':'float', 
+        'attributes':{ 'name':'alpha', 'value':str(alpha) } } )
+    elementDict['children'].append( { 'type':'boolean', 
+        'attributes':{ 'name':'useFastApprox', 'value':str(useFastApproxText) } } )
+
+    # Write structure
+    #writeElement(outFile, elementDict, depth)
+
+    return elementDict
+
+def writeShaderRoughPlastic(material, materialName, outFile, tabbedSpace="     ", depth=1):
     distribution = cmds.getAttr(material+".distribution", asString=True)
     alpha = cmds.getAttr(material+".alpha")
     intIOR = cmds.getAttr(material+".intIOR")
@@ -282,6 +641,7 @@ def writeShaderRoughPlastic(material, materialName, outFile, tabbedSpace):
     specularReflectance = cmds.getAttr(material+".specularReflectance")
     diffuseReflectance = cmds.getAttr(material+".diffuseReflectance")
 
+    '''
     outFile.write(tabbedSpace + " <bsdf type=\"roughplastic\" id=\"" + materialName + "\">\n")
     outFile.write(tabbedSpace + "     <string name=\"distribution\" value=\"" + str(distribution) + "\"/>\n")
     outFile.write(tabbedSpace + "     <float name=\"alpha\" value=\"" + str(alpha) + "\"/>\n")
@@ -290,20 +650,175 @@ def writeShaderRoughPlastic(material, materialName, outFile, tabbedSpace):
     outFile.write(tabbedSpace + "     <srgb name=\"specularReflectance\" value=\"" + str(specularReflectance[0][0]) + " " + str(specularReflectance[0][1]) + " " + str(specularReflectance[0][2]) + "\"/>\n")
     outFile.write(tabbedSpace + "     <srgb name=\"diffuseReflectance\" value=\"" + str(diffuseReflectance[0][0]) + " " + str(diffuseReflectance[0][1]) + " " + str(diffuseReflectance[0][2]) + "\"/>\n")
     outFile.write(tabbedSpace + " </bsdf>\n")
+    '''
 
-def writeShaderThinDielectric(material, materialName, outFile, tabbedSpace):
+    # Create a structure to be written
+    elementDict = {'type':'bsdf'}
+    elementDict['attributes'] = {'type':'roughplastic', 'id':materialName}
+
+    elementDict['children'] = []
+    elementDict['children'].append( { 'type':'string', 
+        'attributes':{ 'name':'distribution', 'value':str(distribution) } } )
+    elementDict['children'].append( { 'type':'float', 
+        'attributes':{ 'name':'alpha', 'value':str(alpha) } } )
+    elementDict['children'].append( { 'type':'float', 
+        'attributes':{ 'name':'intIOR', 'value':str(intIOR) } } )
+    elementDict['children'].append( { 'type':'float', 
+        'attributes':{ 'name':'extIOR', 'value':str(extIOR) } } )
+    elementDict['children'].append( { 'type':'srgb', 
+        'attributes':{ 'name':'specularReflectance', 'value':str(specularReflectance[0][0]) + " " + str(specularReflectance[0][1]) + " " + str(specularReflectance[0][2]) } } )
+    elementDict['children'].append( { 'type':'srgb', 
+        'attributes':{ 'name':'diffuseReflectance', 'value':str(diffuseReflectance[0][0]) + " " + str(diffuseReflectance[0][1]) + " " + str(diffuseReflectance[0][2]) } } )
+
+    # Write structure
+    #writeElement(outFile, elementDict, depth)
+
+    return elementDict
+
+
+def writeShaderThinDielectric(material, materialName, outFile, tabbedSpace="     ", depth=1):
     #Get all of the required attributes
     intIOR = cmds.getAttr(material+".intIOR")
     extIOR = cmds.getAttr(material+".extIOR")
 
+    '''
     #Write material
     outFile.write(tabbedSpace + " <bsdf type=\"thindielectric\" id=\"" + materialName + "\">\n")
     outFile.write(tabbedSpace + "     <float name=\"intIOR\" value=\"" + str(intIOR) + "\"/>\n")
     outFile.write(tabbedSpace + "     <float name=\"extIOR\" value=\"" + str(extIOR) + "\"/>\n")
     outFile.write(tabbedSpace + " </bsdf>\n\n")
+    '''
 
-def writeShaderTwoSided(material, materialName, outFile, tabbedSpace):
+    # Create a structure to be written
+    elementDict = {'type':'bsdf'}
+    elementDict['attributes'] = {'type':'thindielectric', 'id':materialName}
+
+    elementDict['children'] = []
+    elementDict['children'].append( { 'type':'float', 
+        'attributes':{ 'name':'intIOR', 'value':str(intIOR) } } )
+    elementDict['children'].append( { 'type':'float', 
+        'attributes':{ 'name':'extIOR', 'value':str(extIOR) } } )
+
+    # Write structure
+    #writeElement(outFile, elementDict, depth)
+
+    return elementDict
+
+
+def writeShaderWard(material, materialName, outFile, tabbedSpace="     ", depth=1):
+    variant = cmds.getAttr(material+".variant", asString=True)
+    alphaUV = cmds.getAttr(material+".alphaUV")
+    specularReflectance = cmds.getAttr(material+".specularReflectance")
+    diffuseReflectance = cmds.getAttr(material+".diffuseReflectance")
+
+    '''
+    outFile.write(tabbedSpace + " <bsdf type=\"phong\" id=\"" + materialName + "\">\n")
+    outFile.write(tabbedSpace + "     <string name=\"variant\" value=\"" + str(variant) + "\"/>\n")
+    outFile.write(tabbedSpace + "     <float name=\"alphaU\" value=\"" + str(alphaUV[0][0]) + "\"/>\n")
+    outFile.write(tabbedSpace + "     <float name=\"alphaV\" value=\"" + str(alphaUV[0][1]) + "\"/>\n")
+    outFile.write(tabbedSpace + "     <srgb name=\"specularReflectance\" value=\"" + str(specularReflectance[0][0]) + " " + str(specularReflectance[0][1]) + " " + str(specularReflectance[0][2]) + "\"/>\n")
+    outFile.write(tabbedSpace + "     <srgb name=\"diffuseReflectance\" value=\"" + str(diffuseReflectance[0][0]) + " " + str(diffuseReflectance[0][1]) + " " + str(diffuseReflectance[0][2]) + "\"/>\n")
+    outFile.write(tabbedSpace + " </bsdf>\n")
+    '''
+
+    # Create a structure to be written
+    elementDict = {'type':'bsdf'}
+    elementDict['attributes'] = {'type':'phong', 'id':materialName}
+
+    elementDict['children'] = []
+    elementDict['children'].append( { 'type':'string', 
+        'attributes':{ 'name':'variant', 'value':str(variant) } } )
+    elementDict['children'].append( { 'type':'float', 
+        'attributes':{ 'name':'alphaU', 'value':str(alphaUV[0][0]) } } )
+    elementDict['children'].append( { 'type':'float', 
+        'attributes':{ 'name':'alphaV', 'value':str(alphaUV[0][1]) } } )
+    elementDict['children'].append( { 'type':'srgb', 
+        'attributes':{ 'name':'specularReflectance', 'value':str(specularReflectance[0][0]) + " " + str(specularReflectance[0][1]) + " " + str(specularReflectance[0][2]) } } )
+    elementDict['children'].append( { 'type':'srgb', 
+        'attributes':{ 'name':'diffuseReflectance', 'value':str(diffuseReflectance[0][0]) + " " + str(diffuseReflectance[0][1]) + " " + str(diffuseReflectance[0][2]) } } )
+
+    # Write structure
+    #writeElement(outFile, elementDict, depth)
+
+    return elementDict
+
+def writeShaderIrawan(material, materialName, outFile, tabbedSpace="     ", depth=1):
+    filename = cmds.getAttr(material+".filename", asString=True)
+    repeatu = cmds.getAttr(material+".repeatu")
+    repeatv = cmds.getAttr(material+".repeatv")
+    warpkd = cmds.getAttr(material+".warpkd")
+    warpks = cmds.getAttr(material+".warpks")
+    weftkd = cmds.getAttr(material+".weftkd")
+    weftks = cmds.getAttr(material+".weftks")
+
+    '''
+    outFile.write(tabbedSpace + " <bsdf type=\"irawan\" id=\"" + materialName + "\">\n")
+    outFile.write(tabbedSpace + "     <string name=\"filename\" value=\"" + filename + "\"/>\n")
+    outFile.write(tabbedSpace + "     <float name=\"repeatU\" value=\"" + str(repeatu) + "\"/>\n")
+    outFile.write(tabbedSpace + "     <float name=\"repeatV\" value=\"" + str(repeatv) + "\"/>\n")
+    outFile.write(tabbedSpace + "     <rgb name=\"warp_kd\" value=\"" + str(warpkd[0][0]) + " " + str(warpkd[0][1]) + " " + str(warpkd[0][2]) + "\"/>\n")
+    outFile.write(tabbedSpace + "     <rgb name=\"warp_ks\" value=\"" + str(warpks[0][0]) + " " + str(warpks[0][1]) + " " + str(warpks[0][2]) + "\"/>\n")
+    outFile.write(tabbedSpace + "     <rgb name=\"weft_kd\" value=\"" + str(weftkd[0][0]) + " " + str(weftkd[0][1]) + " " + str(weftkd[0][2]) + "\"/>\n")
+    outFile.write(tabbedSpace + "     <rgb name=\"weft_ks\" value=\"" + str(weftks[0][0]) + " " + str(weftks[0][1]) + " " + str(weftks[0][2]) + "\"/>\n")
+    outFile.write(tabbedSpace + " </bsdf>\n")
+    '''
+
+    # Create a structure to be written
+    elementDict = {'type':'bsdf'}
+    elementDict['attributes'] = {'type':'irawan', 'id':materialName}
+
+    elementDict['children'] = []
+    elementDict['children'].append( { 'type':'string', 
+        'attributes':{ 'name':'filename', 'value':filename } } )
+    elementDict['children'].append( { 'type':'float', 
+        'attributes':{ 'name':'repeatU', 'value':str(repeatu) } } )
+    elementDict['children'].append( { 'type':'float', 
+        'attributes':{ 'name':'repeatV', 'value':str(repeatv) } } )
+    elementDict['children'].append( { 'type':'rgb', 
+        'attributes':{ 'name':'warp_kd', 'value':str(warpkd[0][0]) + " " + str(warpkd[0][1]) + " " + str(warpkd[0][2]) } } )
+    elementDict['children'].append( { 'type':'rgb', 
+        'attributes':{ 'name':'warp_ks', 'value':str(warpks[0][0]) + " " + str(warpks[0][1]) + " " + str(warpks[0][2]) } } )
+    elementDict['children'].append( { 'type':'rgb', 
+        'attributes':{ 'name':'weft_kd', 'value':str(weftkd[0][0]) + " " + str(weftkd[0][1]) + " " + str(weftkd[0][2]) } } )
+    elementDict['children'].append( { 'type':'rgb', 
+        'attributes':{ 'name':'weft_ks', 'value':str(weftks[0][0]) + " " + str(weftks[0][1]) + " " + str(weftks[0][2]) } } )
+
+    # Write structure
+    #writeElement(outFile, elementDict, depth)
+
+    return elementDict
+
+
+def writeShaderObjectAreaLight(material, materialName, outFile, tabbedSpace="     ", depth=1):
+    color = cmds.getAttr(material+".radiance")
+    samplingWeight = cmds.getAttr(material+".samplingWeight")
+
+    '''
+    outFile.write(tabbedSpace + " <emitter type=\"area\" id=\"" + materialName + "\">\n")
+    outFile.write(tabbedSpace + "     <rgb name=\"radiance\" value=\"" + str(color[0][0]) + " " + str(color[0][1]) + " " + str(color[0][2]) + "\"/>\n")
+    outFile.write(tabbedSpace + "     <float name=\"samplingWeight\" value=\"" + str(samplingWeight) + "\"/>\n")
+    outFile.write(tabbedSpace + " </emitter>\n")
+    '''
+
+    # Create a structure to be written
+    elementDict = {'type':'emitter'}
+    elementDict['attributes'] = {'type':'area', 'id':materialName}
+
+    elementDict['children'] = []
+    elementDict['children'].append( { 'type':'rgb', 
+        'attributes':{ 'name':'radiance', 'value':str(color[0][0]) + " " + str(color[0][1]) + " " + str(color[0][2]) } } )
+    elementDict['children'].append( { 'type':'float', 
+        'attributes':{ 'name':'samplingWeight', 'value':str(samplingWeight) } } )
+
+    # Write structure
+    #writeElement(outFile, elementDict, depth)
+
+    return elementDict
+
+def writeShaderTwoSided(material, materialName, outFile, tabbedSpace="     ", depth=1):
+    '''
     outFile.write(tabbedSpace + " <bsdf type=\"twosided\" id=\"" + materialName + "\">\n")
+
     #Nested bsdf
     connections = cmds.listConnections(material, connections=True)
     for i in range(len(connections)):
@@ -312,128 +827,99 @@ def writeShaderTwoSided(material, materialName, outFile, tabbedSpace):
             connectionType = cmds.nodeType(connection)
             if connectionType in materialNodeTypes and connections[i-1]==material+".bsdf":
                 #We've found the nested bsdf, so write it
-                writeShader(connection, outFile, tabbedSpace+"    ")
+                writeShader(connection, outFile, tabbedSpace+"    ", depth+1)
 
     outFile.write(tabbedSpace + " </bsdf>\n")
+    '''
 
-def writeShaderWard(material, materialName, outFile, tabbedSpace):
-    variant = cmds.getAttr(material+".variant", asString=True)
-    alphaUV = cmds.getAttr(material+".alphaUV")
-    specularReflectance = cmds.getAttr(material+".specularReflectance")
-    diffuseReflectance = cmds.getAttr(material+".diffuseReflectance")
+    # Create a structure to be written
+    elementDict = {'type':'bsdf'}
+    elementDict['attributes'] = {'type':'twosided', 'id':materialName}
 
-    outFile.write(tabbedSpace + " <bsdf type=\"phong\" id=\"" + materialName + "\">\n")
-    outFile.write(tabbedSpace + "     <string name=\"variant\" value=\"" + str(variant) + "\"/>\n")
-    outFile.write(tabbedSpace + "     <float name=\"alphaU\" value=\"" + str(alphaUV[0][0]) + "\"/>\n")
-    outFile.write(tabbedSpace + "     <float name=\"alphaV\" value=\"" + str(alphaUV[0][1]) + "\"/>\n")
-    outFile.write(tabbedSpace + "     <srgb name=\"specularReflectance\" value=\"" + str(specularReflectance[0][0]) + " " + str(specularReflectance[0][1]) + " " + str(specularReflectance[0][2]) + "\"/>\n")
-    outFile.write(tabbedSpace + "     <srgb name=\"diffuseReflectance\" value=\"" + str(diffuseReflectance[0][0]) + " " + str(diffuseReflectance[0][1]) + " " + str(diffuseReflectance[0][2]) + "\"/>\n")
-    outFile.write(tabbedSpace + " </bsdf>\n")
+    elementDict['children'] = []
 
-def writeShaderIrawan(material, materialName, outFile, tabbedSpace):
-    outFile.write(tabbedSpace + " <bsdf type=\"irawan\" id=\"" + materialName + "\">\n")
+    #Nested bsdf
+    connections = cmds.listConnections(material, connections=True)
+    for i in range(len(connections)):
+        if i%2==1:
+            connection = connections[i]
+            connectionType = cmds.nodeType(connection)
+            if connectionType in materialNodeTypes and connections[i-1]==material+".bsdf":
+                #We've found the nested bsdf, so write it
+                childElement = writeShader(connection, connection, outFile, tabbedSpace+"    ", depth+1)
 
-    # filename
-    filename = cmds.getAttr(material+".filename", asString=True)
-    outFile.write(tabbedSpace + "     <string name=\"filename\" value=\"" + filename + "\"/>\n")
+                elementDict['children'].append( { 'type':'ref', 
+                    'attributes':{ 'id':childElement['attributes']['id'] } } )
 
-    # repeat
-    repeatu = cmds.getAttr(material+".repeatu")
-    outFile.write(tabbedSpace + "     <float name=\"repeatU\" value=\"" + str(repeatu) + "\"/>\n")
+    # Write structure
+    #writeElement(outFile, elementDict, depth)
 
-    repeatv = cmds.getAttr(material+".repeatv")
-    outFile.write(tabbedSpace + "     <float name=\"repeatV\" value=\"" + str(repeatv) + "\"/>\n")
-
-    #warp and weft
-    warpkd = cmds.getAttr(material+".warpkd")
-    outFile.write(tabbedSpace + "     <rgb name=\"warp_kd\" value=\"" + str(warpkd[0][0]) + " " + str(warpkd[0][1]) + " " + str(warpkd[0][2]) + "\"/>\n")
-
-    warpks = cmds.getAttr(material+".warpks")
-    outFile.write(tabbedSpace + "     <rgb name=\"warp_ks\" value=\"" + str(warpks[0][0]) + " " + str(warpks[0][1]) + " " + str(warpks[0][2]) + "\"/>\n")
-
-    weftkd = cmds.getAttr(material+".weftkd")
-    outFile.write(tabbedSpace + "     <rgb name=\"weft_kd\" value=\"" + str(weftkd[0][0]) + " " + str(weftkd[0][1]) + " " + str(weftkd[0][2]) + "\"/>\n")
-
-    weftks = cmds.getAttr(material+".weftks")
-    outFile.write(tabbedSpace + "     <rgb name=\"weft_ks\" value=\"" + str(weftks[0][0]) + " " + str(weftks[0][1]) + " " + str(weftks[0][2]) + "\"/>\n")
-
-    outFile.write(tabbedSpace + " </bsdf>\n")
-
-def writeShaderObjectAreaLight(material, materialName, outFile, tabbedSpace):
-    outFile.write(tabbedSpace + " <emitter type=\"area\" id=\"" + materialName + "\">\n")
-
-    color = cmds.getAttr(material+".radiance")
-    outFile.write(tabbedSpace + "     <rgb name=\"radiance\" value=\"" + str(color[0][0]) + " " + str(color[0][1]) + " " + str(color[0][2]) + "\"/>\n")
-
-    #radiance = cmds.getAttr(material+".radiance")
-    #outFile.write(tabbedSpace + "     <spectrum name=\"radiance\" value=\"" + str(radiance) + "\"/>\n")
-
-    samplingWeight = cmds.getAttr(material+".samplingWeight")
-    outFile.write(tabbedSpace + "     <float name=\"samplingWeight\" value=\"" + str(samplingWeight) + "\"/>\n")
-
-    outFile.write(tabbedSpace + " </emitter>\n")
+    return elementDict
 
 
 '''
 Write a surface material (material) to a Mitsuba scene file (outFile)
 tabbedSpace is a string of blank space to account for recursive xml
 '''
-def writeShader(material, materialName, outFile, tabbedSpace):
+def writeShader(material, materialName, outFile, tabbedSpace="     ", depth=1):
     matType = cmds.nodeType(material)
     
     if matType=="MitsubaSmoothCoatingShader":
-        writeShaderSmoothCoating(material, materialName, outFile, tabbedSpace)
+        elementDict = writeShaderSmoothCoating(material, materialName, outFile, tabbedSpace, depth)
     
     elif matType=="MitsubaConductorShader":
-        writeShaderConductor(material, materialName, outFile, tabbedSpace)
+        elementDict = writeShaderConductor(material, materialName, outFile, tabbedSpace, depth)
 
     elif matType=="MitsubaDielectricShader":
-        writeShaderDielectric(material, materialName, outFile, tabbedSpace)
+        elementDict = writeShaderDielectric(material, materialName, outFile, tabbedSpace, depth)
 
     elif matType=="MitsubaDiffuseTransmitterShader":
-        writeShaderDiffuseTransmitter(material, materialName, outFile, tabbedSpace)
+        elementDict = writeShaderDiffuseTransmitter(material, materialName, outFile, tabbedSpace, depth)
 
     elif matType=="MitsubaDiffuseShader":
-        writeShaderDiffuse(material, materialName, outFile, tabbedSpace)
+        elementDict = writeShaderDiffuse(material, materialName, outFile, tabbedSpace, depth)
 
     elif matType=="MitsubaPhongShader":
-        writeShaderPhong(material, materialName, outFile, tabbedSpace)
+        elementDict = writeShaderPhong(material, materialName, outFile, tabbedSpace, depth)
 
     elif matType=="MitsubaPlasticShader":
-        writeShaderPlastic(material, materialName, outFile, tabbedSpace)
+        elementDict = writeShaderPlastic(material, materialName, outFile, tabbedSpace, depth)
 
     elif matType=="MitsubaRoughCoatingShader":
-        writeShaderRoughCoating(material, materialName, outFile, tabbedSpace)
+        elementDict = writeShaderRoughCoating(material, materialName, outFile, tabbedSpace, depth)
 
     elif matType=="MitsubaRoughConductorShader":
-        writeShaderRoughConductor(material, materialName, outFile, tabbedSpace)
+        elementDict = writeShaderRoughConductor(material, materialName, outFile, tabbedSpace, depth)
 
     elif matType=="MitsubaRoughDielectricShader":
-        writeShaderRoughDielectric(material, materialName, outFile, tabbedSpace)
+        elementDict = writeShaderRoughDielectric(material, materialName, outFile, tabbedSpace, depth)
 
     elif matType=="MitsubaRoughDiffuseShader":
-        writeShaderRoughDiffuse(material, materialName, outFile, tabbedSpace)
+        elementDict = writeShaderRoughDiffuse(material, materialName, outFile, tabbedSpace, depth)
 
     elif matType=="MitsubaRoughPlasticShader":
-        writeShaderRoughPlastic(material, materialName, outFile, tabbedSpace)
+        elementDict = writeShaderRoughPlastic(material, materialName, outFile, tabbedSpace, depth)
 
     elif matType=="MitsubaThinDielectricShader":
-        writeShaderThinDielectric(material, materialName, outFile, tabbedSpace)
-
-    elif matType=="MitsubaTwoSidedShader":
-        writeShaderTwoSided(material, materialName, outFile, tabbedSpace)
+        elementDict = writeShaderThinDielectric(material, materialName, outFile, tabbedSpace, depth)
 
     elif matType=="MitsubaWardShader":
-        writeShaderWard(material, materialName, outFile, tabbedSpace)
+        elementDict = writeShaderWard(material, materialName, outFile, tabbedSpace, depth)
 
     elif matType=="MitsubaIrawanShader":
-        writeShaderIrawan(material, materialName, outFile, tabbedSpace)
+        elementDict = writeShaderIrawan(material, materialName, outFile, tabbedSpace, depth)
 
     elif matType=="MitsubaObjectAreaLightShader":
-        writeShaderObjectAreaLight(material, materialName, outFile, tabbedSpace)
+        elementDict = writeShaderObjectAreaLight(material, materialName, outFile, tabbedSpace, depth)
+
+    elif matType=="MitsubaTwoSidedShader":
+        elementDict = writeShaderTwoSided(material, materialName, outFile, tabbedSpace, depth, depth)
 
     else:
         print( "Unsupported Material : %s" % materialName )
+        elementDict = {}
+
+    return elementDict
 
     '''
     elif matType=="MitsubaBumpShader":
@@ -446,11 +932,10 @@ def writeShader(material, materialName, outFile, tabbedSpace):
         print "mixture"
     '''
 
-
 '''
 Write the appropriate integrator
 '''
-def writeIntegratorPathTracer(outFile, renderSettings, integratorMitsuba):
+def writeIntegratorPathTracer(outFile, renderSettings, integratorMitsuba, depth=1):
     attrPrefixes = { 
         "path" : "", 
         "volpath" : "Volumetric", 
@@ -458,6 +943,7 @@ def writeIntegratorPathTracer(outFile, renderSettings, integratorMitsuba):
     }
     attrPrefix = attrPrefixes[integratorMitsuba]
 
+    # Get values from the scene
     iPathTracerUseInfiniteDepth = cmds.getAttr("%s.%s" % (renderSettings, "i%sPathTracerUseInfiniteDepth" % attrPrefix))
     iPathTracerMaxDepth = cmds.getAttr("%s.%s" % (renderSettings, "i%sPathTracerMaxDepth" % attrPrefix))
     iPathTracerRRDepth = cmds.getAttr("%s.%s" % (renderSettings, "i%sPathTracerRRDepth" % attrPrefix))
@@ -468,17 +954,27 @@ def writeIntegratorPathTracer(outFile, renderSettings, integratorMitsuba):
     iPathTracerStrictNormalsText = 'true' if iPathTracerStrictNormals else 'false'
     iPathTracerHideEmittersText = 'true' if iPathTracerHideEmitters else 'false'
 
-    outFile.write(" <integrator type=\"%s\">\n" % integratorMitsuba)
+    # Create a structure to be written
+    elementDict = {'type':'integrator'}
+    elementDict['attributes'] = {'type':integratorMitsuba}
 
-    outFile.write("     <integer name=\"maxDepth\" value=\"" + str(iPathTracerMaxDepth) + "\"/>\n")
-    outFile.write("     <integer name=\"rrDepth\" value=\"" + str(iPathTracerRRDepth) + "\"/>\n")            
-    outFile.write("     <boolean name=\"strictNormals\" value=\"%s\"/>\n" % iPathTracerStrictNormalsText)
-    outFile.write("     <boolean name=\"hideEmitters\" value=\"%s\"/>\n" % iPathTracerHideEmittersText)
+    elementDict['children'] = []
+    elementDict['children'].append( { 'type':'integer', 
+        'attributes':{ 'name':'maxDepth', 'value':str(iPathTracerMaxDepth) } } )
+    elementDict['children'].append( { 'type':'integer', 
+        'attributes':{ 'name':'rrDepth', 'value':str(iPathTracerRRDepth) } } )
+    elementDict['children'].append( { 'type':'boolean', 
+        'attributes':{ 'name':'strictNormals', 'value':iPathTracerStrictNormalsText } } )
+    elementDict['children'].append( { 'type':'boolean', 
+        'attributes':{ 'name':'hideEmitters', 'value':iPathTracerHideEmittersText } } )
 
-    outFile.write(" </integrator>\n\n\n")
+    # Write structure
+    #writeElement(outFile, elementDict, depth)
 
+    return elementDict
 
-def writeIntegratorBidirectionalPathTracer(outFile, renderSettings, integratorMitsuba):
+def writeIntegratorBidirectionalPathTracer(outFile, renderSettings, integratorMitsuba, depth=1):
+    # Get values from the scene
     iBidrectionalPathTracerUseInfiniteDepth = cmds.getAttr("%s.%s" % (renderSettings, "iBidrectionalPathTracerUseInfiniteDepth"))
     iBidrectionalPathTracerMaxDepth = cmds.getAttr("%s.%s" % (renderSettings, "iBidrectionalPathTracerMaxDepth"))
     iBidrectionalPathTracerRRDepth = cmds.getAttr("%s.%s" % (renderSettings, "iBidrectionalPathTracerRRDepth"))
@@ -489,32 +985,52 @@ def writeIntegratorBidirectionalPathTracer(outFile, renderSettings, integratorMi
     iBidrectionalPathTracerLightImageText = 'true' if iBidrectionalPathTracerLightImage else 'false'
     iBidrectionalPathTracerSampleDirectText = 'true' if iBidrectionalPathTracerSampleDirect else 'false'
 
-    outFile.write(" <integrator type=\"%s\">\n" % integratorMitsuba)
+    # Create a structure to be written
+    elementDict = {'type':'integrator'}
+    elementDict['attributes'] = {'type':integratorMitsuba}
 
-    outFile.write("     <integer name=\"maxDepth\" value=\"" + str(iBidrectionalPathTracerMaxDepth) + "\"/>\n")
-    outFile.write("     <integer name=\"rrDepth\" value=\"" + str(iBidrectionalPathTracerRRDepth) + "\"/>\n")            
-    outFile.write("     <boolean name=\"lightImage\" value=\"%s\"/>\n" % iBidrectionalPathTracerLightImageText)
-    outFile.write("     <boolean name=\"sampleDirect\" value=\"%s\"/>\n" % iBidrectionalPathTracerSampleDirectText)
+    elementDict['children'] = []
+    elementDict['children'].append( { 'type':'integer', 
+        'attributes':{ 'name':'maxDepth', 'value':str(iBidrectionalPathTracerMaxDepth) } } )
+    elementDict['children'].append( { 'type':'integer', 
+        'attributes':{ 'name':'rrDepth', 'value':str(iBidrectionalPathTracerRRDepth) } } )
+    elementDict['children'].append( { 'type':'boolean', 
+        'attributes':{ 'name':'lightImage', 'value':iBidrectionalPathTracerLightImageText } } )
+    elementDict['children'].append( { 'type':'boolean', 
+        'attributes':{ 'name':'sampleDirect', 'value':iBidrectionalPathTracerSampleDirectText } } )
 
-    outFile.write(" </integrator>\n\n\n")
+    # Write structure
+    #writeElement(outFile, elementDict, depth)
+
+    return elementDict
 
 
-def writeIntegratorAmbientOcclusion(outFile, renderSettings, integratorMitsuba):
+def writeIntegratorAmbientOcclusion(outFile, renderSettings, integratorMitsuba, depth=1):
+    # Get values from the scene
     iAmbientOcclusionShadingSamples = cmds.getAttr("%s.%s" % (renderSettings, "iAmbientOcclusionShadingSamples"))
     iAmbientOcclusionUseAutomaticRayLength = cmds.getAttr("%s.%s" % (renderSettings, "iAmbientOcclusionUseAutomaticRayLength"))
     iAmbientOcclusionRayLength = cmds.getAttr("%s.%s" % (renderSettings, "iAmbientOcclusionRayLength"))
 
     iAmbientOcclusionRayLength = -1 if iAmbientOcclusionUseAutomaticRayLength else iAmbientOcclusionRayLength
 
-    outFile.write(" <integrator type=\"%s\">\n" % integratorMitsuba)
+    # Create a structure to be written
+    elementDict = {'type':'integrator'}
+    elementDict['attributes'] = {'type':integratorMitsuba}
 
-    outFile.write("     <integer name=\"shadingSamples\" value=\"" + str(iAmbientOcclusionShadingSamples) + "\"/>\n")
-    outFile.write("     <float name=\"rayLength\" value=\"" + str(-1) + "\"/>\n")
+    elementDict['children'] = []
+    elementDict['children'].append( { 'type':'integer', 
+        'attributes':{ 'name':'shadingSamples', 'value':str(iAmbientOcclusionShadingSamples) } } )
+    elementDict['children'].append( { 'type':'float', 
+        'attributes':{ 'name':'rayLength', 'value':str(iAmbientOcclusionRayLength) } } )
 
-    outFile.write(" </integrator>\n\n\n")
+    # Write structure
+    #writeElement(outFile, elementDict, depth)
+
+    return elementDict
 
 
-def writeIntegratorDirectIllumination(outFile, renderSettings, integratorMitsuba):
+def writeIntegratorDirectIllumination(outFile, renderSettings, integratorMitsuba, depth=1):
+    # Get values from the scene
     iDirectIlluminationShadingSamples = cmds.getAttr("%s.%s" % (renderSettings, "iDirectIlluminationShadingSamples"))
     iDirectIlluminationUseEmitterAndBSDFSamples = cmds.getAttr("%s.%s" % (renderSettings, "iDirectIlluminationUseEmitterAndBSDFSamples"))
     iDirectIlluminationEmitterSamples = cmds.getAttr("%s.%s" % (renderSettings, "iDirectIlluminationEmitterSamples"))
@@ -525,21 +1041,33 @@ def writeIntegratorDirectIllumination(outFile, renderSettings, integratorMitsuba
     iDirectIlluminationStrictNormalsText = 'true' if iDirectIlluminationStrictNormals else 'false'
     iDirectIlluminationHideEmittersText = 'true' if iDirectIlluminationHideEmitters else 'false'
 
-    outFile.write(" <integrator type=\"%s\">\n" % integratorMitsuba)
+    # Create a structure to be written
+    elementDict = {'type':'integrator'}
+    elementDict['attributes'] = {'type':integratorMitsuba}
 
+    elementDict['children'] = []
     if iDirectIlluminationUseEmitterAndBSDFSamples:
-        outFile.write("     <integer name=\"emitterSamples\" value=\"" + str(iDirectIlluminationEmitterSamples) + "\"/>\n")
-        outFile.write("     <integer name=\"bsdfSamples\" value=\"" + str(iDirectIlluminationBSDFSamples) + "\"/>\n")
+        elementDict['children'].append( { 'type':'integer', 
+            'attributes':{ 'name':'emitterSamples', 'value':str(iDirectIlluminationEmitterSamples) } } )
+        elementDict['children'].append( { 'type':'integer', 
+            'attributes':{ 'name':'bsdfSamples', 'value':str(iDirectIlluminationBSDFSamples) } } )
     else:
-        outFile.write("     <integer name=\"shadingSamples\" value=\"" + str(iDirectIlluminationShadingSamples) + "\"/>\n")
+        elementDict['children'].append( { 'type':'integer', 
+            'attributes':{ 'name':'shadingSamples', 'value':str(iDirectIlluminationShadingSamples) } } )
 
-    outFile.write("     <boolean name=\"strictNormals\" value=\"%s\"/>\n" % iDirectIlluminationStrictNormalsText)
-    outFile.write("     <boolean name=\"hideEmitters\" value=\"%s\"/>\n" % iDirectIlluminationHideEmittersText)
+    elementDict['children'].append( { 'type':'boolean', 
+        'attributes':{ 'name':'strictNormals', 'value':str(iDirectIlluminationStrictNormalsText) } } )
+    elementDict['children'].append( { 'type':'boolean', 
+        'attributes':{ 'name':'hideEmitters', 'value':str(iDirectIlluminationHideEmittersText) } } )
 
-    outFile.write(" </integrator>\n\n\n")
+    # Write structure
+    #writeElement(outFile, elementDict, depth)
+
+    return elementDict
 
 
-def writeIntegratorPhotonMap(outFile, renderSettings, integratorMitsuba):
+def writeIntegratorPhotonMap(outFile, renderSettings, integratorMitsuba, depth=1):
+    # Get values from the scene
     iPhotonMapDirectSamples = cmds.getAttr("%s.%s" % (renderSettings, "iPhotonMapDirectSamples"))
     iPhotonMapGlossySamples = cmds.getAttr("%s.%s" % (renderSettings, "iPhotonMapGlossySamples"))
     iPhotonMapUseInfiniteDepth = cmds.getAttr("%s.%s" % (renderSettings, "iPhotonMapUseInfiniteDepth"))
@@ -557,25 +1085,50 @@ def writeIntegratorPhotonMap(outFile, renderSettings, integratorMitsuba):
     iPhotonMapMaxDepth = -1 if iPhotonMapUseInfiniteDepth else iPhotonMapMaxDepth
     iPhotonMapHideEmittersText = "true" if iPhotonMapHideEmitters else "false"
 
-    outFile.write(" <integrator type=\"%s\">\n" % integratorMitsuba)
+    # Create a structure to be written
+    elementDict = {'type':'integrator'}
+    elementDict['attributes'] = {'type':integratorMitsuba}
 
-    outFile.write("     <integer name=\"directSamples\" value=\"" + str(iPhotonMapDirectSamples) + "\"/>\n")
-    outFile.write("     <integer name=\"glossySamples\" value=\"" + str(iPhotonMapGlossySamples) + "\"/>\n")
-    outFile.write("     <integer name=\"maxDepth\" value=\"" + str(iPhotonMapMaxDepth) + "\"/>\n")
-    outFile.write("     <integer name=\"globalPhotons\" value=\"" + str(iPhotonMapGlobalPhotons) + "\"/>\n")
-    outFile.write("     <integer name=\"causticPhotons\" value=\"" + str(iPhotonMapCausticPhotons) + "\"/>\n")
-    outFile.write("     <integer name=\"volumePhotons\" value=\"" + str(iPhotonMapVolumePhotons) + "\"/>\n")
-    outFile.write("     <float name=\"globalLookupRadius\" value=\"" + str(iPhotonMapGlobalLookupRadius) + "\"/>\n")  
-    outFile.write("     <float name=\"causticLookupRadius\" value=\"" + str(iPhotonMapCausticLookupRadius) + "\"/>\n")            
-    outFile.write("     <integer name=\"lookupSize\" value=\"" + str(iPhotonMapLookupSize) + "\"/>\n")
-    outFile.write("     <integer name=\"granularity\" value=\"" + str(iPhotonMapGranularity) + "\"/>\n")
-    outFile.write("     <boolean name=\"hideEmitters\" value=\"%s\"/>\n" % iPhotonMapHideEmittersText)
-    outFile.write("     <integer name=\"rrDepth\" value=\"" + str(iPhotonMapRRDepth) + "\"/>\n")    
+    elementDict['children'] = []
 
-    outFile.write(" </integrator>\n\n\n")
+    elementDict['children'].append( { 'type':'integer', 
+        'attributes':{ 'name':'directSamples', 'value':str(iPhotonMapDirectSamples) } } )
+    elementDict['children'].append( { 'type':'integer', 
+        'attributes':{ 'name':'glossySamples', 'value':str(iPhotonMapGlossySamples) } } )
+
+    elementDict['children'].append( { 'type':'integer', 
+        'attributes':{ 'name':'maxDepth', 'value':str(iPhotonMapMaxDepth) } } )
+
+    elementDict['children'].append( { 'type':'integer', 
+        'attributes':{ 'name':'globalPhotons', 'value':str(iPhotonMapGlobalPhotons) } } )
+    elementDict['children'].append( { 'type':'integer', 
+        'attributes':{ 'name':'causticPhotons', 'value':str(iPhotonMapCausticPhotons) } } )
+    elementDict['children'].append( { 'type':'integer', 
+        'attributes':{ 'name':'volumePhotons', 'value':str(iPhotonMapVolumePhotons) } } )
+
+    elementDict['children'].append( { 'type':'float', 
+        'attributes':{ 'name':'globalLookupRadius', 'value':str(iPhotonMapGlobalLookupRadius) } } )
+    elementDict['children'].append( { 'type':'float', 
+        'attributes':{ 'name':'causticLookupRadius', 'value':str(iPhotonMapCausticLookupRadius) } } )
+
+    elementDict['children'].append( { 'type':'integer', 
+        'attributes':{ 'name':'lookupSize', 'value':str(iPhotonMapLookupSize) } } )
+    elementDict['children'].append( { 'type':'integer', 
+        'attributes':{ 'name':'granularity', 'value':str(iPhotonMapGranularity) } } )
+
+    elementDict['children'].append( { 'type':'boolean', 
+        'attributes':{ 'name':'hideEmitters', 'value':str(iPhotonMapHideEmittersText) } } )
+    elementDict['children'].append( { 'type':'integer', 
+        'attributes':{ 'name':'rrDepth', 'value':str(iPhotonMapRRDepth) } } )
+
+    # Write structure
+    #writeElement(outFile, elementDict, depth)
+
+    return elementDict
 
 
-def writeIntegratorProgressivePhotonMap(outFile, renderSettings, integratorMitsuba):
+def writeIntegratorProgressivePhotonMap(outFile, renderSettings, integratorMitsuba, depth=1):
+    # Get values from the scene
     attrPrefixes = { 
         "ppm" : "", 
         "sppm" : "Stochastic", 
@@ -593,6 +1146,7 @@ def writeIntegratorProgressivePhotonMap(outFile, renderSettings, integratorMitsu
 
     iProgressivePhotonMapMaxDepth = -1 if iProgressivePhotonMapUseInfiniteDepth else iProgressivePhotonMapMaxDepth
 
+    '''
     outFile.write(" <integrator type=\"%s\">\n" % integratorMitsuba)
 
     outFile.write("     <integer name=\"maxDepth\" value=\"" + str(iProgressivePhotonMapMaxDepth) + "\"/>\n")
@@ -604,9 +1158,39 @@ def writeIntegratorProgressivePhotonMap(outFile, renderSettings, integratorMitsu
     outFile.write("     <integer name=\"maxPasses\" value=\"" + str(iProgressivePhotonMapMaxPasses) + "\"/>\n")    
 
     outFile.write(" </integrator>\n\n\n")
+    '''
+
+    # Create a structure to be written
+    elementDict = {'type':'integrator'}
+    elementDict['attributes'] = {'type':integratorMitsuba}
+
+    elementDict['children'] = []
+
+    elementDict['children'].append( { 'type':'integer', 
+        'attributes':{ 'name':'maxDepth', 'value':str(iProgressivePhotonMapMaxDepth) } } )
+    elementDict['children'].append( { 'type':'integer', 
+        'attributes':{ 'name':'photonCount', 'value':str(iProgressivePhotonMapPhotonCount) } } )
+
+    elementDict['children'].append( { 'type':'float', 
+        'attributes':{ 'name':'initialRadius', 'value':str(iProgressivePhotonMapInitialRadius) } } )
+    elementDict['children'].append( { 'type':'float', 
+        'attributes':{ 'name':'alpha', 'value':str(iProgressivePhotonMapAlpha) } } )
+
+    elementDict['children'].append( { 'type':'integer', 
+        'attributes':{ 'name':'granularity', 'value':str(iProgressivePhotonMapGranularity) } } )
+    elementDict['children'].append( { 'type':'integer', 
+        'attributes':{ 'name':'rrDepth', 'value':str(iProgressivePhotonMapRRDepth) } } )
+    elementDict['children'].append( { 'type':'integer', 
+        'attributes':{ 'name':'maxPasses', 'value':str(iProgressivePhotonMapMaxPasses) } } )
+
+    # Write structure
+    #writeElement(outFile, elementDict, depth)
+
+    return elementDict
 
 
-def writeIntegratorPrimarySampleSpaceMetropolisLightTransport(outFile, renderSettings, integratorMitsuba):
+def writeIntegratorPrimarySampleSpaceMetropolisLightTransport(outFile, renderSettings, integratorMitsuba, depth=1):
+    # Get values from the scene
     iPrimarySampleSpaceMetropolisLightTransportBidirectional = cmds.getAttr("%s.%s" % (renderSettings, "iPrimarySampleSpaceMetropolisLightTransportBidirectional"))
     iPrimarySampleSpaceMetropolisLightTransportUseInfiniteDepth = cmds.getAttr("%s.%s" % (renderSettings, "iPrimarySampleSpaceMetropolisLightTransportUseInfiniteDepth"))
     iPrimarySampleSpaceMetropolisLightTransportMaxDepth = cmds.getAttr("%s.%s" % (renderSettings, "iPrimarySampleSpaceMetropolisLightTransportMaxDepth"))
@@ -620,6 +1204,7 @@ def writeIntegratorPrimarySampleSpaceMetropolisLightTransport(outFile, renderSet
     iPrimarySampleSpaceMetropolisLightTransportBidirectionalText = 'true' if iPrimarySampleSpaceMetropolisLightTransportBidirectional else 'false'
     iPrimarySampleSpaceMetropolisLightTransportTwoStageText = 'true' if iPrimarySampleSpaceMetropolisLightTransportTwoStage else 'false'
 
+    '''
     outFile.write(" <integrator type=\"%s\">\n" % integratorMitsuba)
 
     outFile.write("     <boolean name=\"bidirectional\" value=\"%s\"/>\n" % iPrimarySampleSpaceMetropolisLightTransportBidirectionalText)
@@ -631,9 +1216,37 @@ def writeIntegratorPrimarySampleSpaceMetropolisLightTransport(outFile, renderSet
     outFile.write("     <float name=\"pLarge\" value=\"" + str(iPrimarySampleSpaceMetropolisLightTransportPLarge) + "\"/>\n")  
 
     outFile.write(" </integrator>\n\n\n")
+    '''
+
+    # Create a structure to be written
+    elementDict = {'type':'integrator'}
+    elementDict['attributes'] = {'type':integratorMitsuba}
+
+    elementDict['children'] = []
+
+    elementDict['children'].append( { 'type':'boolean', 
+        'attributes':{ 'name':'bidirectional', 'value':str(iPrimarySampleSpaceMetropolisLightTransportBidirectionalText) } } )
+    elementDict['children'].append( { 'type':'integer', 
+        'attributes':{ 'name':'maxDepth', 'value':str(iPrimarySampleSpaceMetropolisLightTransportMaxDepth) } } )
+    elementDict['children'].append( { 'type':'integer', 
+        'attributes':{ 'name':'directSamples', 'value':str(iPrimarySampleSpaceMetropolisLightTransportDirectSamples) } } )
+    elementDict['children'].append( { 'type':'integer', 
+        'attributes':{ 'name':'rrDepth', 'value':str(iPrimarySampleSpaceMetropolisLightTransportRRDepth) } } )
+    elementDict['children'].append( { 'type':'integer', 
+        'attributes':{ 'name':'luminanceSamples', 'value':str(iPrimarySampleSpaceMetropolisLightTransportLuminanceSamples) } } )
+    elementDict['children'].append( { 'type':'boolean', 
+        'attributes':{ 'name':'twoStage', 'value':str(iPrimarySampleSpaceMetropolisLightTransportTwoStageText) } } )
+    elementDict['children'].append( { 'type':'float', 
+        'attributes':{ 'name':'pLarge', 'value':str(iPrimarySampleSpaceMetropolisLightTransportPLarge) } } )
+
+    # Write structure
+    #writeElement(outFile, elementDict, depth)
+
+    return elementDict
 
 
-def writeIntegratorPathSpaceMetropolisLightTransport(outFile, renderSettings, integratorMitsuba):
+def writeIntegratorPathSpaceMetropolisLightTransport(outFile, renderSettings, integratorMitsuba, depth=1):
+    # Get values from the scene
     iPathSpaceMetropolisLightTransportUseInfiniteDepth = cmds.getAttr("%s.%s" % (renderSettings, "iPathSpaceMetropolisLightTransportUseInfiniteDepth"))
     iPathSpaceMetropolisLightTransportMaxDepth = cmds.getAttr("%s.%s" % (renderSettings, "iPathSpaceMetropolisLightTransportMaxDepth"))
     iPathSpaceMetropolisLightTransportDirectSamples = cmds.getAttr("%s.%s" % (renderSettings, "iPathSpaceMetropolisLightTransportDirectSamples"))
@@ -655,6 +1268,7 @@ def writeIntegratorPathSpaceMetropolisLightTransport(outFile, renderSettings, in
     iPathSpaceMetropolisLightTransportCausticPurturbationText = 'true' if iPathSpaceMetropolisLightTransportCausticPurturbation else 'false'
     iPathSpaceMetropolisLightTransportManifoldPurturbationText = 'true' if iPathSpaceMetropolisLightTransportManifoldPurturbation else 'false'
 
+    '''
     outFile.write(" <integrator type=\"%s\">\n" % integratorMitsuba)
 
     outFile.write("     <integer name=\"maxDepth\" value=\"" + str(iPathSpaceMetropolisLightTransportMaxDepth) + "\"/>\n")
@@ -669,9 +1283,43 @@ def writeIntegratorPathSpaceMetropolisLightTransport(outFile, renderSettings, in
     outFile.write("     <float name=\"lambda\" value=\"" + str(iPathSpaceMetropolisLightTransportLambda) + "\"/>\n")  
 
     outFile.write(" </integrator>\n\n\n")
+    '''
+
+    # Create a structure to be written
+    elementDict = {'type':'integrator'}
+    elementDict['attributes'] = {'type':integratorMitsuba}
+
+    elementDict['children'] = []
+
+    elementDict['children'].append( { 'type':'integer', 
+        'attributes':{ 'name':'maxDepth', 'value':str(iPathSpaceMetropolisLightTransportMaxDepth) } } )
+    elementDict['children'].append( { 'type':'integer', 
+        'attributes':{ 'name':'directSamples', 'value':str(iPathSpaceMetropolisLightTransportDirectSamples) } } )
+    elementDict['children'].append( { 'type':'integer', 
+        'attributes':{ 'name':'luminanceSamples', 'value':str(iPathSpaceMetropolisLightTransportLuminanceSamples) } } )
+    elementDict['children'].append( { 'type':'boolean', 
+        'attributes':{ 'name':'twoStage', 'value':str(iPathSpaceMetropolisLightTransportTwoStageText) } } )
+    elementDict['children'].append( { 'type':'boolean', 
+        'attributes':{ 'name':'bidirectionalMutation', 'value':str(iPathSpaceMetropolisLightTransportBidirectionalMutationText) } } )
+    elementDict['children'].append( { 'type':'boolean', 
+        'attributes':{ 'name':'lensPerturbation', 'value':str(iPathSpaceMetropolisLightTransportLensPurturbationText) } } )
+    elementDict['children'].append( { 'type':'boolean', 
+        'attributes':{ 'name':'multiChainPerturbation', 'value':str(iPathSpaceMetropolisLightTransportMultiChainPurturbationText) } } )
+    elementDict['children'].append( { 'type':'boolean', 
+        'attributes':{ 'name':'causticPerturbation', 'value':str(iPathSpaceMetropolisLightTransportCausticPurturbationText) } } )
+    elementDict['children'].append( { 'type':'boolean', 
+        'attributes':{ 'name':'manifoldPerturbation', 'value':str(iPathSpaceMetropolisLightTransportManifoldPurturbationText) } } )
+    elementDict['children'].append( { 'type':'float', 
+        'attributes':{ 'name':'lambda', 'value':str(iPathSpaceMetropolisLightTransportLambda) } } )
+
+    # Write structure
+    #writeElement(outFile, elementDict, depth)
+
+    return elementDict
 
 
-def writeIntegratorEnergyRedistributionPathTracing(outFile, renderSettings, integratorMitsuba):
+def writeIntegratorEnergyRedistributionPathTracing(outFile, renderSettings, integratorMitsuba, depth=1):
+    # Get values from the scene
     iEnergyRedistributionPathTracingUseInfiniteDepth = cmds.getAttr("%s.%s" % (renderSettings, "iEnergyRedistributionPathTracingUseInfiniteDepth"))
     iEnergyRedistributionPathTracingMaxDepth = cmds.getAttr("%s.%s" % (renderSettings, "iEnergyRedistributionPathTracingMaxDepth"))
     iEnergyRedistributionPathTracingNumChains = cmds.getAttr("%s.%s" % (renderSettings, "iEnergyRedistributionPathTracingNumChains"))
@@ -691,6 +1339,7 @@ def writeIntegratorEnergyRedistributionPathTracing(outFile, renderSettings, inte
     iEnergyRedistributionPathTracingCausticPerturbationText = 'true' if iEnergyRedistributionPathTracingCausticPerturbation else 'false'
     iEnergyRedistributionPathTracingManifoldPerturbationText = 'true' if iEnergyRedistributionPathTracingManifoldPerturbation else 'false'
 
+    '''
     outFile.write(" <integrator type=\"%s\">\n" % integratorMitsuba)
 
     outFile.write("     <integer name=\"maxDepth\" value=\"" + str(iEnergyRedistributionPathTracingMaxDepth) + "\"/>\n")
@@ -698,7 +1347,6 @@ def writeIntegratorEnergyRedistributionPathTracing(outFile, renderSettings, inte
     outFile.write("     <integer name=\"maxChains\" value=\"" + str(iEnergyRedistributionPathTracingMaxChains) + "\"/>\n")
     outFile.write("     <integer name=\"directSamples\" value=\"" + str(iEnergyRedistributionPathTracingDirectSamples) + "\"/>\n")
     outFile.write("     <integer name=\"chainLength\" value=\"" + str(iEnergyRedistributionPathTracingChainLength) + "\"/>\n")
-    outFile.write("     <integer name=\"directSamples\" value=\"" + str(iEnergyRedistributionPathTracingDirectSamples) + "\"/>\n")
     outFile.write("     <boolean name=\"lensPerturbation\" value=\"%s\"/>\n" % iEnergyRedistributionPathTracingLensPerturbationText)
     outFile.write("     <boolean name=\"multiChainPerturbation\" value=\"%s\"/>\n" % iEnergyRedistributionPathTracingMultiChainPerturbationText)
     outFile.write("     <boolean name=\"causticPerturbation\" value=\"%s\"/>\n" % iEnergyRedistributionPathTracingCausticPerturbationText)
@@ -706,9 +1354,42 @@ def writeIntegratorEnergyRedistributionPathTracing(outFile, renderSettings, inte
     outFile.write("     <float name=\"lambda\" value=\"" + str(iEnergyRedistributionPathTracingLambda) + "\"/>\n")  
 
     outFile.write(" </integrator>\n\n\n")
+    '''
 
+    # Create a structure to be written
+    elementDict = {'type':'integrator'}
+    elementDict['attributes'] = {'type':integratorMitsuba}
 
-def writeIntegratorAdjointParticleTracer(outFile, renderSettings, integratorMitsuba):
+    elementDict['children'] = []
+
+    elementDict['children'].append( { 'type':'integer', 
+        'attributes':{ 'name':'maxDepth', 'value':str(iEnergyRedistributionPathTracingMaxDepth) } } )
+    elementDict['children'].append( { 'type':'float', 
+        'attributes':{ 'name':'numChains', 'value':str(iEnergyRedistributionPathTracingNumChains) } } )
+    elementDict['children'].append( { 'type':'integer', 
+        'attributes':{ 'name':'maxChains', 'value':str(iEnergyRedistributionPathTracingMaxChains) } } )
+    elementDict['children'].append( { 'type':'integer', 
+        'attributes':{ 'name':'directSamples', 'value':str(iEnergyRedistributionPathTracingDirectSamples) } } )
+    elementDict['children'].append( { 'type':'integer', 
+        'attributes':{ 'name':'chainLength', 'value':str(iEnergyRedistributionPathTracingChainLength) } } )
+    elementDict['children'].append( { 'type':'boolean', 
+        'attributes':{ 'name':'lensPerturbation', 'value':str(iEnergyRedistributionPathTracingLensPerturbationText) } } )
+    elementDict['children'].append( { 'type':'boolean', 
+        'attributes':{ 'name':'multiChainPerturbation', 'value':str(iEnergyRedistributionPathTracingMultiChainPerturbationText) } } )
+    elementDict['children'].append( { 'type':'boolean', 
+        'attributes':{ 'name':'causticPerturbation', 'value':str(iEnergyRedistributionPathTracingCausticPerturbationText) } } )
+    elementDict['children'].append( { 'type':'boolean', 
+        'attributes':{ 'name':'manifoldPerturbation', 'value':str(iEnergyRedistributionPathTracingManifoldPerturbationText) } } )
+    elementDict['children'].append( { 'type':'float', 
+        'attributes':{ 'name':'lambda', 'value':str(iEnergyRedistributionPathTracingLambda) } } )
+
+    # Write structure
+    #writeElement(outFile, elementDict, depth)
+
+    return elementDict
+
+def writeIntegratorAdjointParticleTracer(outFile, renderSettings, integratorMitsuba, depth=1):
+    # Get values from the scene
     iAdjointParticleTracerUseInfiniteDepth = cmds.getAttr("%s.%s" % (renderSettings, "iAdjointParticleTracerUseInfiniteDepth"))
     iAdjointParticleTracerMaxDepth = cmds.getAttr("%s.%s" % (renderSettings, "iAdjointParticleTracerMaxDepth"))
     iAdjointParticleTracerRRDepth = cmds.getAttr("%s.%s" % (renderSettings, "iAdjointParticleTracerRRDepth"))
@@ -718,6 +1399,7 @@ def writeIntegratorAdjointParticleTracer(outFile, renderSettings, integratorMits
     iAdjointParticleTracerMaxDepth = -1 if iAdjointParticleTracerUseInfiniteDepth else iAdjointParticleTracerMaxDepth
     iAdjointParticleTracerBruteForceText = 'true' if iAdjointParticleTracerBruteForce else 'false'
 
+    '''
     outFile.write(" <integrator type=\"%s\">\n" % integratorMitsuba)
 
     outFile.write("     <integer name=\"maxDepth\" value=\"" + str(iAdjointParticleTracerMaxDepth) + "\"/>\n")
@@ -726,9 +1408,30 @@ def writeIntegratorAdjointParticleTracer(outFile, renderSettings, integratorMits
     outFile.write("     <boolean name=\"bruteForce\" value=\"%s\"/>\n" % iAdjointParticleTracerBruteForceText)
 
     outFile.write(" </integrator>\n\n\n")
+    '''
 
+    # Create a structure to be written
+    elementDict = {'type':'integrator'}
+    elementDict['attributes'] = {'type':integratorMitsuba}
 
-def writeIntegratorVirtualPointLight(outFile, renderSettings, integratorMitsuba):
+    elementDict['children'] = []
+
+    elementDict['children'].append( { 'type':'integer', 
+        'attributes':{ 'name':'maxDepth', 'value':str(iAdjointParticleTracerMaxDepth) } } )
+    elementDict['children'].append( { 'type':'integer', 
+        'attributes':{ 'name':'rrDepth', 'value':str(iAdjointParticleTracerRRDepth) } } )
+    elementDict['children'].append( { 'type':'integer', 
+        'attributes':{ 'name':'granularity', 'value':str(iAdjointParticleTracerGranularity) } } )
+    elementDict['children'].append( { 'type':'boolean', 
+        'attributes':{ 'name':'bruteForce', 'value':str(iAdjointParticleTracerBruteForceText) } } )
+
+    # Write structure
+    #writeElement(outFile, elementDict, depth)
+
+    return elementDict
+
+def writeIntegratorVirtualPointLight(outFile, renderSettings, integratorMitsuba, depth=1):
+    # Get values from the scene
     iVirtualPointLightUseInfiniteDepth = cmds.getAttr("%s.%s" % (renderSettings, "iVirtualPointLightUseInfiniteDepth"))
     iVirtualPointLightMaxDepth = cmds.getAttr("%s.%s" % (renderSettings, "iVirtualPointLightMaxDepth"))
     iVirtualPointLightShadowMapResolution = cmds.getAttr("%s.%s" % (renderSettings, "iVirtualPointLightShadowMapResolution"))
@@ -736,6 +1439,7 @@ def writeIntegratorVirtualPointLight(outFile, renderSettings, integratorMitsuba)
 
     iVirtualPointLightMaxDepth = -1 if iVirtualPointLightUseInfiniteDepth else iVirtualPointLightMaxDepth
 
+    '''
     outFile.write(" <integrator type=\"%s\">\n" % integratorMitsuba)
 
     outFile.write("     <integer name=\"maxDepth\" value=\"" + str(iVirtualPointLightMaxDepth) + "\"/>\n")
@@ -743,9 +1447,28 @@ def writeIntegratorVirtualPointLight(outFile, renderSettings, integratorMitsuba)
     outFile.write("     <float name=\"clamping\" value=\"" + str(iVirtualPointLightClamping) + "\"/>\n")
 
     outFile.write(" </integrator>\n\n\n")
+    '''
+
+    # Create a structure to be written
+    elementDict = {'type':'integrator'}
+    elementDict['attributes'] = {'type':integratorMitsuba}
+
+    elementDict['children'] = []
+
+    elementDict['children'].append( { 'type':'integer', 
+        'attributes':{ 'name':'maxDepth', 'value':str(iVirtualPointLightMaxDepth) } } )
+    elementDict['children'].append( { 'type':'integer', 
+        'attributes':{ 'name':'shadowMapResolution', 'value':str(iVirtualPointLightShadowMapResolution) } } )
+    elementDict['children'].append( { 'type':'float', 
+        'attributes':{ 'name':'clamping', 'value':str(iVirtualPointLightClamping) } } )
+
+    # Write structure
+    #writeElement(outFile, elementDict, depth)
+
+    return elementDict
 
 
-def writeIntegrator(outFile, renderSettings):
+def writeIntegrator(outFile, renderSettings, depth=1):
     integratorMaya = cmds.getAttr("%s.%s" % (renderSettings, "integrator")).replace('_', ' ')
 
     mayaUINameToMitsubaName = {
@@ -773,44 +1496,32 @@ def writeIntegrator(outFile, renderSettings):
     #
     # Integrators that can operate independent of the Render Settings UI
     #
-    if( integratorMaya == "Path Tracer" or 
-        integratorMaya == "Volumetric Path Tracer" or 
-        integratorMaya == "Simple Volumetric Path Tracer" ):
-        writeIntegratorPathTracer(outFile, renderSettings, integratorMitsuba)
+    mayaUINameToIntegratorFunction = {
+        "Ambient Occlusion" : writeIntegratorAmbientOcclusion,
+        "Direct_Illumination" : writeIntegratorDirectIllumination,
+        "Path Tracer" : writeIntegratorPathTracer,
+        "Volumetric Path Tracer" : writeIntegratorPathTracer,
+        "Simple Volumetric Path Tracer" : writeIntegratorPathTracer,
+        "Bidirectional Path Tracer" : writeIntegratorBidirectionalPathTracer,
+        "Photon Map" : writeIntegratorPhotonMap,
+        "Progressive Photon Map" : writeIntegratorProgressivePhotonMap,
+        "Stochastic Progressive Photon Map" : writeIntegratorProgressivePhotonMap,
+        "Primary Sample Space Metropolis Light Transport" : writeIntegratorPrimarySampleSpaceMetropolisLightTransport,
+        "Path Space Metropolis Light Transport" : writeIntegratorPathSpaceMetropolisLightTransport,
+        "Energy Redistribution Path Tracer" : writeIntegratorEnergyRedistributionPathTracing,
+        "Adjoint Particle Tracer" : writeIntegratorAdjointParticleTracer,
+        "Virtual Point Lights" : writeIntegratorVirtualPointLight
+    }
 
-    elif integratorMaya == "Bidirectional Path Tracer":
-        writeIntegratorBidirectionalPathTracer(outFile, renderSettings, integratorMitsuba)
-
-    elif integratorMaya == "Ambient Occlusion":
-        writeIntegratorAmbientOcclusion(outFile, renderSettings, integratorMitsuba)
-
-    elif integratorMaya == "Direct Illumination":
-        writeIntegratorDirectIllumination(outFile, renderSettings, integratorMitsuba)
-
-    elif integratorMaya == "Photon Map":
-        writeIntegratorPhotonMap(outFile, renderSettings, integratorMitsuba)
-
-    elif( integratorMaya == "Progressive Photon Map" or
-          integratorMaya == "Stochastic Progressive Photon Map" ):
-        writeIntegratorProgressivePhotonMap(outFile, renderSettings, integratorMitsuba)
-
-    elif integratorMaya == "Primary Sample Space Metropolis Light Transport":
-        writeIntegratorPrimarySampleSpaceMetropolisLightTransport(outFile, renderSettings, integratorMitsuba)
-
-    elif integratorMaya == "Path Space Metropolis Light Transport":
-        writeIntegratorPathSpaceMetropolisLightTransport(outFile, renderSettings, integratorMitsuba)
-
-    elif integratorMaya == "Energy Redistribution Path Tracer":
-        writeIntegratorEnergyRedistributionPathTracing(outFile, renderSettings, integratorMitsuba)
-
-    elif integratorMaya == "Adjoint Particle Tracer":
-        writeIntegratorAdjointParticleTracer(outFile, renderSettings, integratorMitsuba)
-
-    elif integratorMaya == "Virtual Point Lights":
-        writeIntegratorVirtualPointLight(outFile, renderSettings, integratorMitsuba)
-
+    if integratorMaya in mayaUINameToIntegratorFunction:
+        writeIntegratorFunction = mayaUINameToIntegratorFunction[integratorMaya]
     else:
-        print( "Unsupported Integrator : %s" % integratorMaya)
+        print( "Unsupported Integrator : %s. Using Path Tracer" % integratorMaya)
+        writeIntegratorFunction = writeIntegratorPathTracer
+
+    integratorElement = writeIntegratorFunction(outFile, renderSettings, integratorMitsuba, depth)
+
+    return integratorElement
 
 '''
 Write image sample generator
@@ -837,26 +1548,22 @@ def writeSampler(outFile, frameNumber, renderSettings):
     else:
         samplerMitsuba = "independent"
 
-    outFile.write("         <sampler type=\"%s\">\n" % samplerMitsuba)
-    outFile.write("             <integer name=\"sampleCount\" value=\"" + str(sampleCount) + "\"/>\n")
+    elementDict = {'type':'sampler'}
+    elementDict['attributes'] = {'type':samplerMitsuba}
 
-    if samplerMaya == "Stratified Sampler":
-        outFile.write("             <integer name=\"dimension\" value=\"" + str(samplerDimension) + "\"/>\n")
+    elementDict['children'] = []
+    elementDict['children'].append( { 'type':'integer', 'attributes':{ 'name':'sampleCount', 'value':str(sampleCount) } } )
 
-    elif samplerMaya == "Low Discrepancy Sampler":
-        outFile.write("             <integer name=\"dimension\" value=\"" + str(samplerDimension) + "\"/>\n")
+    if( samplerMaya == "Stratified Sampler" or
+        samplerMaya == "Low Discrepancy Sampler" ):
+        elementDict['children'].append( { 'type':'integer', 'attributes':{ 'name':'dimension', 'value':str(samplerDimension) } } )
 
-    elif samplerMaya == "Halton QMC Sampler":
-        outFile.write("             <integer name=\"scramble\" value=\"" + str(samplerScramble) + "\"/>\n")
+    elif( samplerMaya == "Halton QMC Sampler" or
+        samplerMaya == "Hammersley QMC Sampler" or
+        samplerMaya == "Sobol QMC Sampler" ):
+        elementDict['children'].append( { 'type':'integer', 'attributes':{ 'name':'scramble', 'value':str(samplerScramble) } } )
 
-    elif samplerMaya == "Hammersley QMC Sampler":
-        outFile.write("             <integer name=\"scramble\" value=\"" + str(samplerScramble) + "\"/>\n")
-
-    elif samplerMaya == "Sobol QMC Sampler":
-        outFile.write("             <integer name=\"scramble\" value=\"" + str(samplerScramble) + "\"/>\n")
-
-    outFile.write("         </sampler>\n")
-    outFile.write("\n")
+    return elementDict
    
 def writeFilm(outFile, frameNumber, renderSettings):
     #Resolution
@@ -881,12 +1588,16 @@ def writeFilm(outFile, frameNumber, renderSettings):
 
     #print( "Reconstruction Filter : %s" % reconstructionFilterMitsuba )
 
-    outFile.write("     <film type=\"hdrfilm\">\n")    
-    outFile.write("         <integer name=\"height\" value=\"" + str(imageHeight) + "\"/>\n")
-    outFile.write("         <integer name=\"width\" value=\"" + str(imageWidth) + "\"/>\n")
-    outFile.write("         <rfilter type=\"" + reconstructionFilterMitsuba + "\"/>\n")
-    outFile.write("         <boolean name=\"banner\" value=\"false\"/>\n")
-    outFile.write("     </film>\n")
+    elementDict = {'type':'film'}
+    elementDict['attributes'] = {'type':'hdrfilm'}
+
+    elementDict['children'] = []
+    elementDict['children'].append( { 'type':'integer', 'attributes':{ 'name':'height', 'value':str(imageHeight) } } )
+    elementDict['children'].append( { 'type':'integer', 'attributes':{ 'name':'width', 'value':str(imageWidth) } } )
+    elementDict['children'].append( { 'type':'rfilter', 'attributes':{ 'type':reconstructionFilterMitsuba } } )
+    elementDict['children'].append( { 'type':'boolean', 'attributes':{ 'name':'banner', 'value':'false' } } )
+
+    return elementDict
 
 '''
 Write sensor, which include camera, image sampler, and film
@@ -907,7 +1618,7 @@ def getRenderableCamera():
 
     return rCamShape
 
-def writeSensor(outFile, frameNumber, renderSettings):
+def writeSensor(outFile, frameNumber, renderSettings, depth=1):
     # Find renderable camera
     rCamShape = getRenderableCamera()
 
@@ -941,37 +1652,53 @@ def writeSensor(outFile, frameNumber, renderSettings):
     # Near Clip Plane
     nearClip = cmds.getAttr(rCamShape+".nearClipPlane")
 
-    # Write Camera
-    outFile.write(" <!-- Camera -->\n")
-
-    outFile.write(" <sensor type=\"" + camType + "\">\n")
-    if camType in ["thinlens", "perspective"]:
-        if camType == "thinlens":
-            outFile.write("         <float name=\"apertureRadius\" value=\"" + str(apertureRadius) + "\"/>\n")
-            outFile.write("         <float name=\"focusDistance\" value=\"" + str(focusDistance) + "\"/>\n")    
-        outFile.write("         <float name=\"fov\" value=\"" + str(fov) + "\"/>\n")
-        outFile.write("         <string name=\"fovAxis\" value=\"x\"/>\n")
-
-    outFile.write("         <float name=\"nearClip\" value=\"" + str(nearClip) + "\"/>\n")
-
-    outFile.write("         <transform name=\"toWorld\">\n")
-    if camType == "orthographic":
-        outFile.write("             <scale x=\"%s\" y=\"%s\"/>\n" % (orthographicWidth, orthographicWidth) )
-    outFile.write("             <lookat target=\"" + str(camAim[0]) + " " + str(camAim[1]) + " " + str(camAim[2]) + "\" origin=\"" + str(camPos[0]) + " " + str(camPos[1]) + " " + str(camPos[2]) + "\" up=\"" + str(camUp[0]) + " " + str(camUp[1]) + " " + str(camUp[2]) + "\"/>\n")
-
-    outFile.write("         </transform>\n")
-    outFile.write("\n")
-
     # Write Sampler
-    writeSampler(outFile, frameNumber, renderSettings)
+    samplerDict = writeSampler(outFile, frameNumber, renderSettings)
 
     # Write Film
-    writeFilm(outFile, frameNumber, renderSettings)
+    filmDict = writeFilm(outFile, frameNumber, renderSettings)
 
-    outFile.write(" </sensor>\n")
-    outFile.write("\n")
+    # Write Camera
+    elementDict = {'type':'sensor'}
+    elementDict['attributes'] = {'type':camType}
 
-def writeLightDirectional(outFile, light):
+    elementDict['children'] = []
+
+    if camType in ["thinlens", "perspective"]:
+        if camType == "thinlens":
+            elementDict['children'].append( { 'type':'float', 
+                'attributes':{ 'name':'apertureRadius', 'value':str(apertureRadius) } } )
+            elementDict['children'].append( { 'type':'float', 
+                'attributes':{ 'name':'focusDistance', 'value':str(focusDistance) } } )
+        elementDict['children'].append( { 'type':'float', 
+            'attributes':{ 'name':'fov', 'value':str(fov) } } )
+        elementDict['children'].append( { 'type':'string', 
+            'attributes':{ 'name':'fovAxis', 'value':'x' } } )
+
+    elementDict['children'].append( { 'type':'float', 
+        'attributes':{ 'name':'nearClip', 'value':str(nearClip) } } )
+
+    # Generate transform
+    transformDict = {'type':'transform'}
+    transformDict['attributes'] = {'name':'toWorld'}
+    transformDict['children'] = []
+    if camType == "orthographic":
+        transformDict['children'].append( { 'type':'scale', 
+            'attributes':{ 'x':str(orthographicWidth), 'y':str(orthographicWidth) } } )
+    transformDict['children'].append( { 'type':'lookat', 
+        'attributes':{ 'target':str(camAim[0]) + " " + str(camAim[1]) + " " + str(camAim[2]), 
+            'origin':str(camPos[0]) + " " + str(camPos[1]) + " " + str(camPos[2]),
+             'up':str(camUp[0]) + " " + str(camUp[1]) + " " + str(camUp[2])} } )
+
+    elementDict['children'].append(transformDict)
+    elementDict['children'].append(samplerDict)
+    elementDict['children'].append(filmDict)
+
+    #writeElement(outFile, elementDict, depth)
+
+    return elementDict
+
+def writeLightDirectional(light):
     intensity = cmds.getAttr(light+".intensity")
     color = cmds.getAttr(light+".color")[0]
     irradiance = [0,0,0]
@@ -981,12 +1708,28 @@ def writeLightDirectional(outFile, light):
     matrix = cmds.getAttr(light+".worldMatrix")
     lightDir = [-matrix[8],-matrix[9],-matrix[10]]
 
+    '''
     outFile.write(" <emitter type=\"directional\">\n")
     outFile.write("     <srgb name=\"irradiance\" value=\"" + str(irradiance[0]) + " " + str(irradiance[1]) + " " + str(irradiance[2]) + "\"/>\n")
     outFile.write("     <vector name=\"direction\" x=\"" + str(lightDir[0]) + "\" y=\"" + str(lightDir[1]) + "\" z=\"" + str(lightDir[2]) + "\"/>\n")
     outFile.write(" </emitter>\n")
+    '''
 
-def writeLightPoint(outFile, light):
+    # Create a structure to be written
+    elementDict = {'type':'emitter'}
+    elementDict['attributes'] = {'type':'directional'}
+
+    elementDict['children'] = []
+
+    elementDict['children'].append( { 'type':'srgb', 
+        'attributes':{ 'name':'irradiance', 'value':str(irradiance[0]) + " " + str(irradiance[1]) + " " + str(irradiance[2]) } } )
+    elementDict['children'].append( { 'type':'vector', 
+        'attributes':{ 'name':'direction', 'value':str(lightDir[0]) + "\" y=\"" + str(lightDir[1]) + "\" z=\"" + str(lightDir[2]) } } )
+
+    return elementDict
+
+
+def writeLightPoint(light):
     intensity = cmds.getAttr(light+".intensity")
     color = cmds.getAttr(light+".color")[0]
     irradiance = [0,0,0]
@@ -996,12 +1739,28 @@ def writeLightPoint(outFile, light):
     matrix = cmds.getAttr(light+".worldMatrix")
     position = [matrix[12],matrix[13],matrix[14]]
 
+    '''
     outFile.write(" <emitter type=\"point\">\n")
     outFile.write("     <srgb name=\"intensity\" value=\"" + str(irradiance[0]) + " " + str(irradiance[1]) + " " + str(irradiance[2]) + "\"/>\n")
     outFile.write("     <point name=\"position\" x=\"" + str(position[0]) + "\" y=\"" + str(position[1]) + "\" z=\"" + str(position[2]) + "\"/>\n")
     outFile.write(" </emitter>\n")
+    '''
 
-def writeLightSpot(outFile, light):
+    # Create a structure to be written
+    elementDict = {'type':'emitter'}
+    elementDict['attributes'] = {'type':'point'}
+
+    elementDict['children'] = []
+
+    elementDict['children'].append( { 'type':'srgb', 
+        'attributes':{ 'name':'intensity', 'value':str(irradiance[0]) + " " + str(irradiance[1]) + " " + str(irradiance[2]) } } )
+    elementDict['children'].append( { 'type':'point', 
+        'attributes':{ 'name':'position', 'x':str(position[0]), 'y':str(position[1]), 'z':str(position[2]) } } )
+
+    return elementDict
+
+
+def writeLightSpot(light):
     intensity = cmds.getAttr(light+".intensity")
     color = cmds.getAttr(light+".color")[0]
     irradiance = [0,0,0]
@@ -1017,6 +1776,7 @@ def writeLightSpot(outFile, light):
     transform = cmds.listRelatives( light, parent=True )[0]
     rotation = cmds.getAttr(transform+".rotate")[0]
 
+    '''
     outFile.write(" <emitter type=\"spot\">\n")
     outFile.write("     <rgb name=\"intensity\" value=\"" + str(irradiance[0]) + " " + str(irradiance[1]) + " " + str(irradiance[2]) + "\"/>\n")
     outFile.write("     <float name=\"cutoffAngle\" value=\"" + str(coneAngle + penumbraAngle) + "\"/>\n")
@@ -1034,19 +1794,57 @@ def writeLightSpot(outFile, light):
     outFile.write("     </transform>\n")
 
     outFile.write(" </emitter>\n")
+    '''
 
-def writeLightSunSky(outFile, sunsky):
+    # Create a structure to be written
+    elementDict = {'type':'emitter'}
+    elementDict['attributes'] = {'type':'spot'}
+
+    elementDict['children'] = []
+
+    elementDict['children'].append( { 'type':'rgb', 
+        'attributes':{ 'name':'intensity', 'value':str(irradiance[0]) + " " + str(irradiance[1]) + " " + str(irradiance[2]) } } )
+    elementDict['children'].append( { 'type':'float', 
+        'attributes':{ 'name':'cutoffAngle', 'value':str(coneAngle + penumbraAngle) } } )
+    elementDict['children'].append( { 'type':'float', 
+        'attributes':{ 'name':'beamWidth', 'value':str(coneAngle) } } )
+
+    transformDict = {'type':'transform'}
+    transformDict['attributes'] = {'name':'toWorld'}
+
+    transformDict['children'] = []
+
+    transformDict['children'].append( { 'type':'translate', 
+        'attributes':{ 'x':str(position[0]), 'y':str(position[1]), 'z':str(position[2]) } } )
+    transformDict['children'].append( { 'type':'rotate', 
+        'attributes':{ 'y':str(1), 'angle':str(180.0) } } )
+    if rotation[0] != 0.0:
+        transformDict['children'].append( { 'type':'rotate', 
+            'attributes':{ 'x':str(1), 'angle':str(rotation[0]) } } )
+    if rotation[1] != 0.0:
+        transformDict['children'].append( { 'type':'rotate', 
+            'attributes':{ 'y':str(1), 'angle':str(rotation[1]) } } )
+    if rotation[2] != 0.0:
+        transformDict['children'].append( { 'type':'rotate', 
+            'attributes':{ 'z':str(1), 'angle':str(rotation[2]) } } )
+
+    elementDict['children'].append( transformDict )
+
+    return elementDict
+
+
+def writeLightSunSky(sunsky):
     sun = cmds.getAttr(sunsky+".useSun")
     sky = cmds.getAttr(sunsky+".useSky")
     if sun and sky:
-        outFile.write(" <emitter type=\"sunsky\">\n")
+        emitterType = 'sunsky'
     elif sun:
-        outFile.write(" <emitter type=\"sun\">\n")
+        emitterType = 'sun'
     elif sky:
-        outFile.write(" <emitter type=\"sky\">\n")
+        emitterType = 'sky'
     else:
         print "Must use either sun or sky, defaulting to sunsky"
-        outFile.write(" <emitter type=\"sunsky\">\n")
+        emitterType = 'sunsky'
 
     turbidity = cmds.getAttr(sunsky+".turbidity")
     albedo = cmds.getAttr(sunsky+".albedo")
@@ -1060,6 +1858,9 @@ def writeLightSunSky(outFile, sunsky):
     sunScale = cmds.getAttr(sunsky+".sunScale")
     skyScale = cmds.getAttr(sunsky+".skyScale")
     sunRadiusScale = cmds.getAttr(sunsky+".sunRadiusScale")
+
+    '''
+    outFile.write(" <emitter type=\"%s\">\n" % emitterType)
 
     outFile.write("     <float name=\"turbidity\" value=\"" + str(turbidity) + "\"/>\n")
     outFile.write("     <srgb name=\"albedo\" value=\"" + str(albedo[0][0]) + " " + str(albedo[0][1]) + " " + str(albedo[0][2]) + "\"/>\n")
@@ -1080,8 +1881,57 @@ def writeLightSunSky(outFile, sunsky):
     outFile.write("     <float name=\"sunRadiusScale\" value=\"" + str(sunRadiusScale) + "\"/>\n")
 
     outFile.write(" </emitter>\n")
+    '''
 
-def writeLightEnvMap(outFile, envmap):
+    # Create a structure to be written
+    elementDict = {'type':'emitter'}
+    elementDict['attributes'] = {'type':emitterType}
+
+    elementDict['children'] = []
+
+    elementDict['children'].append( { 'type':'float', 
+        'attributes':{ 'name':'turbidity', 'value':str(turbidity) } } )
+    elementDict['children'].append( { 'type':'srgb', 
+        'attributes':{ 'name':'albedo', 'value':str(albedo[0][0]) + " " + str(albedo[0][1]) + " " + str(albedo[0][2]) } } )
+
+    elementDict['children'].append( { 'type':'integer', 
+        'attributes':{ 'name':'year', 'value':str(date[0][0]) } } )
+    elementDict['children'].append( { 'type':'integer', 
+        'attributes':{ 'name':'month', 'value':str(date[0][1]) } } )
+    elementDict['children'].append( { 'type':'integer', 
+        'attributes':{ 'name':'day', 'value':str(date[0][2]) } } )
+
+    elementDict['children'].append( { 'type':'float', 
+        'attributes':{ 'name':'hour', 'value':str(time[0][0]) } } )
+    elementDict['children'].append( { 'type':'float', 
+        'attributes':{ 'name':'minute', 'value':str(time[0][1]) } } )
+    elementDict['children'].append( { 'type':'float', 
+        'attributes':{ 'name':'second', 'value':str(time[0][2]) } } )
+
+    elementDict['children'].append( { 'type':'float', 
+        'attributes':{ 'name':'latitude', 'value':str(latitude) } } )
+    elementDict['children'].append( { 'type':'float', 
+        'attributes':{ 'name':'longitude', 'value':str(longitude) } } )
+    elementDict['children'].append( { 'type':'float', 
+        'attributes':{ 'name':'timezone', 'value':str(timezone) } } )
+    elementDict['children'].append( { 'type':'float', 
+        'attributes':{ 'name':'stretch', 'value':str(stretch) } } )
+
+    elementDict['children'].append( { 'type':'integer', 
+        'attributes':{ 'name':'resolutionX', 'value':str(resolution[0][0]) } } )
+    elementDict['children'].append( { 'type':'integer', 
+        'attributes':{ 'name':'resolutionY', 'value':str(resolution[0][1]) } } )
+
+    elementDict['children'].append( { 'type':'float', 
+        'attributes':{ 'name':'sunScale', 'value':str(sunScale) } } )
+    elementDict['children'].append( { 'type':'float', 
+        'attributes':{ 'name':'skyScale', 'value':str(skyScale) } } )
+    elementDict['children'].append( { 'type':'float', 
+        'attributes':{ 'name':'sunRadiusScale', 'value':str(sunRadiusScale) } } )
+
+    return elementDict
+
+def writeLightEnvMap(envmap):
     connections = cmds.listConnections(envmap, plugs=False, c=True)
     fileName = ""
     hasFile = False
@@ -1111,10 +1961,9 @@ def writeLightEnvMap(outFile, envmap):
             samplingWeight = cmds.getAttr(envmap+".samplingWeight")
             rotate = cmds.getAttr(envmap+".rotate")[0]
 
-            #print( "\n\n\n\n")
-            #print( "envmap::rotate : %3.3f %3.3f %3.3f" % (rotate[0], rotate[1], rotate[2]))
-            #print( "\n\n\n\n")
+            cacheText = 'true' if cache else 'false'
 
+            '''
             outFile.write(" <emitter type=\"envmap\">\n")
             outFile.write("     <string name=\"filename\" value=\"" + fileName + "\"/>\n")
             outFile.write("     <float name=\"scale\" value=\"" + str(scale) + "\"/>\n")
@@ -1132,21 +1981,69 @@ def writeLightEnvMap(outFile, envmap):
             outFile.write("         <rotate z=\"1\" angle=\"" + str(rotate[2]) + "\"/>\n")
             outFile.write("     </transform>\n")
             outFile.write(" </emitter>\n")
+            '''
+
+            # Create a structure to be written
+            elementDict = {'type':'emitter'}
+            elementDict['attributes'] = {'type':'envmap'}
+
+            elementDict['children'] = []
+
+            elementDict['children'].append( { 'type':'string', 
+                'attributes':{ 'name':'filename', 'value':fileName } } )
+            elementDict['children'].append( { 'type':'float', 
+                'attributes':{ 'name':'scale', 'value':str(scale) } } )
+            elementDict['children'].append( { 'type':'float', 
+                'attributes':{ 'name':'gamma', 'value':str(gamma) } } )
+            elementDict['children'].append( { 'type':'boolean', 
+                'attributes':{ 'name':'cache', 'value':cacheText } } )
+            elementDict['children'].append( { 'type':'float', 
+                'attributes':{ 'name':'samplingWeight', 'value':str(samplingWeight) } } )
+
+            transformDict = {'type':'transform'}
+            transformDict['attributes'] = {'name':'toWorld'}
+
+            transformDict['children'] = []
+            transformDict['children'].append( { 'type':'rotate', 
+                'attributes':{ 'x':str(1), 'angle':str(rotate[0]) } } )
+            transformDict['children'].append( { 'type':'rotate', 
+                'attributes':{ 'y':str(1), 'angle':str(rotate[1]) } } )
+            transformDict['children'].append( { 'type':'rotate', 
+                'attributes':{ 'z':str(1), 'angle':str(rotate[2]) } } )
+
+            elementDict['children'].append( transformDict )
+
+            return elementDict
 
         else:
             radiance = cmds.getAttr(envmap+".source")
             samplingWeight = cmds.getAttr(envmap+".samplingWeight")
             
+            '''
             outFile.write(" <emitter type=\"constant\">\n")
             outFile.write("     <srgb name=\"radiance\" value=\"" + str(radiance[0][0]) + " " + str(radiance[0][1]) + " " + str(radiance[0][2]) + "\"/>\n")
             outFile.write("     <float name=\"samplingWeight\" value=\"" + str(samplingWeight) + "\"/>\n")
             outFile.write(" </emitter>\n")
+            '''
+
+            # Create a structure to be written
+            elementDict = {'type':'emitter'}
+            elementDict['attributes'] = {'type':'constant'}
+
+            elementDict['children'] = []
+
+            elementDict['children'].append( { 'type':'srgb', 
+                'attributes':{ 'name':'radiance', 'value':str(radiance[0]) + " " + str(radiance[1]) + " " + str(radiance[2]) } } )
+            elementDict['children'].append( { 'type':'float', 
+                'attributes':{ 'name':'samplingWeight', 'value':str(samplingWeight) } } )
+
+            return elementDict
 
 
 '''
 Write lights
 '''
-def writeLights(outFile):
+def writeLights(outFile, depth=1):
     lights = cmds.ls(type="light")
     sunskyLights = cmds.ls(type="MitsubaSunsky")
     envLights = cmds.ls(type="MitsubaEnvironmentLight")
@@ -1156,28 +2053,46 @@ def writeLights(outFile):
         # print "Defaulting to constant environment emitter"
         # outFile.write(" <emitter type=\"constant\"/>\n")
 
+    lightElements = []
+
+    # Gather element definitions for standard lights
     for light in lights:
         lightType = cmds.nodeType(light)
         if lightType == "directionalLight":
-            writeLightDirectional(outFile, light)
+            lightElements.append( writeLightDirectional(light) )
         elif lightType == "pointLight":
-            writeLightPoint(outFile, light)
+            lightElements.append( writeLightPoint(light) )
         elif lightType == "spotLight":
-            writeLightSpot(outFile, light)
+            lightElements.append( writeLightSpot(light) )
 
-    #Sunsky light
+    # Gather element definitions for Sun and Sky lights
     if sunskyLights:
         sunsky = sunskyLights[0]
-        writeLightSunSky(outFile, sunsky)
+        lightElements.append( writeLightSunSky(sunsky) )
 
-    #Area lights
+    # Gather element definitions for Environment lights
     if envLights:
         envmap = envLights[0]
-        writeLightEnvMap(outFile, envmap)
+        lightElements.append( writeLightEnvMap(envmap) )
 
-    outFile.write("\n")
-    outFile.write("<!-- End of lights -->")
-    outFile.write("\n\n\n")
+    '''
+    # Write lights
+    if lightElements:
+        outFile.write("\n\n\n")
+        outFile.write("<!-- Start of lights -->")
+        outFile.write("\n")
+        outFile.write("\n")
+
+        for lightElement in lightElements:
+            writeElement(outFile, lightElement, depth)
+
+        outFile.write("\n")
+        outFile.write("\n")
+        outFile.write("<!-- End of lights -->")
+        outFile.write("\n\n\n")
+    '''
+
+    return lightElements
 
 def getRenderableGeometry():
     # Build list of visible geometry
@@ -1199,28 +2114,52 @@ def getRenderableGeometry():
 
     return geoms
 
-def writeMaterials(outFile, geoms):
-    #Write the material for each piece of geometry in the scene
+def writeMaterials(outFile, geoms, depth = 1):
     writtenMaterials = []
+    materialElements = []
+
+    #Write the material for each piece of geometry in the scene
     for geom in geoms:
         material = getShader(geom)          #Gets the user define names of the shader
         materialType = cmds.nodeType(material)
         if materialType in materialNodeTypes:
             if material not in writtenMaterials:
                 if "twosided" in cmds.listAttr(material) and cmds.getAttr(material+".twosided"):
+                    '''
                     outFile.write("<bsdf type=\"twosided\" id=\"" + material + "\">\n")
                     writeShader(material, material+"InnerMaterial", outFile, "    ")
                     outFile.write("</bsdf>\n")
+                    '''
+
+                    # Create a structure to be written
+                    elementDict = {'type':'bsdf'}
+                    elementDict['attributes'] = {'type':'twosided', 'id':material}
+
+                    elementDict['children'] = []
+
+                    childElement = writeShader(material, material+"InnerMaterial", outFile, "    ", depth)
+                    elementDict['children'].append(childElement)
+
+                    #elementDict['children'].append( { 'type':'ref', 
+                    #    'attributes':{ 'id':childElement['attributes']['id'] } } )
+                    
+                    # Write structure
+                    #writeElement(outFile, elementDict, depth)
+                    materialElements.append(elementDict)
+
+                    #return elementDict
                 else:
                     if materialType != "MitsubaObjectAreaLightShader":
-                        writeShader(material, material, outFile, "")  #Write the shader to the xml file
+                        materialElement = writeShader(material, material, outFile, "", depth)
+                        materialElements.append( materialElement )
+
                 writtenMaterials.append(material)
         
-    outFile.write("\n")
-    outFile.write("<!-- End of materials -->")
-    outFile.write("\n\n\n")
+    #outFile.write("\n")
+    #outFile.write("<!-- End of materials -->")
+    #outFile.write("\n\n\n")
 
-    return writtenMaterials
+    return writtenMaterials, materialElements
 
 def exportGeometry(geom, cwd):
     output = os.path.join(cwd, "renderData", geom + ".obj")
@@ -1228,7 +2167,7 @@ def exportGeometry(geom, cwd):
     objFile = cmds.file(output, op=True, typ="OBJexport", options="groups=1;ptgroups=1;materials=0;smoothing=1;normals=1", exportSelected=True, force=True)
     return objFile
 
-def findAndWriteMedium(outFile, geom, shader):
+def findAndWriteMedium(outFile, geom, shader, depth=1):
     #check for a homogeneous material
     #this checks if there is a homogeneous medium, and returns the attribute that it
     #is connected to if there is one
@@ -1239,35 +2178,60 @@ def findAndWriteMedium(outFile, geom, shader):
     if connections and connections[0]==shader+".material":
         hasMedium = True
         medium = connections[1]
-    if hasMedium:
-        writeMedium(medium, outFile, "    ")
 
-def writeShape(outFile, geom, shader):
-    outFile.write("    <shape type=\"obj\">\n")
-    outFile.write("        <string name=\"filename\" value=\"" + geom + ".obj\"/>\n")
+    if hasMedium:
+        mediumElement = writeMedium(medium, outFile, "    ", depth)
+    else:
+        mediumElement = None
+
+    return mediumElement
+
+def writeShape(outFile, geom, shader, depth=1):
+    shapeDict = {'type':'shape'}
+    shapeDict['attributes'] = {'type':'obj'}
+
+    shapeDict['children'] = []
+    shapeDict['children'].append( { 'type':'string', 
+        'attributes':{ 'name':'filename', 'value':geom + ".obj" } } )
+
+    #outFile.write("    <shape type=\"obj\">\n")
+    #outFile.write("        <string name=\"filename\" value=\"" + geom + ".obj\"/>\n")
 
     if cmds.nodeType(shader) in materialNodeTypes:
         # Check for area lights
         if cmds.nodeType(shader) == "MitsubaObjectAreaLightShader":
-            writeShader(shader, shader, outFile, "")
+            shaderElement = writeShader(shader, shader, outFile, "", depth)
+            shapeDict['children'].append(shaderElement)
+
         # Otherwise refer to the already written material
         else:
-            outFile.write("        <ref id=\"" + shader + "\"/>\n")
+            #outFile.write("        <ref id=\"" + shader + "\"/>\n")
+            refDict = {'type':'ref'}
+            refDict['attributes'] = {'id':shader}
+            shapeDict['children'].append(refDict)
 
         # Write volume definition, if one exists
-        findAndWriteMedium(outFile, geom, shader)
+        mediumDict = findAndWriteMedium(outFile, geom, shader, depth)
+        if mediumDict:
+            shapeDict['children'].append(mediumDict)
 
     elif cmds.nodeType(shader) == "MitsubaVolume":
-        writeVolume(outFile, cwd, "    ", shader, geom)
+        volumeElement = writeVolume(outFile, cwd, "    ", shader, geom, depth)
+        if volumeElement:
+            shapeDict['children'].append(volumeElement)
     
-    outFile.write("    </shape>\n\n")
+    #outFile.write("    </shape>\n\n")
 
-def writeGeometryAndMaterials(outFile, cwd):
+    return shapeDict
+
+
+def writeGeometryAndMaterials(outFile, cwd, depth=1):
     geoms = getRenderableGeometry()
 
-    writtenMaterials = writeMaterials(outFile, geoms)
+    writtenMaterials, materialElements = writeMaterials(outFile, geoms, depth)
 
     geoFiles = []
+    shapeElements = []
 
     #Write each piece of geometry with references to materials
     for geom in geoms:
@@ -1276,12 +2240,13 @@ def writeGeometryAndMaterials(outFile, cwd):
         exportedGeo = exportGeometry(geom, cwd)
         geoFiles.append( exportedGeo )
 
-        writeShape(outFile, geom, shader)
+        shapeElement = writeShape(outFile, geom, shader, depth)
+        shapeElements.append(shapeElement)
 
-    outFile.write("<!-- End of geometry -->")
-    outFile.write("\n\n\n")
+    #outFile.write("<!-- End of geometry -->")
+    #outFile.write("\n\n\n")
 
-    return geoFiles
+    return (geoFiles, shapeElements, materialElements)
 
 def getVtxPos(shapeNode):
     vtxWorldPosition = []    # will contain positions un space of all object vertex
@@ -1294,7 +2259,7 @@ def getVtxPos(shapeNode):
 #
 # Needs to be generalized
 #
-def writeVolume(outFile, cwd, tabbedSpace, material, geom):
+def writeVolume(outFile, cwd, tabbedSpace, material, geom, depth):
     #sourceFileName = "smoke_source\\text\\smoke_test_"
     hasFile = False
     fileTexture = ""
@@ -1309,7 +2274,7 @@ def writeVolume(outFile, cwd, tabbedSpace, material, geom):
 
     if not hasFile:
         print "please supply a file for the mitsuba volume"
-        return
+        return None
 
     sourceFile = open(inFileName, 'r')
 
@@ -1399,6 +2364,7 @@ def writeVolume(outFile, cwd, tabbedSpace, material, geom):
     volFile.close()
     sourceFile.close()
 
+    '''
     outFile.write(tabbedSpace + "<medium type=\"heterogeneous\" name=\"interior\">\n")
     outFile.write(tabbedSpace + "    <string name=\"method\" value=\"woodcock\"/>\n")
     outFile.write(tabbedSpace + "    <volume name=\"density\" type=\"gridvolume\">\n")
@@ -1408,33 +2374,72 @@ def writeVolume(outFile, cwd, tabbedSpace, material, geom):
     outFile.write(tabbedSpace + "        <spectrum name=\"value\" value=\"0.9\"/>\n")
     outFile.write(tabbedSpace + "    </volume>\n")
     outFile.write(tabbedSpace + "</medium>\n")
+    '''
 
+    # Create a structure to be written
+    mediumDict = {'type':'medium'}
+    mediumDict['attributes'] = {'type':'heterogeneous', 'name':'interior'}
 
+    mediumDict['children'] = []
+    mediumDict['children'].append( { 'type':'string', 
+        'attributes':{ 'name':'method', 'value':'woodcock' } } )
 
+    volume1Dict = {'type':'volume'}
+    volume1Dict['attributes'] = {'type':'gridvolume', 'name':'density'}
+
+    volume1Dict['children'] = []
+    volume1Dict['children'].append( { 'type':'string', 
+        'attributes':{ 'name':'filename', 'value':volFileName } } )
+
+    volume2Dict = {'type':'volume'}
+    volume2Dict['attributes'] = {'type':'constvolume', 'name':'albedo'}
+
+    volume2Dict['children'] = []
+    volume2Dict['children'].append( { 'type':'spectrum', 
+        'attributes':{ 'name':'value', 'value':str(0.9) } } )
+
+    mediumDict['children'].append(volume1Dict)
+    mediumDict['children'].append(volume2Dict)
+
+    #writeElement(outFile, mediumDict, depth)
+
+    return mediumDict
 
 def writeScene(outFileName, outDir, renderSettings):
     outFile = open(outFileName, 'w+')
 
     #Scene stuff
     outFile.write("<?xml version=\'1.0\' encoding=\'utf-8\'?>\n")
-    outFile.write("\n")
-    outFile.write("<scene version=\"0.5.0\">\n")
 
-    #Write integrator
-    writeIntegrator(outFile, renderSettings)
+    sceneElement = {'type':'scene'}
+    sceneElement['attributes'] = {'version':'0.5.0'}
+    sceneElement['children'] = []
 
-    #Write camera, sampler, and film
+    #Get integrator
+    integratorElement = writeIntegrator(outFile, renderSettings)
+    sceneElement['children'].append(integratorElement)
+
+    #Get sensor : camera, sampler, and film
     frameNumber = int(cmds.currentTime(query=True))
-    writeSensor(outFile, frameNumber, renderSettings)
+    sensorElement = writeSensor(outFile, frameNumber, renderSettings)
+    sceneElement['children'].append(sensorElement)
 
-    #Write lights
-    writeLights(outFile)
+    #Get lights
+    lightElements = writeLights(outFile)
+    if lightElements:
+        sceneElement['children'].extend(lightElements)
 
-    #Write geom and mats together since theyre inter-dependent
-    geometryFiles = writeGeometryAndMaterials(outFile, outDir)
-        
-    outFile.write("\n")
-    outFile.write("</scene>")
+    #Get geom and material assignments
+    (exportedGeometryFiles, shapeElements, materialElements) = writeGeometryAndMaterials(outFile, outDir)
+    if materialElements:
+        sceneElement['children'].extend(materialElements)
+
+    if shapeElements:
+        sceneElement['children'].extend(shapeElements)
+
+    # Write the structure to disk
+    writeElement(outFile, sceneElement)
+
     outFile.close()
 
-    return geometryFiles
+    return exportedGeometryFiles
