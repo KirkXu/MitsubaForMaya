@@ -35,6 +35,9 @@ global sampleCount
 global rfilter
 global rfilterMenu
 
+global sensorOverrideMenu
+global sensorOverrideFrames
+
 def createIntegratorFrameAmbientOcclusion():
     existingShadingSamples = cmds.getAttr( "%s.%s" % (renderSettings, "iAmbientOcclusionShadingSamples"))
     existingUseAutomaticRayLength = cmds.getAttr( "%s.%s" % (renderSettings, "iAmbientOcclusionUseAutomaticRayLength"))
@@ -535,6 +538,22 @@ def createIntegratorFrameVirtualPointLights():
 
     return vplSettings
 
+def createSensorFramePerspectiveRdist():
+    sPerspectiveRdistKc2 = cmds.getAttr( "%s.%s" % (renderSettings, "sPerspectiveRdistKc2"))
+    sPerspectiveRdistKc4 = cmds.getAttr( "%s.%s" % (renderSettings, "sPerspectiveRdistKc4"))
+
+    sPerspectiveRdistSettings = cmds.frameLayout(label="Perspective Pinhole Camera with Radial Distortion", cll=True, visible=False)
+
+    cmds.floatFieldGrp(numberOfFields=1, label="Radial Distortion - Coeff 2", value1=sPerspectiveRdistKc2,
+        changeCommand=lambda (x): getFloatFieldGroup(None, "sPerspectiveRdistKc2", x))
+
+    cmds.floatFieldGrp(numberOfFields=1, label="Radial Distortion - Coeff 4", value1=sPerspectiveRdistKc2,
+        changeCommand=lambda (x): getFloatFieldGroup(None, "sPerspectiveRdistKc4", x))
+
+    cmds.setParent('..')
+
+    return sPerspectiveRdistSettings
+
 def createIntegratorFrames():
     #Make the integrator specific settings
     global integratorFrames
@@ -648,6 +667,15 @@ def createSamplerFrames():
     samplerFrames.append(hamSettings)
     samplerFrames.append(sobSettings)
 
+def createSensorOverrideFrames():
+    global sensorOverrideFrames
+
+    sensorOverrideFrames = []
+
+    perspectiveRdistSettings = createSensorFramePerspectiveRdist()
+
+    sensorOverrideFrames.append(perspectiveRdistSettings)
+
 def getRenderSettingsPath(name, renderSettingsAttribute=None):
     global renderSettings
 
@@ -666,6 +694,13 @@ def getCheckBox(name, renderSettingsAttribute=None, value=None):
         cmds.setAttr(attr, value)
 
 def getIntFieldGroup(name, renderSettingsAttribute=None, value=None):
+    global renderSettings
+
+    if renderSettingsAttribute:
+        attr = "%s.%s" % (renderSettings, renderSettingsAttribute)
+        cmds.setAttr(attr, value)
+
+def getFloatFieldGroup(name, renderSettingsAttribute=None, value=None):
     global renderSettings
 
     if renderSettingsAttribute:
@@ -695,6 +730,7 @@ def createRenderSettingsUI():
     global samplerMenu
     global rfilter
     global rfilterMenu
+    global sensorOverrideMenu
 
     print( "\n\n\nMitsuba Render Settings - Create UI - Python\n\n\n" )
 
@@ -785,6 +821,28 @@ def createRenderSettingsUI():
     else:
         cmds.optionMenu(rfilterMenu, edit=True, select=1)
         rfilter = "Box filter"
+
+    existingSensorOverride = cmds.getAttr( "%s.%s" % (renderSettings, "sensorOverride"))
+
+    sensorOverrideMenu = cmds.optionMenu(label="Sensor Override", changeCommand=changeSensorOverride)
+    cmds.menuItem('None')
+    cmds.menuItem('Telecentric')
+    cmds.menuItem('Spherical')
+    #cmds.menuItem('Irradiance Meter')
+    cmds.menuItem('Radiance Meter')
+    cmds.menuItem('Fluence Meter')
+    cmds.menuItem('Perspective Pinhole Camera with Radial Distortion')
+
+    createSensorOverrideFrames()
+
+    if existingSensorOverride not in ["None", None]:
+        cmds.optionMenu(sensorOverrideMenu, edit=True, value=existingSensorOverride)
+        sensorOverride = existingSensorOverride
+    else:
+        cmds.optionMenu(samplerMenu, edit=True, select=1)
+        sensorOverride = "None"
+
+    changeSensorOverride(sensorOverride)
 
     existingKeepTempFiles = cmds.getAttr( "%s.%s" % (renderSettings, "keepTempFiles"))
     keepTempFiles = cmds.checkBox(label="keepTempFiles", value=existingKeepTempFiles)
@@ -889,5 +947,26 @@ def changeSampler(selectedSampler):
 
     sampler = selectedSampler
     getOptionMenu(None, "sampler", selectedSampler)
+
+def changeSensorOverride(selectedSensorOverride):
+    #global sensorOverrideMenu
+    global sensorOverrideFrames
+
+    #Query the Sensor drop down menu to find the active sampler
+    #selectedSensorOverride = cmds.optionMenu(sensorOverrideMenu, query=True, value=True)
+
+    #Set all other sensorOverride frameLayouts to be invisible
+    for frame in sensorOverrideFrames:
+        currentSensorOverride = cmds.frameLayout(frame, query=True, label=True)
+        if currentSensorOverride == selectedSensorOverride:
+            cmds.frameLayout(frame, edit=True, visible=True)
+        else:
+            cmds.frameLayout(frame, edit=True, visible=False)
+
+    getOptionMenu(None, "sensorOverride", selectedSensorOverride)
+
+
+
+
 
 

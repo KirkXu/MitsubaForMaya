@@ -153,6 +153,13 @@ class MitsubaRenderSetting(OpenMayaMPx.MPxNode):
     mVirtualPointLightShadowMapResolution = OpenMaya.MObject()
     mVirtualPointLightClamping = OpenMaya.MObject()
 
+    # Sensor variables
+    mSensorOverride = OpenMaya.MObject()
+
+    # Sensor - Perspective Rdist variables
+    mPerspectiveRdistKc2 = OpenMaya.MObject()
+    mPerspectiveRdistKc4 = OpenMaya.MObject()
+
     def __init__(self):
         OpenMayaMPx.MPxNode.__init__(self)
 
@@ -350,6 +357,13 @@ def nodeInitializer():
         MitsubaRenderSetting.addIntegerAttribute(nAttr, "mVirtualPointLightShadowMapResolution", "iVirtualPointLightShadowMapResolution", "ivplsmr", 512)
         MitsubaRenderSetting.addFloatAttribute(nAttr,   "mVirtualPointLightClamping", "iVirtualPointLightClamping", "ivplc", 0.1)
 
+        # Sensor variables
+        MitsubaRenderSetting.addStringAttribute(sAttr,  "mSensorOverride", "sensorOverride", "so", "None")
+
+        # Sensor - Perspective Rdist variables
+        MitsubaRenderSetting.addFloatAttribute(nAttr,   "mPerspectiveRdistKc2", "sPerspectiveRdistKc2", "sprkc2", 0.0)
+        MitsubaRenderSetting.addFloatAttribute(nAttr,   "mPerspectiveRdistKc4", "sPerspectiveRdistKc4", "sprkc4", 0.0)
+
     except:
         sys.stderr.write("Failed to create and add attributes\n")
         raise
@@ -498,6 +512,13 @@ def nodeInitializer():
         MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mVirtualPointLightMaxDepth)
         MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mVirtualPointLightShadowMapResolution)
         MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mVirtualPointLightClamping)
+
+        # Sensor variables
+        MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mSensorOverride)
+
+        # Sensor - Perspective Rdist variables
+        MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mPerspectiveRdistKc2)
+        MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mPerspectiveRdistKc4)
 
     except:
         sys.stderr.write("Failed to add attributes\n")

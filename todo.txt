@@ -35,10 +35,30 @@ x add support for persisting render settings
  x integrators - Path Tracer
  x The rest of the integrators
 
-add support for tiled rendering
+x add support for more light types - point, spot
+x add support for more sensor types
+ x orthographic
+
+x centralize / standardize xml writing
+
+x add support for more sensor types
+ x spherical, telecentric, radiancemeter, fluencemeter, perspective_rdist
+
+add support for more film types and parameters
+- tiled rendering
+- crop coordinates (pulled from general render settings)
+
+add support for meta-integrators
+- adaptive, irrcache
+add support for multi-channel rendering, with supported integrators
+-  ao, direct, path, volpath, volpath_simple, and irrcache.
+
+add support for writing lightmaps using irradiancemeter sensor type
+
+generalize support for volumes
+
 support render cancel
 support batch render cancel
-support using Mitsuba GUI for in-progress render viewing
 support interactive render view / update / cancel
 
 support animated parameters in batch mode

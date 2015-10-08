@@ -1194,10 +1194,24 @@ def writeSensor(frameNumber, renderSettings):
 
     # Type
     camType = "perspective"
-    if cmds.getAttr(rCamShape+".depthOfField"):
-        camType = "thinlens"
-    elif cmds.getAttr(rCamShape+".orthographic"):
+    if cmds.getAttr(rCamShape+".orthographic"):
         camType = "orthographic"
+    elif cmds.getAttr(rCamShape+".depthOfField"):
+        camType = "thinlens"
+
+    sensorOverride = cmds.getAttr("%s.sensorOverride" % renderSettings)
+    mayaUINameToMistubaSensor = { 
+        "Spherical" : "spherical",
+        "Telecentric" : "telecentric",
+        "Radiance Meter" : "radiancemeter",
+        "Fluence Meter" : "fluencemeter",
+        "Perspective Pinhole Camera with Radial Distortion" : "perspective_rdist"
+    }
+    #"Irradiance Meter" : "irradiancemeter",
+
+    if sensorOverride != "None":
+        camType = mayaUINameToMistubaSensor[sensorOverride]
+        print( "\n\n\nSensor Override : %s - %s\n\n\n" % (sensorOverride, camType) )
 
     # Orientation    
     camera = pymel.core.PyNode(rCamShape)
@@ -1222,11 +1236,9 @@ def writeSensor(frameNumber, renderSettings):
     # Near Clip Plane
     nearClip = cmds.getAttr(rCamShape+".nearClipPlane")
 
-    # Write Sampler
-    samplerDict = writeSampler(frameNumber, renderSettings)
-
-    # Write Film
-    filmDict = writeFilm(frameNumber, renderSettings)
+    # Radial distortion
+    perspectiveRdistKc2 = cmds.getAttr("%s.sPerspectiveRdistKc2" % renderSettings)
+    perspectiveRdistKc4 = cmds.getAttr("%s.sPerspectiveRdistKc4" % renderSettings)
 
     # Write Camera
     elementDict = {'type':'sensor'}
@@ -1235,18 +1247,24 @@ def writeSensor(frameNumber, renderSettings):
     elementDict['children'] = []
 
     if camType in ["thinlens", "perspective"]:
-        if camType == "thinlens":
-            elementDict['children'].append( { 'type':'float', 
-                'attributes':{ 'name':'apertureRadius', 'value':str(apertureRadius) } } )
-            elementDict['children'].append( { 'type':'float', 
-                'attributes':{ 'name':'focusDistance', 'value':str(focusDistance) } } )
         elementDict['children'].append( { 'type':'float', 
             'attributes':{ 'name':'fov', 'value':str(fov) } } )
         elementDict['children'].append( { 'type':'string', 
             'attributes':{ 'name':'fovAxis', 'value':'x' } } )
 
-    elementDict['children'].append( { 'type':'float', 
-        'attributes':{ 'name':'nearClip', 'value':str(nearClip) } } )
+    if camType in ["thinlens", "perspective", "orthographic", "telecentric"]:
+        elementDict['children'].append( { 'type':'float', 
+            'attributes':{ 'name':'nearClip', 'value':str(nearClip) } } )
+
+    if camType in ["thinlens", "telecentric"]:
+        elementDict['children'].append( { 'type':'float', 
+            'attributes':{ 'name':'apertureRadius', 'value':str(apertureRadius) } } )
+        elementDict['children'].append( { 'type':'float', 
+            'attributes':{ 'name':'focusDistance', 'value':str(focusDistance) } } )
+
+    if camType in ["perspective_rdist"]:
+        elementDict['children'].append( { 'type':'string', 
+            'attributes':{ 'name':'kc', 'value':str(perspectiveRdistKc2) + ", " + str(perspectiveRdistKc4)} } )
 
     # Generate transform
     transformDict = {'type':'transform'}
@@ -1261,7 +1279,13 @@ def writeSensor(frameNumber, renderSettings):
              'up':str(camUp[0]) + " " + str(camUp[1]) + " " + str(camUp[2])} } )
 
     elementDict['children'].append(transformDict)
+
+    # Write Sampler
+    samplerDict = writeSampler(frameNumber, renderSettings)
     elementDict['children'].append(samplerDict)
+
+    # Write Film
+    filmDict = writeFilm(frameNumber, renderSettings)
     elementDict['children'].append(filmDict)
 
     return elementDict
