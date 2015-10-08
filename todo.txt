@@ -44,14 +44,25 @@ x centralize / standardize xml writing
 x add support for more sensor types
  x spherical, telecentric, radiancemeter, fluencemeter, perspective_rdist
 
-add support for more film types and parameters
-- tiled rendering
+x add support for more film types
+ x hdr, ldr, tiled, math
+
+x add support for meta-integrators
+ x adaptive, irrcache
+
+x add support for multi-channel rendering, with supported integrators
+ x ao, direct, path, volpath, volpath_simple, and irrcache.
+
+add support for film parameters
 - crop coordinates (pulled from general render settings)
 
-add support for meta-integrators
+add support for meta-integrator parameters
 - adaptive, irrcache
-add support for multi-channel rendering, with supported integrators
--  ao, direct, path, volpath, volpath_simple, and irrcache.
+
+figure out what pixelFormat to use for the 'albedo field'
+figure out how to load multichannel exrs into the Maya Render View
+
+organize UI
 
 add support for writing lightmaps using irradiancemeter sensor type
 

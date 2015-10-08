@@ -160,6 +160,24 @@ class MitsubaRenderSetting(OpenMayaMPx.MPxNode):
     mPerspectiveRdistKc2 = OpenMaya.MObject()
     mPerspectiveRdistKc4 = OpenMaya.MObject()
 
+    # Film variables
+    mFilm = OpenMaya.MObject()
+
+    # Metaintegrator variables
+    mMetaIntegrator = OpenMaya.MObject()
+
+    # Multichannel variables
+    mMultichannel = OpenMaya.MObject()
+    mMultichannelPosition = OpenMaya.MObject()
+    mMultichannelRelPosition = OpenMaya.MObject()
+    mMultichannelDistance = OpenMaya.MObject()
+    mMultichannelGeoNormal = OpenMaya.MObject()
+    mMultichannelShadingNormal = OpenMaya.MObject()
+    mMultichannelUV = OpenMaya.MObject()
+    mMultichannelAlbedo = OpenMaya.MObject()
+    mMultichannelShapeIndex = OpenMaya.MObject()
+    mMultichannelPrimIndex = OpenMaya.MObject()
+
     def __init__(self):
         OpenMayaMPx.MPxNode.__init__(self)
 
@@ -364,6 +382,25 @@ def nodeInitializer():
         MitsubaRenderSetting.addFloatAttribute(nAttr,   "mPerspectiveRdistKc2", "sPerspectiveRdistKc2", "sprkc2", 0.0)
         MitsubaRenderSetting.addFloatAttribute(nAttr,   "mPerspectiveRdistKc4", "sPerspectiveRdistKc4", "sprkc4", 0.0)
 
+        # Film variables
+        MitsubaRenderSetting.addStringAttribute(sAttr,  "mFilm", "film", "fm", "hdrfilm")
+
+        # Meta-Integrator variables
+        MitsubaRenderSetting.addStringAttribute(sAttr,  "mMetaIntegrator", "metaIntegrator", "mi", "None")
+
+        # Multichannel variables
+        MitsubaRenderSetting.addBooleanAttribute(nAttr, "mMultichannel", "multichannel", "mc", False)
+
+        MitsubaRenderSetting.addBooleanAttribute(nAttr, "mMultichannelPosition", "multichannelPosition", "mcp", False)
+        MitsubaRenderSetting.addBooleanAttribute(nAttr, "mMultichannelRelPosition", "multichannelRelPosition", "mcrp", False)
+        MitsubaRenderSetting.addBooleanAttribute(nAttr, "mMultichannelDistance", "multichannelDistance", "mcd", False)
+        MitsubaRenderSetting.addBooleanAttribute(nAttr, "mMultichannelGeoNormal", "multichannelGeoNormal", "mcgn", False)
+        MitsubaRenderSetting.addBooleanAttribute(nAttr, "mMultichannelShadingNormal", "multichannelShadingNormal", "mcsn", False)
+        MitsubaRenderSetting.addBooleanAttribute(nAttr, "mMultichannelUV", "multichannelUV", "mcuv", False)
+        MitsubaRenderSetting.addBooleanAttribute(nAttr, "mMultichannelAlbedo", "multichannelAlbedo", "mca", False)
+        MitsubaRenderSetting.addBooleanAttribute(nAttr, "mMultichannelShapeIndex", "multichannelShapeIndex", "mcsi", False)
+        MitsubaRenderSetting.addBooleanAttribute(nAttr, "mMultichannelPrimIndex", "multichannelPrimIndex", "mcpi", False)
+
     except:
         sys.stderr.write("Failed to create and add attributes\n")
         raise
@@ -519,6 +556,25 @@ def nodeInitializer():
         # Sensor - Perspective Rdist variables
         MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mPerspectiveRdistKc2)
         MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mPerspectiveRdistKc4)
+
+        # Film variables
+        MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mFilm)
+
+        # Meta-Integrator variables
+        MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mMetaIntegrator)
+
+        # Multichannel variables
+        MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mMultichannel)
+
+        MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mMultichannelPosition)
+        MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mMultichannelRelPosition)
+        MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mMultichannelDistance)
+        MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mMultichannelGeoNormal)
+        MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mMultichannelShadingNormal)
+        MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mMultichannelUV)
+        MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mMultichannelAlbedo)
+        MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mMultichannelShapeIndex)
+        MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mMultichannelPrimIndex)
 
     except:
         sys.stderr.write("Failed to add attributes\n")

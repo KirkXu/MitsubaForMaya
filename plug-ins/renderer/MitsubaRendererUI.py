@@ -777,6 +777,21 @@ def createRenderSettingsUI():
 
     changeIntegrator(integrator)
 
+    existingMetaIntegrator = cmds.getAttr( "%s.%s" % (renderSettings, "metaIntegrator"))
+
+    metaIntegratorMenu = cmds.optionMenu(label="Meta Integrator", changeCommand=changeMetaIntegrator)
+    cmds.menuItem('None')
+    cmds.menuItem('Adaptive')
+    cmds.menuItem('Irradiance Cache')
+
+    if existingMetaIntegrator not in ["", None]:
+        cmds.optionMenu(metaIntegratorMenu, edit=True, value=existingMetaIntegrator)
+    else:
+        cmds.optionMenu(integratorMenu, edit=True, select=0)
+        existingMetaIntegrator = "None"
+
+    changeMetaIntegrator(existingMetaIntegrator)
+
     existingSampler = cmds.getAttr( "%s.%s" % (renderSettings, "sampler"))
     #print( "Existing Sampler : %s" % existingSampler)
 
@@ -802,6 +817,22 @@ def createRenderSettingsUI():
     changeSampleCount = lambda (x): getIntFieldGroup(None, "sampleCount", x)
     sampleCountGroup = cmds.intFieldGrp(numberOfFields=1, label="sampleCount", value1=existingSampleCount)
     cmds.intFieldGrp(sampleCountGroup, edit=1, changeCommand=changeSampleCount)    
+
+    existingFilm = cmds.getAttr( "%s.%s" % (renderSettings, "film"))
+
+    filmMenu = cmds.optionMenu(label="Film", changeCommand=changeFilm)
+    cmds.menuItem('HDR Film')
+    cmds.menuItem('HDR Film - Tiled')
+    cmds.menuItem('Math Film')
+    cmds.menuItem('LDR Film')
+
+    if existingFilm not in ["", None]:
+        cmds.optionMenu(filmMenu, edit=True, value=existingFilm)
+    else:
+        cmds.optionMenu(filmMenu, edit=True, select=0)
+        existingFilm = "HDR Film"
+
+    changeFilm(existingFilm)
 
     existingReconstructionFilter = cmds.getAttr( "%s.%s" % (renderSettings, "reconstructionFilter"))
     #print( "Existing Reconstruction Filter : %s" % existingReconstructionFilter)
@@ -853,6 +884,48 @@ def createRenderSettingsUI():
     verbose = cmds.checkBox(label="verbose", value=existingVerbose)
     cmds.checkBox(verbose, edit=1,
         changeCommand=lambda (x): getCheckBox(verbose, "verbose", x))
+
+
+    multichannel = cmds.getAttr( "%s.%s" % (renderSettings, "multichannel"))
+    cmds.checkBox(label="Multichannel Rendering", value=multichannel,
+        changeCommand=lambda (x): getCheckBox(None, "multichannel", x))
+
+    multichannelPosition = cmds.getAttr( "%s.%s" % (renderSettings, "multichannelPosition"))
+    cmds.checkBox(label="Multichannel - Position", value=multichannelPosition,
+        changeCommand=lambda (x): getCheckBox(None, "multichannelPosition", x))
+
+    multichannelRelPosition = cmds.getAttr( "%s.%s" % (renderSettings, "multichannelRelPosition"))
+    cmds.checkBox(label="Multichannel - Relative Position", value=multichannelRelPosition,
+        changeCommand=lambda (x): getCheckBox(None, "multichannelRelPosition", x))
+
+    multichannelDistance = cmds.getAttr( "%s.%s" % (renderSettings, "multichannelDistance"))
+    cmds.checkBox(label="Multichannel - Distance", value=multichannelDistance,
+        changeCommand=lambda (x): getCheckBox(None, "multichannelDistance", x))
+
+    multichannelGeoNormal = cmds.getAttr( "%s.%s" % (renderSettings, "multichannelGeoNormal"))
+    cmds.checkBox(label="Multichannel - Geometric Normal", value=multichannelGeoNormal,
+        changeCommand=lambda (x): getCheckBox(None, "multichannelGeoNormal", x))
+
+    multichannelShadingNormal = cmds.getAttr( "%s.%s" % (renderSettings, "multichannelShadingNormal"))
+    cmds.checkBox(label="Multichannel - Shading Normal", value=multichannelShadingNormal,
+        changeCommand=lambda (x): getCheckBox(None, "multichannelShadingNormal", x))
+
+    multichannelUV = cmds.getAttr( "%s.%s" % (renderSettings, "multichannelUV"))
+    cmds.checkBox(label="Multichannel - UV", value=multichannelUV,
+        changeCommand=lambda (x): getCheckBox(None, "multichannelUV", x))
+
+    multichannelAlbedo = cmds.getAttr( "%s.%s" % (renderSettings, "multichannelAlbedo"))
+    cmds.checkBox(label="Multichannel - Albedo", value=multichannelAlbedo,
+        changeCommand=lambda (x): getCheckBox(None, "multichannelAlbedo", x))
+
+    multichannelShapeIndex = cmds.getAttr( "%s.%s" % (renderSettings, "multichannelShapeIndex"))
+    cmds.checkBox(label="Multichannel - Shape Index", value=multichannelShapeIndex,
+        changeCommand=lambda (x): getCheckBox(None, "multichannelShapeIndex", x))
+
+    multichannelPrimIndex = cmds.getAttr( "%s.%s" % (renderSettings, "multichannelPrimIndex"))
+    cmds.checkBox(label="Multichannel - Primitive Index", value=multichannelPrimIndex,
+        changeCommand=lambda (x): getCheckBox(None, "multichannelPrimIndex", x))
+
 
 def createRenderSettings():
     createRenderSettingsNode()
@@ -949,11 +1022,7 @@ def changeSampler(selectedSampler):
     getOptionMenu(None, "sampler", selectedSampler)
 
 def changeSensorOverride(selectedSensorOverride):
-    #global sensorOverrideMenu
     global sensorOverrideFrames
-
-    #Query the Sensor drop down menu to find the active sampler
-    #selectedSensorOverride = cmds.optionMenu(sensorOverrideMenu, query=True, value=True)
 
     #Set all other sensorOverride frameLayouts to be invisible
     for frame in sensorOverrideFrames:
@@ -965,7 +1034,35 @@ def changeSensorOverride(selectedSensorOverride):
 
     getOptionMenu(None, "sensorOverride", selectedSensorOverride)
 
+def changeFilm(selectedFilm):
+    '''
+    global sensorOverrideFrames
 
+    #Set all other sensorOverride frameLayouts to be invisible
+    for frame in sensorOverrideFrames:
+        currentSensorOverride = cmds.frameLayout(frame, query=True, label=True)
+        if currentSensorOverride == selectedSensorOverride:
+            cmds.frameLayout(frame, edit=True, visible=True)
+        else:
+            cmds.frameLayout(frame, edit=True, visible=False)
+    '''
+
+    getOptionMenu(None, "film", selectedFilm)
+
+def changeMetaIntegrator(selectedMetaIntegrator):
+    '''
+    global sensorOverrideFrames
+
+    #Set all other sensorOverride frameLayouts to be invisible
+    for frame in sensorOverrideFrames:
+        currentSensorOverride = cmds.frameLayout(frame, query=True, label=True)
+        if currentSensorOverride == selectedSensorOverride:
+            cmds.frameLayout(frame, edit=True, visible=True)
+        else:
+            cmds.frameLayout(frame, edit=True, visible=False)
+    '''
+
+    getOptionMenu(None, "metaIntegrator", selectedMetaIntegrator)
 
 
 

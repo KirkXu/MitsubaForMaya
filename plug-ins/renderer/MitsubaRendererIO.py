@@ -17,7 +17,7 @@ materialNodeTypes = []
 def writeElementText(element, depth=0):
     #print( "element : %s" % str(element) )
 
-    if element == {}:
+    if element in [{}, None]:
         return ""
 
     if 'attributes' in element:
@@ -1041,12 +1041,97 @@ def writeIntegratorVirtualPointLight(renderSettings, integratorMitsuba):
     return elementDict
 
 
+def writeIntegratorAdaptive(renderSettings, integratorMitsuba, subIntegrator):
+    # Create a structure to be written
+    elementDict = {'type':'integrator'}
+    elementDict['attributes'] = {'type':integratorMitsuba}
+
+    elementDict['children'] = []
+
+    elementDict['children'].append( subIntegrator )
+
+    return elementDict
+
+def writeIntegratorIrradianceCache(renderSettings, integratorMitsuba, subIntegrator):
+    # Create a structure to be written
+    elementDict = {'type':'integrator'}
+    elementDict['attributes'] = {'type':integratorMitsuba}
+
+    elementDict['children'] = []
+
+    elementDict['children'].append( subIntegrator )
+
+    return elementDict
+
+def writeMetaIntegrator(renderSettings, metaIntegratorMaya, subIntegrator):
+    mayaMetaIntegratorUINameToMitsubaName = {
+        "Adaptive" : "adaptive",
+        "Irradiance Cache" : "irrcache"
+    }
+
+    if metaIntegratorMaya in mayaMetaIntegratorUINameToMitsubaName:
+        metaIntegratorMitsuba = mayaMetaIntegratorUINameToMitsubaName[metaIntegratorMaya]
+    else:
+        metaIntegratorMitsuba = None
+
+    mayaMetaIntegratorUINameToIntegratorFunction = {
+        "Adaptive" : writeIntegratorAdaptive,
+        "Irradiance Cache" : writeIntegratorIrradianceCache
+    }
+
+    if metaIntegratorMitsuba:
+        writeMetaIntegratorFunction = mayaMetaIntegratorUINameToIntegratorFunction[metaIntegratorMaya]
+        integratorElement = writeMetaIntegratorFunction(renderSettings, metaIntegratorMitsuba, subIntegrator)
+    else:
+        integratorElement = subIntegrator
+
+    return integratorElement
+
+def writeIntegratorField(value):
+    elementDict = {'type':'integrator'}
+    elementDict['attributes'] = {'type':'field'}
+
+    elementDict['children'] = []
+    elementDict['children'].append( { 'type':'string', 
+        'attributes':{ 'name':'field', 'value':value } } )
+
+    return elementDict
+
+def writeIntegratorMultichannel(renderSettings, subIntegrator):
+    multichannelPosition = cmds.getAttr("%s.%s" % (renderSettings, "multichannelPosition"))
+    multichannelRelPosition = cmds.getAttr("%s.%s" % (renderSettings, "multichannelRelPosition"))
+    multichannelDistance = cmds.getAttr("%s.%s" % (renderSettings, "multichannelDistance"))
+    multichannelGeoNormal = cmds.getAttr("%s.%s" % (renderSettings, "multichannelGeoNormal"))
+    multichannelShadingNormal = cmds.getAttr("%s.%s" % (renderSettings, "multichannelShadingNormal"))
+    multichannelUV = cmds.getAttr("%s.%s" % (renderSettings, "multichannelUV"))
+    multichannelAlbedo = cmds.getAttr("%s.%s" % (renderSettings, "multichannelAlbedo"))
+    multichannelShapeIndex = cmds.getAttr("%s.%s" % (renderSettings, "multichannelShapeIndex"))
+    multichannelPrimIndex = cmds.getAttr("%s.%s" % (renderSettings, "multichannelPrimIndex"))
+
+    # Create a structure to be written
+    elementDict = {'type':'integrator'}
+    elementDict['attributes'] = {'type':'multichannel'}
+
+    elementDict['children'] = []
+    elementDict['children'].append( subIntegrator )
+    if multichannelPosition: elementDict['children'].append( writeIntegratorField("position") )
+    if multichannelRelPosition: elementDict['children'].append( writeIntegratorField("relPosition") )
+    if multichannelDistance: elementDict['children'].append( writeIntegratorField("distance") )
+    if multichannelGeoNormal: elementDict['children'].append( writeIntegratorField("geoNormal") )
+    if multichannelShadingNormal: elementDict['children'].append( writeIntegratorField("shNormal") )
+    if multichannelUV: elementDict['children'].append( writeIntegratorField("uv") )
+    if multichannelShapeIndex: elementDict['children'].append( writeIntegratorField("shapeIndex") )
+    if multichannelPrimIndex: elementDict['children'].append( writeIntegratorField("primIndex") )
+
+    return elementDict
+
 def writeIntegrator(renderSettings):
+    # Create base integrator
     integratorMaya = cmds.getAttr("%s.%s" % (renderSettings, "integrator")).replace('_', ' ')
 
     mayaUINameToMitsubaName = {
         "Ambient Occlusion" : "ao",
-        "Direct_Illumination" : "direct",
+        "Direct Illumination" : "direct",
         "Path Tracer" : "path",
         "Volumetric Path Tracer" : "volpath",
         "Simple Volumetric Path Tracer" : "volpath_simple",
@@ -1068,7 +1153,7 @@ def writeIntegrator(renderSettings):
 
     mayaUINameToIntegratorFunction = {
         "Ambient Occlusion" : writeIntegratorAmbientOcclusion,
-        "Direct_Illumination" : writeIntegratorDirectIllumination,
+        "Direct Illumination" : writeIntegratorDirectIllumination,
         "Path Tracer" : writeIntegratorPathTracer,
         "Volumetric Path Tracer" : writeIntegratorPathTracer,
         "Simple Volumetric Path Tracer" : writeIntegratorPathTracer,
@@ -1090,6 +1175,17 @@ def writeIntegrator(renderSettings):
         writeIntegratorFunction = writeIntegratorPathTracer
 
     integratorElement = writeIntegratorFunction(renderSettings, integratorMitsuba)
+
+    # Create meta integrator
+    metaIntegratorMaya = cmds.getAttr("%s.%s" % (renderSettings, "metaIntegrator")).replace('_', ' ')
+    if metaIntegratorMaya != "None":
+        integratorElement = writeMetaIntegrator(renderSettings, metaIntegratorMaya, integratorElement)
+
+    # Create multichannel integrator
+    multichannel = cmds.getAttr("%s.%s" % (renderSettings, "multichannel"))
+
+    if multichannel:
+        integratorElement = writeIntegratorMultichannel(renderSettings, integratorElement)
 
     return integratorElement
 
@@ -1134,11 +1230,71 @@ def writeSampler(frameNumber, renderSettings):
         elementDict['children'].append( { 'type':'integer', 'attributes':{ 'name':'scramble', 'value':str(samplerScramble) } } )
 
     return elementDict
+
+def filmAddMultichannelAttributes(renderSettings, elementDict):
+    multichannelPosition = cmds.getAttr("%s.%s" % (renderSettings, "multichannelPosition"))
+    multichannelRelPosition = cmds.getAttr("%s.%s" % (renderSettings, "multichannelRelPosition"))
+    multichannelDistance = cmds.getAttr("%s.%s" % (renderSettings, "multichannelDistance"))
+    multichannelGeoNormal = cmds.getAttr("%s.%s" % (renderSettings, "multichannelGeoNormal"))
+    multichannelShadingNormal = cmds.getAttr("%s.%s" % (renderSettings, "multichannelShadingNormal"))
+    multichannelUV = cmds.getAttr("%s.%s" % (renderSettings, "multichannelUV"))
+    multichannelAlbedo = cmds.getAttr("%s.%s" % (renderSettings, "multichannelAlbedo"))
+    multichannelShapeIndex = cmds.getAttr("%s.%s" % (renderSettings, "multichannelShapeIndex"))
+    multichannelPrimIndex = cmds.getAttr("%s.%s" % (renderSettings, "multichannelPrimIndex"))
+
+    pixelFormat = "rgba"
+    channelNames = "rgba"
+
+    if multichannelPosition:
+        pixelFormat  += ", rgb"
+        channelNames += ", position"
+    if multichannelRelPosition:
+        pixelFormat  += ", rgb"
+        channelNames += ", relPosition"
+    if multichannelDistance:
+        pixelFormat  += ", luminance"
+        channelNames += ", distance"
+    if multichannelGeoNormal:
+        pixelFormat  += ", rgb"
+        channelNames += ", geoNormal"
+    if multichannelShadingNormal:
+        pixelFormat  += ", rgb"
+        channelNames += ", shadingNormal"
+    if multichannelUV:
+        pixelFormat  += ", rgb"
+        channelNames += ", uv"
+    if multichannelAlbedo:
+        pixelFormat  += ", rgb"
+        channelNames += ", albedo"
+    if multichannelShapeIndex:
+        pixelFormat  += ", luminance"
+        channelNames += ", shapeIndex"
+    if multichannelPrimIndex:
+        pixelFormat  += ", luminance"
+        channelNames += ", primitiveIndex"
+
+    elementDict['children'].append( { 'type':'string', 'attributes':{ 'name':'pixelFormat', 'value':pixelFormat } } )
+    elementDict['children'].append( { 'type':'string', 'attributes':{ 'name':'channelNames', 'value':channelNames } } )
+
+    return elementDict
    
 def writeFilm(frameNumber, renderSettings):
     #Resolution
     imageWidth = cmds.getAttr("defaultResolution.width")
     imageHeight = cmds.getAttr("defaultResolution.height")
+
+    # Film
+    filmMaya = cmds.getAttr("%s.%s" % (renderSettings, "film"))
+    mayaFilmUINameToMitsubaName = {
+        "HDR Film"  : "hdrfilm",
+        "LDR Film" : "ldrfilm",
+        "HDR Film - Tiled"  : "tiledhdrfilm",
+        "Math Film"  : "mfilm",
+    }
+    if filmMaya in mayaFilmUINameToMitsubaName:
+        filmMitsuba = mayaFilmUINameToMitsubaName[filmMaya]
+    else:
+        filmMitsuba = "hdrfilm"
 
     #Filter
     reconstructionFilterMaya = cmds.getAttr("%s.%s" % (renderSettings, "reconstructionFilter")).replace('_' ,' ')
@@ -1156,16 +1312,18 @@ def writeFilm(frameNumber, renderSettings):
     else:
         reconstructionFilterMitsuba = "box"
 
-    #print( "Reconstruction Filter : %s" % reconstructionFilterMitsuba )
-
     elementDict = {'type':'film'}
-    elementDict['attributes'] = {'type':'hdrfilm'}
+    elementDict['attributes'] = {'type':filmMitsuba}
 
     elementDict['children'] = []
     elementDict['children'].append( { 'type':'integer', 'attributes':{ 'name':'height', 'value':str(imageHeight) } } )
     elementDict['children'].append( { 'type':'integer', 'attributes':{ 'name':'width', 'value':str(imageWidth) } } )
     elementDict['children'].append( { 'type':'rfilter', 'attributes':{ 'type':reconstructionFilterMitsuba } } )
     elementDict['children'].append( { 'type':'boolean', 'attributes':{ 'name':'banner', 'value':'false' } } )
+
+    multichannel = cmds.getAttr("%s.%s" % (renderSettings, "multichannel"))
+    if multichannel and filmMitsuba in ["hdrfilm", "tiledhdrfilm"]:
+        elementDict = filmAddMultichannelAttributes(renderSettings, elementDict)
 
     return elementDict
 
