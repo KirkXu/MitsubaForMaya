@@ -65,20 +65,20 @@ import MitsubaRendererUI
 #
 # Renderer functions
 #
-def renderScene(outFileName, projectDir, mitsubaPath, mtsDir, keepTempFiles, geometryFiles, animation=False, frame=1, verbose=False):
-    renderDir = os.path.join(projectDir, 'images')
-    os.chdir(renderDir)
+def renderScene(outFileName, renderDir, mitsubaPath, mtsDir, keepTempFiles, geometryFiles, animation=False, frame=1, verbose=False):
+    imageDir = os.path.join(os.path.split(renderDir)[0], 'images')
+    os.chdir(imageDir)
 
     imagePrefix = cmds.getAttr("defaultRenderGlobals.imageFilePrefix")
     if imagePrefix is None:
-        imagePrefix = "tempRender"
+        imagePrefix = "mitsubaTempRender"
     if animation:
         extensionPadding = cmds.getAttr("defaultRenderGlobals.extensionPadding")
-        logName = os.path.join(renderDir, imagePrefix + "." + str(frame).zfill(extensionPadding) +".log")
-        imageName = os.path.join(renderDir, imagePrefix + "." + str(frame).zfill(extensionPadding) +".exr")
+        logName = os.path.join(imageDir, imagePrefix + "." + str(frame).zfill(extensionPadding) +".log")
+        imageName = os.path.join(imageDir, imagePrefix + "." + str(frame).zfill(extensionPadding) +".exr")
     else:
-        logName = os.path.join(renderDir, imagePrefix + ".log")
-        imageName = os.path.join(renderDir, imagePrefix + ".exr")
+        logName = os.path.join(imageDir, imagePrefix + ".log")
+        imageName = os.path.join(imageDir, imagePrefix + ".exr")
 
     args = []
     if verbose:
@@ -102,7 +102,7 @@ def renderScene(outFileName, projectDir, mitsubaPath, mtsDir, keepTempFiles, geo
 
     if not keepTempFiles:
         #Delete all of the temp file we just made
-        os.chdir(os.path.join(projectDir, "renderData"))
+        os.chdir(renderDir)
         for geometryFile in geometryFiles:
             #print( "Removing geometry : %s" % geometryFile )
             os.remove(geometryFile)
@@ -135,7 +135,7 @@ class mitsubaForMaya(OpenMayaMPx.MPxCommand):
 
         #Get the directories and other variables
         projectDir = cmds.workspace(q=True, fn=True)
-        outFileName = os.path.join(projectDir, "renderData", "temporary.xml")
+        renderDir = os.path.join(projectDir, "renderData")
         pluginDir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
         version = cmds.about(v=True).replace(" ", "-")
 
@@ -158,6 +158,7 @@ class mitsubaForMaya(OpenMayaMPx.MPxCommand):
         print( "Render Settings - Keep Temp Files : %s" % keepTempFiles )
         print( "Render Settings - Verbose         : %s" % verbose )
         print( "Render Settings - Animation       : %s" % animation )
+        print( "Render Settings - Render Dir      : %s" % renderDir )
 
         if not cmds.about(batch=True) and animation:
             print( "Animation isn't currently supported outside of Batch mode. Rendering current frame." )
@@ -179,23 +180,27 @@ class mitsubaForMaya(OpenMayaMPx.MPxCommand):
 
                 print( "Rendering frame " + str(frame) + " - frame set" )
 
+                outFileName = os.path.join(renderDir, "temporary.xml")
+
                 # Export scene and geometry
-                geometryFiles = MitsubaRendererIO.writeScene(outFileName, projectDir, renderSettings)
+                geometryFiles = MitsubaRendererIO.writeScene(outFileName, renderDir, renderSettings)
         
                 # Render scene, delete scene and geometry
-                imageName = renderScene(outFileName, projectDir, mitsubaPath, 
+                imageName = renderScene(outFileName, renderDir, mitsubaPath, 
                     mtsDir, keepTempFiles, geometryFiles, animation, frame, verbose)
 
                 print( "Rendering frame " + str(frame) + " - end" )
 
             print( "Animation finished" )
         else:
+            outFileName = os.path.join(renderDir, "temporary.xml")
+
             # Export scene and geometry
-            geometryFiles = MitsubaRendererIO.writeScene(outFileName, projectDir, renderSettings)
+            geometryFiles = MitsubaRendererIO.writeScene(outFileName, renderDir, renderSettings)
 
             # Render scene
             # Clean up scene and geometry
-            imageName = renderScene(outFileName, projectDir, mitsubaPath, 
+            imageName = renderScene(outFileName, renderDir, mitsubaPath, 
                 mtsDir, keepTempFiles, geometryFiles, verbose=verbose)
 
             # Display the render
