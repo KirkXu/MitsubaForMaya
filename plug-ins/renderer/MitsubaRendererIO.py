@@ -1042,22 +1042,69 @@ def writeIntegratorVirtualPointLight(renderSettings, integratorMitsuba):
 
 
 def writeIntegratorAdaptive(renderSettings, integratorMitsuba, subIntegrator):
+    miAdaptiveMaxError = cmds.getAttr("%s.%s" % (renderSettings, "miAdaptiveMaxError"))
+    miAdaptivePValue = cmds.getAttr("%s.%s" % (renderSettings, "miAdaptivePValue"))
+    miAdaptiveMaxSampleFactor = cmds.getAttr("%s.%s" % (renderSettings, "miAdaptiveMaxSampleFactor"))
+
     # Create a structure to be written
     elementDict = {'type':'integrator'}
     elementDict['attributes'] = {'type':integratorMitsuba}
 
     elementDict['children'] = []
+
+    elementDict['children'].append( { 'type':'float', 
+        'attributes':{ 'name':'maxError', 'value':str(miAdaptiveMaxError/100.0) } } )
+    elementDict['children'].append( { 'type':'float', 
+        'attributes':{ 'name':'pValue', 'value':str(miAdaptivePValue/100.0) } } )
+    elementDict['children'].append( { 'type':'integer', 
+        'attributes':{ 'name':'maxSampleFactor', 'value':str(miAdaptiveMaxSampleFactor) } } )
 
     elementDict['children'].append( subIntegrator )
 
     return elementDict
 
 def writeIntegratorIrradianceCache(renderSettings, integratorMitsuba, subIntegrator):
+    miIrradianceCacheResolution = cmds.getAttr("%s.%s" % (renderSettings, "miIrradianceCacheResolution"))
+    miIrradianceCacheQuality = cmds.getAttr("%s.%s" % (renderSettings, "miIrradianceCacheQuality"))
+    miIrradianceCacheGradients = cmds.getAttr("%s.%s" % (renderSettings, "miIrradianceCacheGradients"))
+    miIrradianceCacheClampNeighbor = cmds.getAttr("%s.%s" % (renderSettings, "miIrradianceCacheClampNeighbor"))
+    miIrradianceCacheClampScreen = cmds.getAttr("%s.%s" % (renderSettings, "miIrradianceCacheClampScreen"))
+    miIrradianceCacheOverture = cmds.getAttr("%s.%s" % (renderSettings, "miIrradianceCacheOverture"))
+    miIrradianceCacheQualityAdjustment = cmds.getAttr("%s.%s" % (renderSettings, "miIrradianceCacheQualityAdjustment"))
+    miIrradianceCacheIndirectOnly = cmds.getAttr("%s.%s" % (renderSettings, "miIrradianceCacheIndirectOnly"))
+    miIrradianceCacheDebug = cmds.getAttr("%s.%s" % (renderSettings, "miIrradianceCacheDebug"))
+
+    miIrradianceCacheGradientsText = "true" if miIrradianceCacheGradients else "false"
+    miIrradianceCacheClampNeighborText = "true" if miIrradianceCacheClampNeighbor else "false"
+    miIrradianceCacheClampScreenText = "true" if miIrradianceCacheClampScreen else "false"
+    miIrradianceCacheOvertureText = "true" if miIrradianceCacheOverture else "false"
+    miIrradianceCacheIndirectOnlyText = "true" if miIrradianceCacheIndirectOnly else "false"
+    miIrradianceCacheDebug = "true" if miIrradianceCacheDebug else "false"
+
     # Create a structure to be written
     elementDict = {'type':'integrator'}
     elementDict['attributes'] = {'type':integratorMitsuba}
 
     elementDict['children'] = []
+
+    elementDict['children'].append( { 'type':'integer', 
+        'attributes':{ 'name':'resolution', 'value':str(miIrradianceCacheResolution) } } )
+    elementDict['children'].append( { 'type':'float', 
+        'attributes':{ 'name':'quality', 'value':str(miIrradianceCacheQuality) } } )
+    elementDict['children'].append( { 'type':'boolean', 
+        'attributes':{ 'name':'gradients', 'value':miIrradianceCacheGradientsText } } )
+    elementDict['children'].append( { 'type':'boolean', 
+        'attributes':{ 'name':'clampNeighbor', 'value':miIrradianceCacheClampNeighborText } } )
+    elementDict['children'].append( { 'type':'boolean', 
+        'attributes':{ 'name':'clampScreen', 'value':miIrradianceCacheClampScreenText } } )
+    elementDict['children'].append( { 'type':'boolean', 
+        'attributes':{ 'name':'overture', 'value':miIrradianceCacheOvertureText } } )
+    elementDict['children'].append( { 'type':'float', 
+        'attributes':{ 'name':'qualityAdjustment', 'value':str(miIrradianceCacheQualityAdjustment) } } )
+    elementDict['children'].append( { 'type':'boolean', 
+        'attributes':{ 'name':'indirectOnly', 'value':miIrradianceCacheIndirectOnlyText } } )
+    elementDict['children'].append( { 'type':'boolean', 
+        'attributes':{ 'name':'debug', 'value':miIrradianceCacheDebug } } )
 
     elementDict['children'].append( subIntegrator )
 
@@ -1277,7 +1324,269 @@ def filmAddMultichannelAttributes(renderSettings, elementDict):
     elementDict['children'].append( { 'type':'string', 'attributes':{ 'name':'channelNames', 'value':channelNames } } )
 
     return elementDict
-   
+
+def writeReconstructionFilter(renderSettings):
+    #Filter
+    reconstructionFilterMaya = cmds.getAttr("%s.%s" % (renderSettings, "reconstructionFilter")).replace('_' ,' ')
+    mayaUINameToMitsubaName = {
+        "Box filter"  : "box",
+        "Tent filter" : "tent",
+        "Gaussian filter" : "gaussian",
+        "Catmull-Rom filter" : "catmullrom",
+        "Lanczos filter" : "lanczos",
+        "Mitchell-Netravali filter" : "mitchell"
+    }
+
+    if reconstructionFilterMaya in mayaUINameToMitsubaName:
+        reconstructionFilterMitsuba = mayaUINameToMitsubaName[reconstructionFilterMaya]
+    else:
+        reconstructionFilterMitsuba = "box"
+
+    rfilterElement = { 'type':'rfilter', 'attributes':{ 'type':reconstructionFilterMitsuba } }
+
+    return rfilterElement
+
+def booleanToMisubaText(b):
+    if b:
+        return "true"
+    else:
+        return "false"
+
+def writeFilmHDR(renderSettings, filmMitsuba):
+    fHDRFilmFileFormat = cmds.getAttr("%s.%s" % (renderSettings, "fHDRFilmFileFormat"))
+    fHDRFilmPixelFormat = cmds.getAttr("%s.%s" % (renderSettings, "fHDRFilmPixelFormat"))
+    fHDRFilmComponentFormat = cmds.getAttr("%s.%s" % (renderSettings, "fHDRFilmComponentFormat"))
+    fHDRFilmAttachLog = cmds.getAttr("%s.%s" % (renderSettings, "fHDRFilmAttachLog"))
+    fHDRFilmBanner = cmds.getAttr("%s.%s" % (renderSettings, "fHDRFilmBanner"))
+    fHDRFilmHighQualityEdges = cmds.getAttr("%s.%s" % (renderSettings, "fHDRFilmHighQualityEdges"))
+
+    mayaFileFormatUINameToMitsubaName = {
+        "OpenEXR (.exr)"  : "openexr",
+        "RGBE (.hdr)" : "rgbe",
+        "Portable Float Map (.pfm)"  : "pfm"
+    }
+
+    if fHDRFilmFileFormat in mayaFileFormatUINameToMitsubaName:
+        fHDRFilmFileFormatMitsuba = mayaFileFormatUINameToMitsubaName[fHDRFilmFileFormat]
+    else:
+        print( "Unsupported file format : %s. Using OpenEXR (.exr)" % fHDRFilmFileFormat)
+        fHDRFilmFileFormatMitsuba = "openexr"
+
+    mayaPixelFormatUINameToMitsubaName = {
+        'Luminance' : 'luminance',
+        'Luminance Alpha' : 'luminanceAlpha',
+        'RGB' : 'rgb',
+        'RGBA' : 'rgba',
+        'XYZ' : 'xyz',
+        'XYZA' : 'xyza',
+        'Spectrum' : 'spectrum',
+        'Spectrum Alpha' : 'spectrumAlpha'
+    }
+
+    if fHDRFilmPixelFormat in mayaPixelFormatUINameToMitsubaName:
+        fHDRFilmPixelFormatMitsuba = mayaPixelFormatUINameToMitsubaName[fHDRFilmPixelFormat]
+    else:
+        print( "Unsupported pixel format : %s. Using RGB" % fHDRFilmPixelFormat)
+        fHDRFilmPixelFormatMitsuba = "rgb"
+
+    mayaComponentFormatUINameToMitsubaName = {
+        'Float 16' : 'float16',
+        'Float 32' : 'float32',
+        'UInt 32' : 'uint32',
+    }
+
+    if fHDRFilmComponentFormat in mayaComponentFormatUINameToMitsubaName:
+        fHDRFilmComponentFormatMitsuba = mayaComponentFormatUINameToMitsubaName[fHDRFilmComponentFormat]
+    else:
+        print( "Unsupported component format : %s. Using Float 16" % fHDRFilmComponentFormat)
+        fHDRFilmComponentFormatMitsuba = "float16"
+
+    elementDict = {'type':'film'}
+    elementDict['attributes'] = {'type':filmMitsuba}
+
+    elementDict['children'] = []
+    elementDict['children'].append( { 'type':'string', 
+        'attributes':{ 'name':'fileFormat', 'value':fHDRFilmFileFormatMitsuba } } )
+    if fHDRFilmFileFormatMitsuba == "openexr":
+        elementDict['children'].append( { 'type':'string', 
+            'attributes':{ 'name':'pixelFormat', 'value':fHDRFilmPixelFormatMitsuba } } )
+    elementDict['children'].append( { 'type':'string', 
+        'attributes':{ 'name':'componentFormat', 'value':fHDRFilmComponentFormatMitsuba } } )
+    elementDict['children'].append( { 'type':'boolean', 
+        'attributes':{ 'name':'attachLog', 'value':booleanToMisubaText(fHDRFilmAttachLog) } } )
+    elementDict['children'].append( { 'type':'boolean', 
+        'attributes':{ 'name':'banner', 'value':booleanToMisubaText(fHDRFilmBanner) } } )
+    elementDict['children'].append( { 'type':'boolean', 
+        'attributes':{ 'name':'highQualityEdges', 'value':booleanToMisubaText(fHDRFilmHighQualityEdges) } } )
+
+    return elementDict
+
+def writeFilmHDRTiled(renderSettings, filmMitsuba):
+    fTiledHDRFilmPixelFormat = cmds.getAttr("%s.%s" % (renderSettings, "fTiledHDRFilmPixelFormat"))
+    fTiledHDRFilmComponentFormat = cmds.getAttr("%s.%s" % (renderSettings, "fTiledHDRFilmComponentFormat"))
+
+    mayaPixelFormatUINameToMitsubaName = {
+        'Luminance' : 'luminance',
+        'Luminance Alpha' : 'luminanceAlpha',
+        'RGB' : 'rgb',
+        'RGBA' : 'rgba',
+        'XYZ' : 'xyz',
+        'XYZA' : 'xyza',
+        'Spectrum' : 'spectrum',
+        'Spectrum Alpha' : 'spectrumAlpha'
+    }
+
+    if fTiledHDRFilmPixelFormat in mayaPixelFormatUINameToMitsubaName:
+        fTiledHDRFilmPixelFormatMitsuba = mayaPixelFormatUINameToMitsubaName[fTiledHDRFilmPixelFormat]
+    else:
+        print( "Unsupported pixel format : %s. Using RGB" % fTiledHDRFilmPixelFormat)
+        fTiledHDRFilmPixelFormatMitsuba = "rgb"
+
+    mayaComponentFormatUINameToMitsubaName = {
+        'Float 16' : 'float16',
+        'Float 32' : 'float32',
+        'UInt 32' : 'uint32',
+    }
+
+    if fTiledHDRFilmComponentFormat in mayaComponentFormatUINameToMitsubaName:
+        fTiledHDRFilmComponentFormatMitsuba = mayaComponentFormatUINameToMitsubaName[fTiledHDRFilmComponentFormat]
+    else:
+        print( "Unsupported component format : %s. Using Float 16" % fTiledHDRFilmComponentFormat)
+        fTiledHDRFilmComponentFormatMitsuba = "float16"
+
+    elementDict = {'type':'film'}
+    elementDict['attributes'] = {'type':filmMitsuba}
+
+    elementDict['children'] = []
+    elementDict['children'].append( { 'type':'string', 
+        'attributes':{ 'name':'pixelFormat', 'value':fTiledHDRFilmPixelFormatMitsuba } } )
+    elementDict['children'].append( { 'type':'string', 
+        'attributes':{ 'name':'componentFormat', 'value':fTiledHDRFilmComponentFormatMitsuba } } )
+
+    return elementDict
+
+def writeFilmLDR(renderSettings, filmMitsuba):
+    fLDRFilmFileFormat = cmds.getAttr("%s.%s" % (renderSettings, "fLDRFilmFileFormat"))
+    fLDRFilmPixelFormat = cmds.getAttr("%s.%s" % (renderSettings, "fLDRFilmPixelFormat"))
+    fLDRFilmTonemapMethod = cmds.getAttr("%s.%s" % (renderSettings, "fLDRFilmTonemapMethod"))
+    fLDRFilmGamma = cmds.getAttr("%s.%s" % (renderSettings, "fLDRFilmGamma"))
+    fLDRFilmExposure = cmds.getAttr("%s.%s" % (renderSettings, "fLDRFilmExposure"))
+    fLDRFilmKey = cmds.getAttr("%s.%s" % (renderSettings, "fLDRFilmKey"))
+    fLDRFilmBurn = cmds.getAttr("%s.%s" % (renderSettings, "fLDRFilmBurn"))
+    fLDRFilmBanner = cmds.getAttr("%s.%s" % (renderSettings, "fLDRFilmBanner"))
+    fLDRFilmHighQualityEdges = cmds.getAttr("%s.%s" % (renderSettings, "fLDRFilmHighQualityEdges"))
+
+    mayaFileFormatUINameToMitsubaName = {
+        "PNG (.png)"  : "png",
+        "JPEG (.jpg)" : "jpeg"
+    }
+
+    if fLDRFilmFileFormat in mayaFileFormatUINameToMitsubaName:
+        fLDRFilmFileFormatMitsuba = mayaFileFormatUINameToMitsubaName[fLDRFilmFileFormat]
+    else:
+        print( "Unsupported file format : %s. Using PNG (.png)" % fLDRFilmFileFormat)
+        fLDRFilmFileFormatMitsuba = "png"
+
+    mayaPixelFormatUINameToMitsubaName = {
+        'Luminance' : 'luminance',
+        'Luminance Alpha' : 'luminanceAlpha',
+        'RGB' : 'rgb',
+        'RGBA' : 'rgba'
+    }
+
+    if fLDRFilmPixelFormat in mayaPixelFormatUINameToMitsubaName:
+        fLDRFilmPixelFormatMitsuba = mayaPixelFormatUINameToMitsubaName[fLDRFilmPixelFormat]
+    else:
+        print( "Unsupported pixel format : %s. Using RGB" % fLDRFilmPixelFormat)
+        fLDRFilmPixelFormatMitsuba = "rgb"
+
+    mayaTonemapMethodUINameToMitsubaName = {
+        'Gamma' : 'gamma',
+        'Reinhard' : 'reinhard'
+    }
+
+    if fLDRFilmTonemapMethod in mayaTonemapMethodUINameToMitsubaName:
+        fLDRFilmTonemapMethodMitsuba = mayaTonemapMethodUINameToMitsubaName[fLDRFilmTonemapMethod]
+    else:
+        print( "Unsupported tonemap method : %s. Using Gamma" % fLDRFilmTonemapMethod)
+        fLDRFilmTonemapMethodMitsuba = "gamma"
+
+    elementDict = {'type':'film'}
+    elementDict['attributes'] = {'type':filmMitsuba}
+
+    elementDict['children'] = []
+    elementDict['children'].append( { 'type':'string', 
+        'attributes':{ 'name':'fileFormat', 'value':fLDRFilmFileFormatMitsuba } } )
+    elementDict['children'].append( { 'type':'string', 
+        'attributes':{ 'name':'pixelFormat', 'value':fLDRFilmPixelFormatMitsuba } } )
+    elementDict['children'].append( { 'type':'string', 
+        'attributes':{ 'name':'tonemapMethod', 'value':fLDRFilmTonemapMethodMitsuba } } )
+    elementDict['children'].append( { 'type':'float', 
+        'attributes':{ 'name':'gamma', 'value':str(fLDRFilmGamma) } } )
+    elementDict['children'].append( { 'type':'float', 
+        'attributes':{ 'name':'exposure', 'value':str(fLDRFilmExposure) } } )
+    elementDict['children'].append( { 'type':'float', 
+        'attributes':{ 'name':'key', 'value':str(fLDRFilmKey) } } )
+    elementDict['children'].append( { 'type':'float', 
+        'attributes':{ 'name':'burn', 'value':str(fLDRFilmBurn) } } )
+    elementDict['children'].append( { 'type':'boolean', 
+        'attributes':{ 'name':'banner', 'value':booleanToMisubaText(fLDRFilmBanner) } } )
+    elementDict['children'].append( { 'type':'boolean', 
+        'attributes':{ 'name':'highQualityEdges', 'value':booleanToMisubaText(fLDRFilmHighQualityEdges) } } )
+
+    return elementDict
+
+def writeFilmMath(renderSettings, filmMitsuba):
+    fMathFilmFileFormat = cmds.getAttr("%s.%s" % (renderSettings, "fMathFilmFileFormat"))
+    fMathFilmPixelFormat = cmds.getAttr("%s.%s" % (renderSettings, "fMathFilmPixelFormat"))
+    fMathFilmDigits = cmds.getAttr("%s.%s" % (renderSettings, "fMathFilmDigits"))
+    fMathFilmVariable = cmds.getAttr("%s.%s" % (renderSettings, "fMathFilmVariable"))
+    fMathFilmHighQualityEdges = cmds.getAttr("%s.%s" % (renderSettings, "fMathFilmHighQualityEdges"))
+
+    mayaFileFormatUINameToMitsubaName = {
+        "Matlab (.m)"  : "matlab",
+        "Mathematica (.m)" : "mathematica",
+        "NumPy (.npy)" : "numpy"
+    }
+
+    if fMathFilmFileFormat in mayaFileFormatUINameToMitsubaName:
+        fMathFilmFileFormatMitsuba = mayaFileFormatUINameToMitsubaName[fMathFilmFileFormat]
+    else:
+        print( "Unsupported file format : %s. Using Matlab (.m)" % fMathFilmFileFormat)
+        fMathFilmFileFormatMitsuba = "matlab"
+
+    mayaPixelFormatUINameToMitsubaName = {
+        'Luminance' : 'luminance',
+        'Luminance Alpha' : 'luminanceAlpha',
+        'RGB' : 'rgb',
+        'RGBA' : 'rgba',
+        'Spectrum' : 'spectrum',
+        'Spectrum Alpha' : 'spectrumAlpha'
+    }
+
+    if fMathFilmPixelFormat in mayaPixelFormatUINameToMitsubaName:
+        fMathFilmPixelFormatMitsuba = mayaPixelFormatUINameToMitsubaName[fMathFilmPixelFormat]
+    else:
+        print( "Unsupported pixel format : %s. Using RGB" % fMathFilmPixelFormat)
+        fMathFilmPixelFormatMitsuba = "rgb"
+
+    elementDict = {'type':'film'}
+    elementDict['attributes'] = {'type':filmMitsuba}
+
+    elementDict['children'] = []
+    elementDict['children'].append( { 'type':'string', 
+        'attributes':{ 'name':'fileFormat', 'value':fMathFilmFileFormatMitsuba } } )
+    elementDict['children'].append( { 'type':'string', 
+        'attributes':{ 'name':'pixelFormat', 'value':fMathFilmPixelFormatMitsuba } } )
+    elementDict['children'].append( { 'type':'integer', 
+        'attributes':{ 'name':'digits', 'value':str(fMathFilmDigits) } } )
+    elementDict['children'].append( { 'type':'string', 
+        'attributes':{ 'name':'variable', 'value':fMathFilmVariable } } )
+    elementDict['children'].append( { 'type':'boolean', 
+        'attributes':{ 'name':'highQualityEdges', 'value':booleanToMisubaText(fMathFilmHighQualityEdges) } } )
+
+    return elementDict
+
 def writeFilm(frameNumber, renderSettings):
     #Resolution
     imageWidth = cmds.getAttr("defaultResolution.width")
@@ -1296,36 +1605,40 @@ def writeFilm(frameNumber, renderSettings):
     else:
         filmMitsuba = "hdrfilm"
 
-    #Filter
-    reconstructionFilterMaya = cmds.getAttr("%s.%s" % (renderSettings, "reconstructionFilter")).replace('_' ,' ')
-    mayaUINameToMitsubaName = {
-        "Box filter"  : "box",
-        "Tent filter" : "tent",
-        "Gaussian filter" : "gaussian",
-        "Catmull-Rom filter" : "catmullrom",
-        "Lanczos filter" : "lanczos",
-        "Mitchell-Netravali filter" : "mitchell"
+    mayaUINameToFilmFunction = {
+        "HDR Film" : writeFilmHDR,
+        "LDR Film" : writeFilmLDR,
+        "HDR Film - Tiled" : writeFilmHDRTiled,
+        "Math Film" : writeFilmMath
     }
 
-    if reconstructionFilterMaya in mayaUINameToMitsubaName:
-        reconstructionFilterMitsuba = mayaUINameToMitsubaName[reconstructionFilterMaya]
+    if filmMaya in mayaUINameToFilmFunction:
+        writeFilmFunction = mayaUINameToFilmFunction[filmMaya]
     else:
-        reconstructionFilterMitsuba = "box"
+        print( "Unsupported Film : %s. Using HDR" % filmMaya)
+        writeFilmFunction = writeFilmHDR
 
-    elementDict = {'type':'film'}
-    elementDict['attributes'] = {'type':filmMitsuba}
+    filmElement = writeFilmFunction(renderSettings, filmMitsuba)
 
-    elementDict['children'] = []
-    elementDict['children'].append( { 'type':'integer', 'attributes':{ 'name':'height', 'value':str(imageHeight) } } )
-    elementDict['children'].append( { 'type':'integer', 'attributes':{ 'name':'width', 'value':str(imageWidth) } } )
-    elementDict['children'].append( { 'type':'rfilter', 'attributes':{ 'type':reconstructionFilterMitsuba } } )
-    elementDict['children'].append( { 'type':'boolean', 'attributes':{ 'name':'banner', 'value':'false' } } )
+    rfilterElement = writeReconstructionFilter(renderSettings)
+
+    #elementDict = {'type':'film'}
+    #elementDict['attributes'] = {'type':filmMitsuba}
+
+    #elementDict['children'] = []
+    #elementDict['children'].append( { 'type':'boolean', 'attributes':{ 'name':'banner', 'value':'false' } } )
+
+    filmElement['children'].append( { 'type':'integer', 
+        'attributes':{ 'name':'height', 'value':str(imageHeight) } } )
+    filmElement['children'].append( { 'type':'integer', 
+        'attributes':{ 'name':'width', 'value':str(imageWidth) } } )
+    filmElement['children'].append( rfilterElement )
 
     multichannel = cmds.getAttr("%s.%s" % (renderSettings, "multichannel"))
     if multichannel and filmMitsuba in ["hdrfilm", "tiledhdrfilm"]:
-        elementDict = filmAddMultichannelAttributes(renderSettings, elementDict)
+        filmElement = filmAddMultichannelAttributes(renderSettings, filmElement)
 
-    return elementDict
+    return filmElement
 
 '''
 Write sensor, which include camera, image sampler, and film

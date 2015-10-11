@@ -53,18 +53,22 @@ x add support for meta-integrators
 x add support for multi-channel rendering, with supported integrators
  x ao, direct, path, volpath, volpath_simple, and irrcache.
 
-add support for film parameters
-- crop coordinates (pulled from general render settings)
+x add support for meta-integrator parameters
+ x adaptive, irrcache
 
-add support for meta-integrator parameters
-- adaptive, irrcache
+x add support for film parameters
 
-figure out what pixelFormat to use for the 'albedo field'
+figure out what pixelFormat to use for the 'albedo' field
 figure out how to load multichannel exrs into the Maya Render View
+add support for metadata and label annotations with ldrfilm and hdrfilm
+standardize callbacks used in UI
+add support for crop coordinates (pulled from general render settings)
 
 organize UI
+- connect activation of multichannel and metaintegrators to choice of base integrator
 
 add support for writing lightmaps using irradiancemeter sensor type
+- need workflow design
 
 generalize support for volumes
 

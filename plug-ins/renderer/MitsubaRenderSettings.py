@@ -163,8 +163,54 @@ class MitsubaRenderSetting(OpenMayaMPx.MPxNode):
     # Film variables
     mFilm = OpenMaya.MObject()
 
+    # Film - HDR variables
+    mHDRFilmFileFormat = OpenMaya.MObject()
+    mHDRFilmPixelFormat = OpenMaya.MObject()
+    mHDRFilmComponentFormat = OpenMaya.MObject()
+    mHDRFilmAttachLog = OpenMaya.MObject()
+    mHDRFilmBanner = OpenMaya.MObject()
+    mHDRFilmHighQualityEdges = OpenMaya.MObject()
+
+    # Film - Tiled HDR variables
+    mTiledHDRFilmPixelFormat = OpenMaya.MObject()
+    mTiledHDRFilmComponentFormat = OpenMaya.MObject()
+
+    # Film - LDR variables
+    mLDRFilmFileFormat = OpenMaya.MObject()
+    mLDRFilmPixelFormat = OpenMaya.MObject()
+    mLDRFilmTonemapMethod = OpenMaya.MObject()
+    mLDRFilmGamma = OpenMaya.MObject()
+    mLDRFilmExposure = OpenMaya.MObject()
+    mLDRFilmKey = OpenMaya.MObject()
+    mLDRFilmBurn = OpenMaya.MObject()
+    mLDRFilmBanner = OpenMaya.MObject()
+    mLDRFilmHighQualityEdges = OpenMaya.MObject()
+
+    # Film - Math variables
+    mMathFilmFileFormat = OpenMaya.MObject()
+    mMathFilmPixelFormat = OpenMaya.MObject()
+    mMathFilmDigits = OpenMaya.MObject()
+    mMathFilmVariable = OpenMaya.MObject()
+    mMathFilmHighQualityEdges = OpenMaya.MObject()
+
     # Metaintegrator variables
     mMetaIntegrator = OpenMaya.MObject()
+
+    # Metaintegrator - Adaptive variables
+    mAdaptiveMaxError = OpenMaya.MObject()
+    mAdaptivePValue = OpenMaya.MObject()
+    mAdaptiveMaxSampleFactor = OpenMaya.MObject()
+
+    # Metaintegrator - Irradiance Cache variables
+    mIrradianceCacheResolution = OpenMaya.MObject()
+    mIrradianceCacheQuality = OpenMaya.MObject()
+    mIrradianceCacheGradients = OpenMaya.MObject()
+    mIrradianceCacheClampNeighbor = OpenMaya.MObject()
+    mIrradianceCacheClampScreen = OpenMaya.MObject()
+    mIrradianceCacheOverture = OpenMaya.MObject()
+    mIrradianceCacheQualityAdjustment = OpenMaya.MObject()
+    mIrradianceCacheIndirectOnly = OpenMaya.MObject()
+    mIrradianceCacheDebug = OpenMaya.MObject()
 
     # Multichannel variables
     mMultichannel = OpenMaya.MObject()
@@ -383,10 +429,56 @@ def nodeInitializer():
         MitsubaRenderSetting.addFloatAttribute(nAttr,   "mPerspectiveRdistKc4", "sPerspectiveRdistKc4", "sprkc4", 0.0)
 
         # Film variables
-        MitsubaRenderSetting.addStringAttribute(sAttr,  "mFilm", "film", "fm", "hdrfilm")
+        MitsubaRenderSetting.addStringAttribute(sAttr,  "mFilm", "film", "fm", "HDR Film")
+
+        # Film - HDR variables
+        MitsubaRenderSetting.addStringAttribute(sAttr,  "mHDRFilmFileFormat", "fHDRFilmFileFormat", "fhff", "OpenEXR (.exr)")
+        MitsubaRenderSetting.addStringAttribute(sAttr,  "mHDRFilmPixelFormat", "fHDRFilmPixelFormat", "fhpf", "RGBA")
+        MitsubaRenderSetting.addStringAttribute(sAttr,  "mHDRFilmComponentFormat", "fHDRFilmComponentFormat", "fhcf", "Float 16")
+        MitsubaRenderSetting.addBooleanAttribute(nAttr, "mHDRFilmAttachLog", "fHDRFilmAttachLog", "fhal", True)
+        MitsubaRenderSetting.addBooleanAttribute(nAttr, "mHDRFilmBanner", "fHDRFilmBanner", "fhb", False)
+        MitsubaRenderSetting.addBooleanAttribute(nAttr, "mHDRFilmHighQualityEdges", "fHDRFilmHighQualityEdges", "fhhqe", False)
+
+        # Film - Tiled HDR variables
+        MitsubaRenderSetting.addStringAttribute(sAttr,  "mTiledHDRFilmPixelFormat", "fTiledHDRFilmPixelFormat", "fthpf", "RGBA")
+        MitsubaRenderSetting.addStringAttribute(sAttr,  "mTiledHDRFilmComponentFormat", "fTiledHDRFilmComponentFormat", "fthcf", "Float 16")
+
+        # Film - LDR variables
+        MitsubaRenderSetting.addStringAttribute(sAttr,  "mLDRFilmFileFormat", "fLDRFilmFileFormat", "flff", "PNG (.png)")
+        MitsubaRenderSetting.addStringAttribute(sAttr,  "mLDRFilmPixelFormat", "fLDRFilmPixelFormat", "flpf", "RGB")
+        MitsubaRenderSetting.addStringAttribute(sAttr,  "mLDRFilmTonemapMethod", "fLDRFilmTonemapMethod", "fltm", "Gamma")
+        MitsubaRenderSetting.addFloatAttribute(nAttr,   "mLDRFilmGamma", "fLDRFilmGamma", "flg", -1)
+        MitsubaRenderSetting.addFloatAttribute(nAttr,   "mLDRFilmExposure", "fLDRFilmExposure", "fle", 0.0)
+        MitsubaRenderSetting.addFloatAttribute(nAttr,   "mLDRFilmKey", "fLDRFilmKey", "flk", 0.18)
+        MitsubaRenderSetting.addFloatAttribute(nAttr,   "mLDRFilmBurn", "fLDRFilmBurn", "flb", 0.0)
+        MitsubaRenderSetting.addBooleanAttribute(nAttr, "mLDRFilmBanner", "fLDRFilmBanner", "flbn", False)
+        MitsubaRenderSetting.addBooleanAttribute(nAttr, "mLDRFilmHighQualityEdges", "fLDRFilmHighQualityEdges", "flhqe", False)
+
+        # Film - Math variables
+        MitsubaRenderSetting.addStringAttribute(sAttr,  "mMathFilmFileFormat", "fMathFilmFileFormat", "fmfm", "Matlab (.m)")
+        MitsubaRenderSetting.addStringAttribute(sAttr,  "mMathFilmPixelFormat", "fMathFilmPixelFormat", "fmpf", "RGB")
+        MitsubaRenderSetting.addIntegerAttribute(nAttr, "mMathFilmDigits", "fMathFilmDigits", "fmd", 4)
+        MitsubaRenderSetting.addStringAttribute(sAttr,  "mMathFilmVariable", "fMathFilmVariable", "fmv", "data")
+        MitsubaRenderSetting.addBooleanAttribute(nAttr, "mMathFilmHighQualityEdges", "fMathFilmHighQualityEdges", "fmhqe", False)
 
         # Meta-Integrator variables
         MitsubaRenderSetting.addStringAttribute(sAttr,  "mMetaIntegrator", "metaIntegrator", "mi", "None")
+
+        # Metaintegrator - Adaptive variables
+        MitsubaRenderSetting.addFloatAttribute(nAttr,   "mAdaptiveMaxError", "miAdaptiveMaxError", "miame", 5.0)
+        MitsubaRenderSetting.addFloatAttribute(nAttr,   "mAdaptivePValue", "miAdaptivePValue", "miapv", 5.0)
+        MitsubaRenderSetting.addIntegerAttribute(nAttr, "mAdaptiveMaxSampleFactor", "miAdaptiveMaxSampleFactor", "miamsf", 32)
+
+        # Metaintegrator - Irradiance Cache variables
+        MitsubaRenderSetting.addIntegerAttribute(nAttr, "mIrradianceCacheResolution", "miIrradianceCacheResolution", "miicr", 14)
+        MitsubaRenderSetting.addFloatAttribute(nAttr,   "mIrradianceCacheQuality", "miIrradianceCacheQuality", "miicq", 1.0)
+        MitsubaRenderSetting.addBooleanAttribute(nAttr, "mIrradianceCacheGradients", "miIrradianceCacheGradients", "miicg", True)
+        MitsubaRenderSetting.addBooleanAttribute(nAttr, "mIrradianceCacheClampNeighbor", "miIrradianceCacheClampNeighbor" , "miiccn", True)
+        MitsubaRenderSetting.addBooleanAttribute(nAttr, "mIrradianceCacheClampScreen", "miIrradianceCacheClampScreen", "miiccs", True)
+        MitsubaRenderSetting.addBooleanAttribute(nAttr, "mIrradianceCacheOverture", "miIrradianceCacheOverture", "miico", True)
+        MitsubaRenderSetting.addFloatAttribute(nAttr,   "mIrradianceCacheQualityAdjustment", "miIrradianceCacheQualityAdjustment", "miicqa", 0.5)
+        MitsubaRenderSetting.addBooleanAttribute(nAttr, "mIrradianceCacheIndirectOnly", "miIrradianceCacheIndirectOnly", "miicio", False)
+        MitsubaRenderSetting.addBooleanAttribute(nAttr, "mIrradianceCacheDebug", "miIrradianceCacheDebug", "miicd", False)
 
         # Multichannel variables
         MitsubaRenderSetting.addBooleanAttribute(nAttr, "mMultichannel", "multichannel", "mc", False)
@@ -560,8 +652,54 @@ def nodeInitializer():
         # Film variables
         MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mFilm)
 
+        # Film - HDR variables
+        MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mHDRFilmFileFormat)
+        MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mHDRFilmPixelFormat)
+        MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mHDRFilmComponentFormat)
+        MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mHDRFilmAttachLog)
+        MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mHDRFilmBanner)
+        MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mHDRFilmHighQualityEdges)
+
+        # Film - Tiled HDR variables
+        MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mTiledHDRFilmPixelFormat)
+        MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mTiledHDRFilmComponentFormat)
+
+        # Film - LDR variables
+        MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mLDRFilmFileFormat)
+        MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mLDRFilmPixelFormat)
+        MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mLDRFilmTonemapMethod)
+        MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mLDRFilmGamma)
+        MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mLDRFilmExposure)
+        MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mLDRFilmKey)
+        MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mLDRFilmBurn)
+        MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mLDRFilmBanner)
+        MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mLDRFilmHighQualityEdges)
+
+        # Film - Math variables
+        MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mMathFilmFileFormat)
+        MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mMathFilmPixelFormat)
+        MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mMathFilmDigits)
+        MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mMathFilmVariable)
+        MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mMathFilmHighQualityEdges)
+
         # Meta-Integrator variables
         MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mMetaIntegrator)
+
+        # Metaintegrator - Adaptive variables
+        MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mAdaptiveMaxError)
+        MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mAdaptivePValue)
+        MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mAdaptiveMaxSampleFactor)
+
+        # Metaintegrator - Irradiance Cache variables
+        MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mIrradianceCacheResolution)
+        MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mIrradianceCacheQuality)
+        MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mIrradianceCacheGradients)
+        MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mIrradianceCacheClampNeighbor)
+        MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mIrradianceCacheClampScreen)
+        MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mIrradianceCacheOverture)
+        MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mIrradianceCacheQualityAdjustment)
+        MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mIrradianceCacheIndirectOnly)
+        MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mIrradianceCacheDebug)
 
         # Multichannel variables
         MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mMultichannel)

@@ -32,11 +32,15 @@ global samplerFrames
 
 global sampleCount
 
+global filmFrames
+
 global rfilter
 global rfilterMenu
 
 global sensorOverrideMenu
 global sensorOverrideFrames
+
+global metaIntegratorFrames
 
 def createIntegratorFrameAmbientOcclusion():
     existingShadingSamples = cmds.getAttr( "%s.%s" % (renderSettings, "iAmbientOcclusionShadingSamples"))
@@ -617,6 +621,317 @@ def createIntegratorFrames():
     integratorFrames.append(ptrSettings)
     #integratorFrames.append(vplSettings)
 
+def createMetaIntegratorFramesAdaptive():
+    miAdaptiveMaxError = cmds.getAttr("%s.%s" % (renderSettings, "miAdaptiveMaxError"))
+    miAdaptivePValue = cmds.getAttr("%s.%s" % (renderSettings, "miAdaptivePValue"))
+    miAdaptiveMaxSampleFactor = cmds.getAttr("%s.%s" % (renderSettings, "miAdaptiveMaxSampleFactor"))
+
+    adaptiveSettings = cmds.frameLayout(label="Adaptive", cll=True, visible=False)
+
+    cmds.floatFieldGrp(numberOfFields=1, label="Max Error", value1=miAdaptiveMaxError,
+        changeCommand=lambda (x): getFloatFieldGroup(None, "miAdaptiveMaxError", x))
+
+    cmds.floatFieldGrp(numberOfFields=1, label="P Value", value1=miAdaptivePValue,
+        changeCommand=lambda (x): getFloatFieldGroup(None, "miAdaptivePValue", x))
+
+    cmds.intFieldGrp(numberOfFields=1, label="Max Sample Factor", value1=miAdaptiveMaxSampleFactor,
+        changeCommand=lambda (x): getIntFieldGroup(None, "miAdaptiveMaxSampleFactor", x))
+
+    cmds.setParent('..')
+
+    return adaptiveSettings
+
+def createMetaIntegratorFramesIrradianceCache():
+    miIrradianceCacheResolution = cmds.getAttr("%s.%s" % (renderSettings, "miIrradianceCacheResolution"))
+    miIrradianceCacheQuality = cmds.getAttr("%s.%s" % (renderSettings, "miIrradianceCacheQuality"))
+    miIrradianceCacheGradients = cmds.getAttr("%s.%s" % (renderSettings, "miIrradianceCacheGradients"))
+    miIrradianceCacheClampNeighbor = cmds.getAttr("%s.%s" % (renderSettings, "miIrradianceCacheClampNeighbor"))
+    miIrradianceCacheClampScreen = cmds.getAttr("%s.%s" % (renderSettings, "miIrradianceCacheClampScreen"))
+    miIrradianceCacheOverture = cmds.getAttr("%s.%s" % (renderSettings, "miIrradianceCacheOverture"))
+    miIrradianceCacheQualityAdjustment = cmds.getAttr("%s.%s" % (renderSettings, "miIrradianceCacheQualityAdjustment"))
+    miIrradianceCacheIndirectOnly = cmds.getAttr("%s.%s" % (renderSettings, "miIrradianceCacheIndirectOnly"))
+    miIrradianceCacheDebug = cmds.getAttr("%s.%s" % (renderSettings, "miIrradianceCacheDebug"))
+
+    irracheSettings = cmds.frameLayout(label="Irradiance Cache", cll=True, visible=False)
+
+    cmds.intFieldGrp(numberOfFields=1, label="Resolution", value1=miIrradianceCacheResolution,
+        changeCommand=lambda (x): getFloatFieldGroup(None, "miIrradianceCacheResolution", x))
+
+    cmds.floatFieldGrp(numberOfFields=1, label="Quality", value1=miIrradianceCacheQuality,
+        changeCommand=lambda (x): getFloatFieldGroup(None, "miIrradianceCacheQuality", x))
+
+    cmds.checkBox(label = "Gradients", value=miIrradianceCacheGradients,
+        changeCommand=lambda (x): getCheckBox(None, "miIrradianceCacheGradients", x))   
+
+    cmds.checkBox(label = "Clamp Neighbor", value=miIrradianceCacheClampNeighbor,
+        changeCommand=lambda (x): getCheckBox(None, "miIrradianceCacheClampNeighbor", x))   
+
+    cmds.checkBox(label = "Clamp Screen", value=miIrradianceCacheClampScreen,
+        changeCommand=lambda (x): getCheckBox(None, "miIrradianceCacheClampScreen", x))   
+
+    cmds.checkBox(label = "Overture", value=miIrradianceCacheOverture,
+        changeCommand=lambda (x): getCheckBox(None, "miIrradianceCacheOverture", x))   
+
+    cmds.floatFieldGrp(numberOfFields=1, label="Quality Adjustment", value1=miIrradianceCacheQualityAdjustment,
+        changeCommand=lambda (x): getFloatFieldGroup(None, "miIrradianceCacheQualityAdjustment", x))
+
+    cmds.checkBox(label = "Indirect Only", value=miIrradianceCacheIndirectOnly,
+        changeCommand=lambda (x): getCheckBox(None, "miIrradianceCacheIndirectOnly", x))   
+
+    cmds.checkBox(label = "Debug", value=miIrradianceCacheDebug,
+        changeCommand=lambda (x): getCheckBox(None, "miIrradianceCacheDebug", x))   
+
+    cmds.setParent('..')
+
+    return irracheSettings
+
+
+def createMetaIntegratorFrames():
+    #Make the integrator specific settings
+    global metaIntegratorFrames
+    metaIntegratorFrames = []
+
+    # Adaptive Settings
+    adaptiveSettings = createMetaIntegratorFramesAdaptive()
+
+    # Irradiance Cache Settings
+    irracheSettings = createMetaIntegratorFramesIrradianceCache()
+
+    metaIntegratorFrames.append(adaptiveSettings)
+    metaIntegratorFrames.append(irracheSettings)
+
+def changeMenu(menu, attribute, renderSettings, value):
+    #selected = cmds.optionMenu(menu, query=True, value=True)
+    cmds.setAttr("%s.%s" % (renderSettings, attribute), value, type="string")
+
+def createFilmFramesHDR(renderSettings):
+    global filmFrames
+
+    fHDRFilmFileFormat = cmds.getAttr("%s.%s" % (renderSettings, "fHDRFilmFileFormat"))
+    fHDRFilmPixelFormat = cmds.getAttr("%s.%s" % (renderSettings, "fHDRFilmPixelFormat"))
+    fHDRFilmComponentFormat = cmds.getAttr("%s.%s" % (renderSettings, "fHDRFilmComponentFormat"))
+    fHDRFilmAttachLog = cmds.getAttr("%s.%s" % (renderSettings, "fHDRFilmAttachLog"))
+    fHDRFilmBanner = cmds.getAttr("%s.%s" % (renderSettings, "fHDRFilmBanner"))
+    fHDRFilmHighQualityEdges = cmds.getAttr("%s.%s" % (renderSettings, "fHDRFilmHighQualityEdges"))
+
+    hdrSettings = cmds.frameLayout(label="HDR Film", cll=True)
+
+    fileFormatMenu = cmds.optionMenu(label="File Format")
+    cmds.optionMenu(fileFormatMenu, edit=True,
+        changeCommand=lambda (x): changeMenu(fileFormatMenu, "fHDRFilmFileFormat", renderSettings, x))
+    cmds.menuItem('OpenEXR (.exr)')
+    cmds.menuItem('RGBE (.hdr)')
+    cmds.menuItem('Portable Float Map (.pfm)')
+
+    if fHDRFilmFileFormat not in ["", None]:
+        cmds.optionMenu(fileFormatMenu, edit=True, value=fHDRFilmFileFormat)
+
+    pixelFormatMenu = cmds.optionMenu(label="Pixel Format")
+    cmds.optionMenu(pixelFormatMenu, edit=True,
+        changeCommand=lambda (x): changeMenu(pixelFormatMenu, "fHDRFilmPixelFormat", renderSettings, x))
+    cmds.menuItem('Luminance')
+    cmds.menuItem('Luminance Alpha')
+    cmds.menuItem('RGB')
+    cmds.menuItem('RGBA')
+    cmds.menuItem('XYZ')
+    cmds.menuItem('XYZA')
+    cmds.menuItem('Spectrum')
+    cmds.menuItem('Spectrum Alpha')
+
+    if fHDRFilmPixelFormat not in ["", None]:
+        cmds.optionMenu(pixelFormatMenu, edit=True, value=fHDRFilmPixelFormat)
+
+    componentFormatMenu = cmds.optionMenu(label="Component Format")
+    cmds.optionMenu(componentFormatMenu, edit=True,
+        changeCommand=lambda (x): changeMenu(componentFormatMenu, "fHDRFilmComponentFormat", renderSettings, x))
+    cmds.menuItem('Float 16')
+    cmds.menuItem('Float 32')
+    cmds.menuItem('UInt 32')
+
+    if fHDRFilmComponentFormat not in ["", None]:
+        cmds.optionMenu(componentFormatMenu, edit=True, value=fHDRFilmComponentFormat)
+
+    cmds.checkBox(label = "Attach Log", value=fHDRFilmAttachLog,
+        changeCommand=lambda (x): getCheckBox(None, "fHDRFilmAttachLog", x))   
+
+    cmds.checkBox(label = "Banner", value=fHDRFilmBanner,
+        changeCommand=lambda (x): getCheckBox(None, "fHDRFilmBanner", x))   
+
+    cmds.checkBox(label = "High Quality Edges", value=fHDRFilmHighQualityEdges,
+        changeCommand=lambda (x): getCheckBox(None, "fHDRFilmHighQualityEdges", x))   
+
+    cmds.setParent('..')
+
+    return hdrSettings
+
+
+def createFilmFramesHDRTiled(renderSettings):
+    fTiledHDRFilmPixelFormat = cmds.getAttr("%s.%s" % (renderSettings, "fTiledHDRFilmPixelFormat"))
+    fTiledHDRFilmComponentFormat = cmds.getAttr("%s.%s" % (renderSettings, "fTiledHDRFilmComponentFormat"))
+
+    hdrTiledSettings = cmds.frameLayout(label="HDR Film - Tiled", cll=True)
+
+    pixelFormatMenu = cmds.optionMenu(label="Pixel Format")
+    cmds.optionMenu(pixelFormatMenu, edit=True,
+        changeCommand=lambda (x): changeMenu(pixelFormatMenu, "fTiledHDRFilmPixelFormat", renderSettings, x))
+    cmds.menuItem('Luminance')
+    cmds.menuItem('Luminance Alpha')
+    cmds.menuItem('RGB')
+    cmds.menuItem('RGBA')
+    cmds.menuItem('XYZ')
+    cmds.menuItem('XYZA')
+    cmds.menuItem('Spectrum')
+    cmds.menuItem('Spectrum Alpha')
+
+    if fTiledHDRFilmPixelFormat not in ["", None]:
+        cmds.optionMenu(pixelFormatMenu, edit=True, value=fTiledHDRFilmPixelFormat)
+
+    componentFormatMenu = cmds.optionMenu(label="Component Format")
+    cmds.optionMenu(componentFormatMenu, edit=True,
+        changeCommand=lambda (x): changeMenu(componentFormatMenu, "fTiledHDRFilmComponentFormat", renderSettings, x))
+    cmds.menuItem('Float 16')
+    cmds.menuItem('Float 32')
+    cmds.menuItem('UInt 32')
+
+    if fTiledHDRFilmComponentFormat not in ["", None]:
+        cmds.optionMenu(componentFormatMenu, edit=True, value=fTiledHDRFilmComponentFormat)
+
+    cmds.setParent('..')
+
+    return hdrTiledSettings
+
+
+def createFilmFramesLDR(renderSettings):
+    fLDRFilmFileFormat = cmds.getAttr("%s.%s" % (renderSettings, "fLDRFilmFileFormat"))
+    fLDRFilmPixelFormat = cmds.getAttr("%s.%s" % (renderSettings, "fLDRFilmPixelFormat"))
+    fLDRFilmTonemapMethod = cmds.getAttr("%s.%s" % (renderSettings, "fLDRFilmTonemapMethod"))
+    fLDRFilmGamma = cmds.getAttr("%s.%s" % (renderSettings, "fLDRFilmGamma"))
+    fLDRFilmExposure = cmds.getAttr("%s.%s" % (renderSettings, "fLDRFilmExposure"))
+    fLDRFilmKey = cmds.getAttr("%s.%s" % (renderSettings, "fLDRFilmKey"))
+    fLDRFilmBurn = cmds.getAttr("%s.%s" % (renderSettings, "fLDRFilmBurn"))
+    fLDRFilmBanner = cmds.getAttr("%s.%s" % (renderSettings, "fLDRFilmBanner"))
+    fLDRFilmHighQualityEdges = cmds.getAttr("%s.%s" % (renderSettings, "fLDRFilmHighQualityEdges"))
+
+    ldrSettings = cmds.frameLayout(label="LDR Film", cll=True)
+
+    fileFormatMenu = cmds.optionMenu(label="File Format")
+    cmds.optionMenu(fileFormatMenu, edit=True,
+        changeCommand=lambda (x): changeMenu(fileFormatMenu, "fLDRFilmFileFormat", renderSettings, x))
+    cmds.menuItem('PNG (.png)')
+    cmds.menuItem('JPEG (.jpg)')
+
+    if fLDRFilmFileFormat not in ["", None]:
+        cmds.optionMenu(fileFormatMenu, edit=True, value=fLDRFilmFileFormat)
+
+    pixelFormatMenu = cmds.optionMenu(label="Pixel Format")
+    cmds.optionMenu(pixelFormatMenu, edit=True,
+        changeCommand=lambda (x): changeMenu(pixelFormatMenu, "fLDRFilmPixelFormat", renderSettings, x))
+    cmds.menuItem('Luminance')
+    cmds.menuItem('Luminance Alpha')
+    cmds.menuItem('RGB')
+    cmds.menuItem('RGBA')
+
+    if fLDRFilmPixelFormat not in ["", None]:
+        cmds.optionMenu(pixelFormatMenu, edit=True, value=fLDRFilmPixelFormat)
+
+    tonemapMethodMenu = cmds.optionMenu(label="Tonemap Method")
+    cmds.optionMenu(tonemapMethodMenu, edit=True,
+        changeCommand=lambda (x): changeMenu(tonemapMethodMenu, "fLDRFilmTonemapMethod", renderSettings, x))
+    cmds.menuItem('Gamma')
+    cmds.menuItem('Reinhard')
+
+    if fLDRFilmTonemapMethod not in ["", None]:
+        cmds.optionMenu(tonemapMethodMenu, edit=True, value=fLDRFilmTonemapMethod)
+
+    cmds.floatFieldGrp(numberOfFields=1, label="Gamma", value1=fLDRFilmGamma,
+        changeCommand=lambda (x): getFloatFieldGroup(None, "fLDRFilmGamma", x))
+
+    cmds.floatFieldGrp(numberOfFields=1, label="Exposure", value1=fLDRFilmExposure,
+        changeCommand=lambda (x): getFloatFieldGroup(None, "fLDRFilmExposure", x))
+
+    cmds.floatFieldGrp(numberOfFields=1, label="Key", value1=fLDRFilmKey,
+        changeCommand=lambda (x): getFloatFieldGroup(None, "fLDRFilmKey", x))
+
+    cmds.floatFieldGrp(numberOfFields=1, label="Burn", value1=fLDRFilmBurn,
+        changeCommand=lambda (x): getFloatFieldGroup(None, "fLDRFilmBurn", x))
+
+    cmds.checkBox(label = "Banner", value=fLDRFilmBanner,
+        changeCommand=lambda (x): getCheckBox(None, "fLDRFilmBanner", x))   
+
+    cmds.checkBox(label = "High Quality Edges", value=fLDRFilmHighQualityEdges,
+        changeCommand=lambda (x): getCheckBox(None, "fLDRFilmHighQualityEdges", x))   
+
+    cmds.setParent('..')
+
+    return ldrSettings
+
+def createFilmFramesMath(renderSettings):
+    fMathFilmFileFormat = cmds.getAttr("%s.%s" % (renderSettings, "fMathFilmFileFormat"))
+    fMathFilmPixelFormat = cmds.getAttr("%s.%s" % (renderSettings, "fMathFilmPixelFormat"))
+    fMathFilmDigits = cmds.getAttr("%s.%s" % (renderSettings, "fMathFilmDigits"))
+    fMathFilmVariable = cmds.getAttr("%s.%s" % (renderSettings, "fMathFilmVariable"))
+    fMathFilmHighQualityEdges = cmds.getAttr("%s.%s" % (renderSettings, "fMathFilmHighQualityEdges"))
+
+    mathSettings = cmds.frameLayout(label="Math Film", cll=True)
+
+    fileFormatMenu = cmds.optionMenu(label="File Format")
+    cmds.optionMenu(fileFormatMenu, edit=True,
+        changeCommand=lambda (x): changeMenu(fileFormatMenu, "fMathFilmFileFormat", renderSettings, x))
+    cmds.menuItem('Matlab (.m)')
+    cmds.menuItem('Mathematica (.m)')
+    cmds.menuItem('NumPy (.npy)')
+
+    if fMathFilmFileFormat not in ["", None]:
+        cmds.optionMenu(fileFormatMenu, edit=True, value=fMathFilmFileFormat)
+
+    pixelFormatMenu = cmds.optionMenu(label="Pixel Format")
+    cmds.optionMenu(pixelFormatMenu, edit=True,
+        changeCommand=lambda (x): changeMenu(pixelFormatMenu, "fMathFilmPixelFormat", renderSettings, x))
+    cmds.menuItem('Luminance')
+    cmds.menuItem('Luminance Alpha')
+    cmds.menuItem('RGB')
+    cmds.menuItem('RGBA')
+    cmds.menuItem('Spectrum')
+    cmds.menuItem('Spectrum Alpha')
+
+    if fMathFilmPixelFormat not in ["", None]:
+        cmds.optionMenu(pixelFormatMenu, edit=True, value=fMathFilmPixelFormat)
+
+    cmds.intFieldGrp(numberOfFields=1, label="Digits", value1=fMathFilmDigits,
+        changeCommand=lambda (x): getIntFieldGroup(None, "fMathFilmDigits", x))
+
+    cmds.textFieldGrp(label="Variable", text=fMathFilmVariable,
+        changeCommand=lambda (x): getTextFieldGroup(None, "fMathFilmVariable", x))
+
+    cmds.checkBox(label = "High Quality Edges", value=fMathFilmHighQualityEdges,
+        changeCommand=lambda (x): getCheckBox(None, "fMathFilmHighQualityEdges", x))   
+
+    cmds.setParent('..')
+
+    return mathSettings
+
+def createFilmFrames(renderSettings):
+    global filmFrames
+    filmFrames = []
+
+    # HDR Settings
+    hdrSettings = createFilmFramesHDR(renderSettings)
+
+    # HDR Tiled Settings
+    hdrTiledSettings = createFilmFramesHDRTiled(renderSettings)
+
+    # LDR Settings
+    ldrSettings = createFilmFramesLDR(renderSettings)
+
+    # Math Settings
+    mathSettings = createFilmFramesMath(renderSettings)
+
+    filmFrames.append(hdrSettings)
+    filmFrames.append(hdrTiledSettings)
+    filmFrames.append(ldrSettings)
+    filmFrames.append(mathSettings)
+
+
 def createSamplerFrames():
     global samplerFrames
 
@@ -629,8 +944,6 @@ def createSamplerFrames():
     changeSampleCount = lambda (x): getIntFieldGroup(None, "sampleCount", x)
     changeSamplerDimension = lambda (x): getIntFieldGroup(None, "samplerDimension", x)
     changeSamplerScramble = lambda (x): getIntFieldGroup(None, "samplerScramble", x)
-
-    #print( "Existing Sample Count : %s" % existingSampleCount)
 
     indSettings = cmds.frameLayout(label="Independent Sampler", cll=False, visible=True)
     cmds.setParent('..')
@@ -669,7 +982,6 @@ def createSamplerFrames():
 
 def createSensorOverrideFrames():
     global sensorOverrideFrames
-
     sensorOverrideFrames = []
 
     perspectiveRdistSettings = createSensorFramePerspectiveRdist()
@@ -707,6 +1019,13 @@ def getFloatFieldGroup(name, renderSettingsAttribute=None, value=None):
         attr = "%s.%s" % (renderSettings, renderSettingsAttribute)
         cmds.setAttr(attr, value)
 
+def getTextFieldGroup(name, renderSettingsAttribute=None, value=None):
+    global renderSettings
+
+    if renderSettingsAttribute:
+        attr = "%s.%s" % (renderSettings, renderSettingsAttribute)
+        cmds.setAttr(attr, value, type="string")
+
 def getOptionMenu(name, renderSettingsAttribute=None, value=None):
     global renderSettings
 
@@ -734,7 +1053,6 @@ def createRenderSettingsUI():
 
     print( "\n\n\nMitsuba Render Settings - Create UI - Python\n\n\n" )
 
-    #renderSettingsWindow = cmds.window(title="Mitsuba Render Settings", iconName="MTS", widthHeight=(100,250), retain=True, resizeToFitChildren=True)
     cmds.columnLayout(adjustableColumn=True)
 
     # Path to executable
@@ -777,12 +1095,16 @@ def createRenderSettingsUI():
 
     changeIntegrator(integrator)
 
+    cmds.separator()
+
     existingMetaIntegrator = cmds.getAttr( "%s.%s" % (renderSettings, "metaIntegrator"))
 
     metaIntegratorMenu = cmds.optionMenu(label="Meta Integrator", changeCommand=changeMetaIntegrator)
     cmds.menuItem('None')
     cmds.menuItem('Adaptive')
     cmds.menuItem('Irradiance Cache')
+
+    createMetaIntegratorFrames()
 
     if existingMetaIntegrator not in ["", None]:
         cmds.optionMenu(metaIntegratorMenu, edit=True, value=existingMetaIntegrator)
@@ -794,6 +1116,8 @@ def createRenderSettingsUI():
 
     existingSampler = cmds.getAttr( "%s.%s" % (renderSettings, "sampler"))
     #print( "Existing Sampler : %s" % existingSampler)
+
+    cmds.separator()
 
     samplerMenu = cmds.optionMenu(label="Image Sampler", changeCommand=changeSampler)
     cmds.menuItem('Independent Sampler')
@@ -818,6 +1142,8 @@ def createRenderSettingsUI():
     sampleCountGroup = cmds.intFieldGrp(numberOfFields=1, label="sampleCount", value1=existingSampleCount)
     cmds.intFieldGrp(sampleCountGroup, edit=1, changeCommand=changeSampleCount)    
 
+    cmds.separator()
+
     existingFilm = cmds.getAttr( "%s.%s" % (renderSettings, "film"))
 
     filmMenu = cmds.optionMenu(label="Film", changeCommand=changeFilm)
@@ -826,6 +1152,8 @@ def createRenderSettingsUI():
     cmds.menuItem('Math Film')
     cmds.menuItem('LDR Film')
 
+    createFilmFrames(renderSettings)
+
     if existingFilm not in ["", None]:
         cmds.optionMenu(filmMenu, edit=True, value=existingFilm)
     else:
@@ -833,6 +1161,8 @@ def createRenderSettingsUI():
         existingFilm = "HDR Film"
 
     changeFilm(existingFilm)
+
+    cmds.separator()
 
     existingReconstructionFilter = cmds.getAttr( "%s.%s" % (renderSettings, "reconstructionFilter"))
     #print( "Existing Reconstruction Filter : %s" % existingReconstructionFilter)
@@ -852,6 +1182,8 @@ def createRenderSettingsUI():
     else:
         cmds.optionMenu(rfilterMenu, edit=True, select=1)
         rfilter = "Box filter"
+
+    cmds.separator()
 
     existingSensorOverride = cmds.getAttr( "%s.%s" % (renderSettings, "sensorOverride"))
 
@@ -875,6 +1207,8 @@ def createRenderSettingsUI():
 
     changeSensorOverride(sensorOverride)
 
+    cmds.separator()
+
     existingKeepTempFiles = cmds.getAttr( "%s.%s" % (renderSettings, "keepTempFiles"))
     keepTempFiles = cmds.checkBox(label="keepTempFiles", value=existingKeepTempFiles)
     cmds.checkBox(keepTempFiles, edit=1,
@@ -885,45 +1219,46 @@ def createRenderSettingsUI():
     cmds.checkBox(verbose, edit=1,
         changeCommand=lambda (x): getCheckBox(verbose, "verbose", x))
 
+    cmds.separator()
 
     multichannel = cmds.getAttr( "%s.%s" % (renderSettings, "multichannel"))
     cmds.checkBox(label="Multichannel Rendering", value=multichannel,
         changeCommand=lambda (x): getCheckBox(None, "multichannel", x))
 
     multichannelPosition = cmds.getAttr( "%s.%s" % (renderSettings, "multichannelPosition"))
-    cmds.checkBox(label="Multichannel - Position", value=multichannelPosition,
+    cmds.checkBox(label="Position", value=multichannelPosition,
         changeCommand=lambda (x): getCheckBox(None, "multichannelPosition", x))
 
     multichannelRelPosition = cmds.getAttr( "%s.%s" % (renderSettings, "multichannelRelPosition"))
-    cmds.checkBox(label="Multichannel - Relative Position", value=multichannelRelPosition,
+    cmds.checkBox(label="Relative Position", value=multichannelRelPosition,
         changeCommand=lambda (x): getCheckBox(None, "multichannelRelPosition", x))
 
     multichannelDistance = cmds.getAttr( "%s.%s" % (renderSettings, "multichannelDistance"))
-    cmds.checkBox(label="Multichannel - Distance", value=multichannelDistance,
+    cmds.checkBox(label="Distance", value=multichannelDistance,
         changeCommand=lambda (x): getCheckBox(None, "multichannelDistance", x))
 
     multichannelGeoNormal = cmds.getAttr( "%s.%s" % (renderSettings, "multichannelGeoNormal"))
-    cmds.checkBox(label="Multichannel - Geometric Normal", value=multichannelGeoNormal,
+    cmds.checkBox(label="Geometric Normal", value=multichannelGeoNormal,
         changeCommand=lambda (x): getCheckBox(None, "multichannelGeoNormal", x))
 
     multichannelShadingNormal = cmds.getAttr( "%s.%s" % (renderSettings, "multichannelShadingNormal"))
-    cmds.checkBox(label="Multichannel - Shading Normal", value=multichannelShadingNormal,
+    cmds.checkBox(label="Shading Normal", value=multichannelShadingNormal,
         changeCommand=lambda (x): getCheckBox(None, "multichannelShadingNormal", x))
 
     multichannelUV = cmds.getAttr( "%s.%s" % (renderSettings, "multichannelUV"))
-    cmds.checkBox(label="Multichannel - UV", value=multichannelUV,
+    cmds.checkBox(label="UV", value=multichannelUV,
         changeCommand=lambda (x): getCheckBox(None, "multichannelUV", x))
 
     multichannelAlbedo = cmds.getAttr( "%s.%s" % (renderSettings, "multichannelAlbedo"))
-    cmds.checkBox(label="Multichannel - Albedo", value=multichannelAlbedo,
+    cmds.checkBox(label="Albedo", value=multichannelAlbedo,
         changeCommand=lambda (x): getCheckBox(None, "multichannelAlbedo", x))
 
     multichannelShapeIndex = cmds.getAttr( "%s.%s" % (renderSettings, "multichannelShapeIndex"))
-    cmds.checkBox(label="Multichannel - Shape Index", value=multichannelShapeIndex,
+    cmds.checkBox(label="Shape Index", value=multichannelShapeIndex,
         changeCommand=lambda (x): getCheckBox(None, "multichannelShapeIndex", x))
 
     multichannelPrimIndex = cmds.getAttr( "%s.%s" % (renderSettings, "multichannelPrimIndex"))
-    cmds.checkBox(label="Multichannel - Primitive Index", value=multichannelPrimIndex,
+    cmds.checkBox(label="Primitive Index", value=multichannelPrimIndex,
         changeCommand=lambda (x): getCheckBox(None, "multichannelPrimIndex", x))
 
 
@@ -1035,32 +1370,28 @@ def changeSensorOverride(selectedSensorOverride):
     getOptionMenu(None, "sensorOverride", selectedSensorOverride)
 
 def changeFilm(selectedFilm):
-    '''
-    global sensorOverrideFrames
+    global filmFrames
 
-    #Set all other sensorOverride frameLayouts to be invisible
-    for frame in sensorOverrideFrames:
-        currentSensorOverride = cmds.frameLayout(frame, query=True, label=True)
-        if currentSensorOverride == selectedSensorOverride:
+    #Set all other film frameLayouts to be invisible
+    for frame in filmFrames:
+        currentFilmFrame = cmds.frameLayout(frame, query=True, label=True)
+        if currentFilmFrame == selectedFilm:
             cmds.frameLayout(frame, edit=True, visible=True)
         else:
             cmds.frameLayout(frame, edit=True, visible=False)
-    '''
 
     getOptionMenu(None, "film", selectedFilm)
 
 def changeMetaIntegrator(selectedMetaIntegrator):
-    '''
-    global sensorOverrideFrames
+    global metaIntegratorFrames
 
     #Set all other sensorOverride frameLayouts to be invisible
-    for frame in sensorOverrideFrames:
-        currentSensorOverride = cmds.frameLayout(frame, query=True, label=True)
-        if currentSensorOverride == selectedSensorOverride:
+    for frame in metaIntegratorFrames:
+        currentMetaIntegrator = cmds.frameLayout(frame, query=True, label=True)
+        if currentMetaIntegrator == selectedMetaIntegrator:
             cmds.frameLayout(frame, edit=True, visible=True)
         else:
             cmds.frameLayout(frame, edit=True, visible=False)
-    '''
 
     getOptionMenu(None, "metaIntegrator", selectedMetaIntegrator)
 
