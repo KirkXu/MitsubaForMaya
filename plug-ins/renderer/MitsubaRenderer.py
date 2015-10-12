@@ -57,6 +57,65 @@ def updateRenderSettings():
     global renderSettings
     print( "\n\n\nMitsuba Render Settings - Update - Python\n\n\n" )
 
+def getImageExtension(renderSettings):
+    filmType = cmds.getAttr( "%s.film" % renderSettings )
+
+    if filmType == 'HDR Film':
+        fHDRFilmFileFormat = cmds.getAttr("%s.%s" % (renderSettings, "fHDRFilmFileFormat"))
+
+        mayaFileFormatUINameToExtension = {
+            "OpenEXR (.exr)"  : "exr",
+            "RGBE (.hdr)" : "hdr",
+            "Portable Float Map (.pfm)"  : "pfm"
+        }
+
+        if fHDRFilmFileFormat in mayaFileFormatUINameToExtension:
+            fHDRFilmFileFormatExtension = mayaFileFormatUINameToExtension[fHDRFilmFileFormat]
+        else:
+            fHDRFilmFileFormatExtension = "exr"
+
+        extension = fHDRFilmFileFormatExtension
+
+    elif filmType == 'HDR Film - Tiled':
+        extension = "exr"
+
+    elif filmType == 'LDR Film':
+        fLDRFilmFileFormat = cmds.getAttr("%s.%s" % (renderSettings, "fLDRFilmFileFormat"))
+
+        mayaFileFormatUINameToExtension = {
+            "PNG (.png)"  : "png",
+            "JPEG (.jpg)" : "jpg"
+        }
+
+        if fLDRFilmFileFormat in mayaFileFormatUINameToExtension:
+            fLDRFilmFileFormatExtension = mayaFileFormatUINameToExtension[fLDRFilmFileFormat]
+        else:
+            fLDRFilmFileFormatExtension = "png"
+
+        extension = fLDRFilmFileFormatExtension
+
+    elif filmType == 'Math Film':
+        fMathFilmFileFormat = cmds.getAttr("%s.%s" % (renderSettings, "fMathFilmFileFormat"))
+
+        mayaFileFormatUINameToExtension = {
+            "Matlab (.m)"  : "m",
+            "Mathematica (.m)" : "m",
+            "NumPy (.npy)" : "npy"
+        }
+
+        if fMathFilmFileFormat in mayaFileFormatUINameToExtension:
+            fMathFilmFileFormatExtension = mayaFileFormatUINameToExtension[fMathFilmFileFormat]
+        else:
+            fMathFilmFileFormatExtension = "m"
+
+        extension = fMathFilmFileFormatExtension
+
+    else:
+        extension = "exr"
+
+    return extension
+
+
 #
 # UI
 #
@@ -65,20 +124,33 @@ import MitsubaRendererUI
 #
 # Renderer functions
 #
-def renderScene(outFileName, renderDir, mitsubaPath, mtsDir, keepTempFiles, geometryFiles, animation=False, frame=1, verbose=False):
+def renderScene(outFileName, 
+                renderDir, 
+                mitsubaPath, 
+                mtsDir, 
+                keepTempFiles, 
+                geometryFiles, 
+                animation=False, 
+                frame=1, 
+                verbose=False,
+                renderSettings=None):
     imageDir = os.path.join(os.path.split(renderDir)[0], 'images')
     os.chdir(imageDir)
 
     imagePrefix = cmds.getAttr("defaultRenderGlobals.imageFilePrefix")
     if imagePrefix is None:
         imagePrefix = "mitsubaTempRender"
+
+    if renderSettings:
+        extension = getImageExtension(renderSettings)
+
     if animation:
         extensionPadding = cmds.getAttr("defaultRenderGlobals.extensionPadding")
         logName = os.path.join(imageDir, imagePrefix + "." + str(frame).zfill(extensionPadding) +".log")
-        imageName = os.path.join(imageDir, imagePrefix + "." + str(frame).zfill(extensionPadding) +".exr")
+        imageName = os.path.join(imageDir, imagePrefix + "." + str(frame).zfill(extensionPadding) + "." + extension)
     else:
         logName = os.path.join(imageDir, imagePrefix + ".log")
-        imageName = os.path.join(imageDir, imagePrefix + ".exr")
+        imageName = os.path.join(imageDir, imagePrefix + "." + extension)
 
     args = []
     if verbose:
@@ -187,7 +259,8 @@ class mitsubaForMaya(OpenMayaMPx.MPxCommand):
         
                 # Render scene, delete scene and geometry
                 imageName = renderScene(outFileName, renderDir, mitsubaPath, 
-                    mtsDir, keepTempFiles, geometryFiles, animation, frame, verbose)
+                    mtsDir, keepTempFiles, geometryFiles, animation, frame, verbose,
+                    renderSettings)
 
                 print( "Rendering frame " + str(frame) + " - end" )
 
@@ -201,14 +274,12 @@ class mitsubaForMaya(OpenMayaMPx.MPxCommand):
             # Render scene
             # Clean up scene and geometry
             imageName = renderScene(outFileName, renderDir, mitsubaPath, 
-                mtsDir, keepTempFiles, geometryFiles, verbose=verbose)
+                mtsDir, keepTempFiles, geometryFiles, verbose=verbose,
+                renderSettings=renderSettings)
 
             # Display the render
             if not cmds.about(batch=True):
                 MitsubaRendererUI.showRender(imageName)
-
-        if cmds.about(batch=True):
-            print( "End of Batch Render" )
 
         # Select the objects that the user had selected before they rendered, or clear the selection
         if len(userSelection) > 0:
