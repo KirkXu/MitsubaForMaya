@@ -1780,10 +1780,9 @@ def writeLightDirectional(light):
     elementDict['children'].append( { 'type':'srgb', 
         'attributes':{ 'name':'irradiance', 'value':str(irradiance[0]) + " " + str(irradiance[1]) + " " + str(irradiance[2]) } } )
     elementDict['children'].append( { 'type':'vector', 
-        'attributes':{ 'name':'direction', 'value':str(lightDir[0]) + "\" y=\"" + str(lightDir[1]) + "\" z=\"" + str(lightDir[2]) } } )
+        'attributes':{ 'name':'direction', 'x':str(lightDir[0]), 'y':str(lightDir[1]), 'z':str(lightDir[2]) } } )
 
     return elementDict
-
 
 def writeLightPoint(light):
     intensity = cmds.getAttr(light+".intensity")
@@ -1843,8 +1842,6 @@ def writeLightSpot(light):
 
     transformDict['children'] = []
 
-    transformDict['children'].append( { 'type':'translate', 
-        'attributes':{ 'x':str(position[0]), 'y':str(position[1]), 'z':str(position[2]) } } )
     transformDict['children'].append( { 'type':'rotate', 
         'attributes':{ 'y':str(1), 'angle':str(180.0) } } )
     if rotation[0] != 0.0:
@@ -1856,6 +1853,8 @@ def writeLightSpot(light):
     if rotation[2] != 0.0:
         transformDict['children'].append( { 'type':'rotate', 
             'attributes':{ 'z':str(1), 'angle':str(rotation[2]) } } )
+    transformDict['children'].append( { 'type':'translate', 
+        'attributes':{ 'x':str(position[0]), 'y':str(position[1]), 'z':str(position[2]) } } )
 
     elementDict['children'].append( transformDict )
 
