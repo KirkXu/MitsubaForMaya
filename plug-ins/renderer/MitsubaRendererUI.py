@@ -1053,10 +1053,13 @@ def createRenderSettingsUI():
 
     print( "\n\n\nMitsuba Render Settings - Create UI - Python\n\n\n" )
 
+    parentForm = cmds.setParent(query=True)
+
+    mitsubaGlobalsScrollLayout = cmds.scrollLayout(horizontalScrollBarThickness=0)
     cmds.columnLayout(adjustableColumn=True)
 
     # Path to executable
-    mitsubaPathGroup = cmds.textFieldButtonGrp(label="Mitsuba", 
+    mitsubaPathGroup = cmds.textFieldButtonGrp(label="Mitsuba Path", 
         buttonLabel="Open", buttonCommand="browseFiles")
     # Get default
     existingMitsubaPath = cmds.getAttr( "%s.%s" % (renderSettings, "mitsubaPath"))
@@ -1065,11 +1068,15 @@ def createRenderSettingsUI():
     cmds.textFieldButtonGrp(mitsubaPathGroup, e=1, 
         buttonCommand=lambda: getRenderSettingsPath(mitsubaPathGroup, "mitsubaPath"))
 
+    # Integrator controls
+    cmds.frameLayout(label='Integrator', collapsable=True, collapse=False)
+    cmds.columnLayout(adjustableColumn=True)
+
     #Create integrator selection drop down menu
     existingIntegrator = cmds.getAttr( "%s.%s" % (renderSettings, "integrator"))
     #print( "Existing Integrator : %s" % existingIntegrator)
 
-    integratorMenu = cmds.optionMenu(label="Integrator", changeCommand=changeIntegrator)
+    integratorMenu = cmds.optionMenu(changeCommand=changeIntegrator)
     cmds.menuItem('Ambient Occlusion')
     cmds.menuItem('Direct Illumination')
     cmds.menuItem('Path Tracer')
@@ -1095,7 +1102,12 @@ def createRenderSettingsUI():
 
     changeIntegrator(integrator)
 
-    cmds.separator()
+    cmds.setParent('..')
+    cmds.setParent('..')
+
+    # Meta Integrator controls
+    cmds.frameLayout(label='Meta Integrator', collapsable=True, collapse=True)
+    cmds.columnLayout(adjustableColumn=True)
 
     existingMetaIntegrator = cmds.getAttr( "%s.%s" % (renderSettings, "metaIntegrator"))
 
@@ -1114,10 +1126,15 @@ def createRenderSettingsUI():
 
     changeMetaIntegrator(existingMetaIntegrator)
 
+    cmds.setParent('..')
+    cmds.setParent('..')
+
+    # Sampler controls
+    cmds.frameLayout(label='Sampler', collapsable=True, collapse=False)
+    cmds.columnLayout(adjustableColumn=True)
+
     existingSampler = cmds.getAttr( "%s.%s" % (renderSettings, "sampler"))
     #print( "Existing Sampler : %s" % existingSampler)
-
-    cmds.separator()
 
     samplerMenu = cmds.optionMenu(label="Image Sampler", changeCommand=changeSampler)
     cmds.menuItem('Independent Sampler')
@@ -1142,7 +1159,12 @@ def createRenderSettingsUI():
     sampleCountGroup = cmds.intFieldGrp(numberOfFields=1, label="sampleCount", value1=existingSampleCount)
     cmds.intFieldGrp(sampleCountGroup, edit=1, changeCommand=changeSampleCount)    
 
-    cmds.separator()
+    cmds.setParent('..')
+    cmds.setParent('..')
+
+    # Film controls
+    cmds.frameLayout(label='Film', collapsable=True, collapse=True)
+    cmds.columnLayout(adjustableColumn=True)
 
     existingFilm = cmds.getAttr( "%s.%s" % (renderSettings, "film"))
 
@@ -1162,7 +1184,14 @@ def createRenderSettingsUI():
 
     changeFilm(existingFilm)
 
-    cmds.separator()
+    #cmds.separator(style="none", height=10)
+
+    cmds.setParent('..')
+    cmds.setParent('..')
+
+    # Reconstruction Filter controls
+    cmds.frameLayout(label='Reconstruction Filter', collapsable=True, collapse=True)
+    cmds.columnLayout(adjustableColumn=True)
 
     existingReconstructionFilter = cmds.getAttr( "%s.%s" % (renderSettings, "reconstructionFilter"))
     #print( "Existing Reconstruction Filter : %s" % existingReconstructionFilter)
@@ -1183,7 +1212,12 @@ def createRenderSettingsUI():
         cmds.optionMenu(rfilterMenu, edit=True, select=1)
         rfilter = "Box filter"
 
-    cmds.separator()
+    cmds.setParent('..')
+    cmds.setParent('..')
+
+    # Camera / Sensor controls
+    cmds.frameLayout(label='Camera / Sensor', collapsable=True, collapse=True)
+    cmds.columnLayout(adjustableColumn=True)
 
     existingSensorOverride = cmds.getAttr( "%s.%s" % (renderSettings, "sensorOverride"))
 
@@ -1207,19 +1241,12 @@ def createRenderSettingsUI():
 
     changeSensorOverride(sensorOverride)
 
-    cmds.separator()
+    cmds.setParent('..')
+    cmds.setParent('..')
 
-    existingKeepTempFiles = cmds.getAttr( "%s.%s" % (renderSettings, "keepTempFiles"))
-    keepTempFiles = cmds.checkBox(label="keepTempFiles", value=existingKeepTempFiles)
-    cmds.checkBox(keepTempFiles, edit=1,
-        changeCommand=lambda (x): getCheckBox(keepTempFiles, "keepTempFiles", x))
-
-    existingVerbose = cmds.getAttr( "%s.%s" % (renderSettings, "verbose"))
-    verbose = cmds.checkBox(label="verbose", value=existingVerbose)
-    cmds.checkBox(verbose, edit=1,
-        changeCommand=lambda (x): getCheckBox(verbose, "verbose", x))
-
-    cmds.separator()
+    # Multichannel controls
+    cmds.frameLayout(label='Multichannel', collapsable=True, collapse=True)
+    cmds.columnLayout(adjustableColumn=True)
 
     multichannel = cmds.getAttr( "%s.%s" % (renderSettings, "multichannel"))
     cmds.checkBox(label="Multichannel Rendering", value=multichannel,
@@ -1260,6 +1287,34 @@ def createRenderSettingsUI():
     multichannelPrimIndex = cmds.getAttr( "%s.%s" % (renderSettings, "multichannelPrimIndex"))
     cmds.checkBox(label="Primitive Index", value=multichannelPrimIndex,
         changeCommand=lambda (x): getCheckBox(None, "multichannelPrimIndex", x))
+
+    cmds.setParent('..')
+    cmds.setParent('..')
+
+    # Overall controls
+    cmds.frameLayout(label='Overall', collapsable=True, collapse=False)
+    cmds.columnLayout(adjustableColumn=True)
+
+    existingKeepTempFiles = cmds.getAttr( "%s.%s" % (renderSettings, "keepTempFiles"))
+    keepTempFiles = cmds.checkBox(label="keepTempFiles", value=existingKeepTempFiles)
+    cmds.checkBox(keepTempFiles, edit=1,
+        changeCommand=lambda (x): getCheckBox(keepTempFiles, "keepTempFiles", x))
+
+    existingVerbose = cmds.getAttr( "%s.%s" % (renderSettings, "verbose"))
+    verbose = cmds.checkBox(label="verbose", value=existingVerbose)
+    cmds.checkBox(verbose, edit=1,
+        changeCommand=lambda (x): getCheckBox(verbose, "verbose", x))
+
+    cmds.setParent('..')
+    cmds.setParent('..')
+
+
+    af = []
+    af.append((mitsubaGlobalsScrollLayout, 'top', 0))
+    af.append((mitsubaGlobalsScrollLayout, 'bottom', 0))
+    af.append((mitsubaGlobalsScrollLayout, 'left', 0))
+    af.append((mitsubaGlobalsScrollLayout, 'right', 0))
+    cmds.formLayout(parentForm, edit=True, attachForm=af)
 
 
 def createRenderSettings():
@@ -1319,15 +1374,15 @@ def changeIntegrator(selectedIntegrator):
     global integratorFrames
     global integrator
 
-    #print( "selectedIntegrator : %s" % selectedIntegrator )
+    print( "selectedIntegrator : %s" % selectedIntegrator )
 
     #Query the integrator drop down menu to find the active integrator
-    selectedIntegrator = cmds.optionMenu(integratorMenu, query=True, value=True)
+    #selectedIntegrator = cmds.optionMenu(integratorMenu, query=True, value=True)
+
     #Set all other integrator frameLayout to be invisible
     for frame in integratorFrames:
-        currentIntegrator = cmds.frameLayout(frame, query=True, label=True)
-        currentIntegratorUnderscore = currentIntegrator.replace(" ", "_")
-        if currentIntegrator == selectedIntegrator or currentIntegratorUnderscore == selectedIntegrator:
+        currentIntegrator = cmds.frameLayout(frame, query=True, label=True).replace("_", " ")
+        if currentIntegrator == selectedIntegrator:
             cmds.frameLayout(frame, edit=True, visible=True)
         else:
             cmds.frameLayout(frame, edit=True, visible=False) 
