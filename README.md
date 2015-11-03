@@ -3,7 +3,7 @@ MitsubaForMaya
 
 A Maya plugin for the Mitsuba rendering engine.
 
-Installation and Usage
+Usage
 -
 
 - Load from anywhere using Python command
@@ -23,7 +23,7 @@ Installation and Usage
 
 - Currently, only Mitsuba Lights and Materials are supported. These can be found and assigned using the Hypershade
 
-Application Environment
+Installation and Application Environment
 - 
 The path to the Mitsuba binary has to be specified, either in the Render Settings manually or by using the Maya.env or other environment setup file.
 
@@ -47,16 +47,26 @@ In order to render in Batch mode, you'll need to set two environment variables
 
 	- MAYA_PLUG_IN_PATH = C:\path\to\MitsubaForMaya\plug-ins
 
+****VERY IMPORTANT**** 
+If your scene contains animated parameters for the Mitsuba lights or materials and you want to use Maya 2016 or later, you will need to set the following environment variable
+
+	- MAYA_RELEASE_PYTHON_GIL = 1
+
+	- Without this setting, Maya will lock up.
+
+	- [Discussion on Python Programming for Autodesk Maya Google Group](https://groups.google.com/forum/?hl=en#!topic/python_inside_maya/Zk7FKPu7J_A)
+
+
 Maya.env
 -
 
 Maya.env files can be saved in the following folders
 
-- Windows: C:\Users\username\Documents\maya\<mayaVersion>
+- Windows: C:\Users\*username*\Documents\maya\<mayaVersion>
 
-- Mac: /Users/username/Library/Preferences/Autodesk/maya/<mayaVersion>
+- Mac: /Users/*username*/Library/Preferences/Autodesk/maya/<mayaVersion>
 
-- Linux: /home/username/maya/<mayaVersion>
+- Linux: /home/*username*/maya/<mayaVersion>
 
 *Autodesk Reference links*
 

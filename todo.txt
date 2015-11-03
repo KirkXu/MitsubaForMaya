@@ -58,7 +58,13 @@ x add support for meta-integrator parameters
 
 x add support for film parameters
 
-figure out what pixelFormat to use for the 'albedo' field
+x support animated parameters in batch mode
+ x added MAYA_RELEASE_PYTHON_GIL = 1 to Maya.env
+
+x figure out what pixelFormat to use for the 'albedo' field
+
+x expand support for predefined 'conductor' materials
+
 figure out how to load multichannel exrs into the Maya Render View
 add support for metadata and label annotations with ldrfilm and hdrfilm
 standardize callbacks used in UI
@@ -75,8 +81,6 @@ generalize support for volumes
 support render cancel
 support batch render cancel
 support interactive render view / update / cancel
-
-support animated parameters in batch mode
 
 create renderData/mitsuba directory for temporary render files
 

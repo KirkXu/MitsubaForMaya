@@ -176,8 +176,55 @@ def writeShaderSmoothCoating(material, materialName):
     return elementDict
 
 def writeShaderConductor(material, materialName):
-    conductorMaterial = cmds.getAttr(material+".material", asString=True)
+    conductorMaterialUI = cmds.getAttr(material+".material", asString=True)
     extEta = cmds.getAttr(material+".extEta")
+
+    conductorMaterialUIToPreset = {
+        "100\% reflecting mirror" : "none",
+        "Amorphous carbon" : "a-C",
+        "Silver" : "Ag",
+        "Aluminium" : "Al",
+        "Cubic aluminium arsenide" : "AlAs",
+        "Cubic aluminium antimonide" : "AlSb",
+        "Gold" : "Au",
+        "Polycrystalline beryllium" : "Be",
+        "Chromium" : "Cr",
+        "Cubic caesium iodide" : "CsI",
+        "Copper" : "Cu",
+        "Copper (I) oxide" : "Cu2O",
+        "Copper (II) oxide" : "CuO",
+        "Cubic diamond" : "d-C",
+        "Mercury" : "Hg",
+        "Mercury telluride" : "HgTe",
+        "Iridium" : "Ir",
+        "Polycrystalline potassium" : "K",
+        "Lithium" : "Li",
+        "Magnesium oxide" : "MgO",
+        "Molybdenum" : "Mo",
+        "Sodium" : "Na_palik",
+        "Niobium" : "Nb",
+        "Nickel" : "Ni_palik",
+        "Rhodium" : "Rh",
+        "Selenium" : "Se",
+        "Hexagonal silicon carbide" : "SiC",
+        "Tin telluride" : "SnTe",
+        "Tantalum" : "Ta",
+        "Trigonal tellurium" : "Te",
+        "Polycryst. thorium (IV) fuoride" : "ThF4",
+        "Polycrystalline titanium carbide" : "TiC",
+        "Titanium nitride" : "TiN",
+        "Tetragonal titan. dioxide" : "TiO2",
+        "Vanadium carbide" : "VC",
+        "Vanadium" : "V_palik",
+        "Vanadium nitride" : "VN",
+        "Tungsten" : "W",
+    }
+
+    if conductorMaterialUI in conductorMaterialUIToPreset:
+        conductorMaterialPreset = conductorMaterialUIToPreset[conductorMaterialUI]
+    else:
+        # Default to a perfectly reflective mirror
+        conductorMaterialPreset = "none"
 
     # Create a structure to be written
     elementDict = {'type':'bsdf'}
@@ -185,7 +232,7 @@ def writeShaderConductor(material, materialName):
 
     elementDict['children'] = []
     elementDict['children'].append( { 'type':'string', 
-        'attributes':{ 'name':'material', 'value':str(conductorMaterial) } } )
+        'attributes':{ 'name':'material', 'value':str(conductorMaterialPreset) } } )
     elementDict['children'].append( { 'type':'float', 
         'attributes':{ 'name':'extEta', 'value':str(extEta) } } )
 
@@ -1167,6 +1214,7 @@ def writeIntegratorMultichannel(renderSettings, subIntegrator):
     if multichannelGeoNormal: elementDict['children'].append( writeIntegratorField("geoNormal") )
     if multichannelShadingNormal: elementDict['children'].append( writeIntegratorField("shNormal") )
     if multichannelUV: elementDict['children'].append( writeIntegratorField("uv") )
+    if multichannelAlbedo: elementDict['children'].append( writeIntegratorField("albedo") )
     if multichannelShapeIndex: elementDict['children'].append( writeIntegratorField("shapeIndex") )
     if multichannelPrimIndex: elementDict['children'].append( writeIntegratorField("primIndex") )
 
@@ -1319,6 +1367,16 @@ def filmAddMultichannelAttributes(renderSettings, elementDict):
     if multichannelPrimIndex:
         pixelFormat  += ", luminance"
         channelNames += ", primitiveIndex"
+
+    pixelFormatChild = None
+    for child in elementDict['children']:
+        attributes = child['attributes']
+        if 'name' in attributes and attributes['name'] == 'pixelFormat':
+            pixelFormatChild = child
+            break
+
+    if pixelFormatChild:
+        elementDict['children'].remove( pixelFormatChild )
 
     elementDict['children'].append( { 'type':'string', 'attributes':{ 'name':'pixelFormat', 'value':pixelFormat } } )
     elementDict['children'].append( { 'type':'string', 'attributes':{ 'name':'channelNames', 'value':channelNames } } )
