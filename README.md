@@ -50,11 +50,11 @@ In order to render in Batch mode, you'll need to set two environment variables
 ****VERY IMPORTANT**** 
 If your scene contains animated parameters for the Mitsuba lights or materials and you want to use Maya 2016 or later, you will need to set the following environment variable
 
-	- MAYA_RELEASE_PYTHON_GIL = 1
+- MAYA_RELEASE_PYTHON_GIL = 1
 
-	- Without this setting, Maya will lock up.
+- Without this setting, Maya will lock up.
 
-	- [Discussion on Python Programming for Autodesk Maya Google Group](https://groups.google.com/forum/?hl=en#!topic/python_inside_maya/Zk7FKPu7J_A)
+- [Discussion on Python Programming for Autodesk Maya Google Group](https://groups.google.com/forum/?hl=en#!topic/python_inside_maya/Zk7FKPu7J_A)
 
 
 Maya.env
