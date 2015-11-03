@@ -62,7 +62,7 @@ Maya.env
 
 Maya.env files can be saved in the following folders
 
-- Windows: C:\Users\*username*\Documents\maya\<mayaVersion>
+- Windows: C:\Users\\*username*\\Documents\maya\<mayaVersion>
 
 - Mac: /Users/*username*/Library/Preferences/Autodesk/maya/<mayaVersion>
 
