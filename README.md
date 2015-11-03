@@ -81,8 +81,6 @@ Rendering an animation in Batch mode works, with a couple of caveats
 
 - Batch renders can't be canceled from the UI
 
-- Animated parameters on Mitsuba shading, lighting and volume nodes aren't supported
-
 Notes
 -
 
