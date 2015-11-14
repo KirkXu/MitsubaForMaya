@@ -8,21 +8,21 @@ Supported Features
 -
 Mitsuba 0.5.0 is the currently supported version.
 
-Supported Mitsuba BSDFs / Materials: Diffuse, Rough Diffuse, Smooth Dielectric, Thin Dielectric, Rough Dielectric, Smooth Conductor, Rough Conductor, Smooth Plastic, Rough Plastic, Smooth Coating, Rough Coating, Bump Map, Phong, Ward, Mixture, Blend, Mask, Two Sided, Diffuse Transmitter, Hanrahan-Krueger, Irawan-Marschner Woven Cloth, Dipole SSS + Rough Plastic.
+Supported Mitsuba *BSDFs / Materials*: Diffuse, Rough Diffuse, Smooth Dielectric, Thin Dielectric, Rough Dielectric, Smooth Conductor, Rough Conductor, Smooth Plastic, Rough Plastic, Smooth Coating, Rough Coating, Bump Map, Phong, Ward, Mixture, Blend, Mask, Two Sided, Diffuse Transmitter, Hanrahan-Krueger, Irawan-Marschner Woven Cloth, Dipole SSS + Rough Plastic.
 
-Supported Mitsuba Emitters / Lights: Point, Spot, Directional, Object Area Light, Sun Sky, Envmap (IBL)
+Supported Mitsuba *Emitters / Lights*: Point, Spot, Directional, Object Area Light, Sun Sky, Envmap (IBL)
 
-Supported Mitsuba Volume Scattering Models: Homogeneous, Heterogeneous
+Supported Mitsuba *Volume Scattering Models*: Homogeneous, Heterogeneous
 
-Supported Mitsuba Phase Functions: Isotropic, Henyey-Greenstein, Rayleigh, Kajiya-Kay, Micro-flake
+Supported Mitsuba *Phase Functions*: Isotropic, Henyey-Greenstein, Rayleigh, Kajiya-Kay, Micro-flake
 
-Supported Mitsuba Sensors: Perspective, Orthographic, Perspective with Thin Lens, Spherical, Telecentric, Radiance Meter, Fluence Meter, Perspective with Radial Distortion.
+Supported Mitsuba *Sensors*: Perspective, Orthographic, Perspective with Thin Lens, Spherical, Telecentric, Radiance Meter, Fluence Meter, Perspective with Radial Distortion.
 
-Supported Mitsuba Integrators : Ambient Occlusion, Direct Illumination, Path Tracer, Simple Volumetric Path Tracer, Extended Volumetric Path Tracer, Bidirectional Path Tracer, Photon Map, Progressive Photon Mapping, Stochastic Progressive Photon Mapping, Primary Sample Space Metropolis Light Transport, Path Space Metropolis Light Transport, Energy Redistribution Path Tracing, Adjoint Particle Tracer, Adaptive, Irradiance Caching, Multi-Channel
+Supported Mitsuba *Integrators* : Ambient Occlusion, Direct Illumination, Path Tracer, Simple Volumetric Path Tracer, Extended Volumetric Path Tracer, Bidirectional Path Tracer, Photon Map, Progressive Photon Mapping, Stochastic Progressive Photon Mapping, Primary Sample Space Metropolis Light Transport, Path Space Metropolis Light Transport, Energy Redistribution Path Tracing, Adjoint Particle Tracer, Adaptive, Irradiance Caching, Multi-Channel
 
-Supported Mitsuba Sampler Generators : Independent, Stratified, Low Discrepancy, Halton QMC, Hammersley QMC, Sobol QMC
+Supported Mitsuba *Sampler Generators* : Independent, Stratified, Low Discrepancy, Halton QMC, Hammersley QMC, Sobol QMC
 
-Supported Mitsuba Films / Output Drivers : HDR (exr/hdr/pfm), Tiled HDR (exr), LDR (jpg, png), Matlab / Mathematica / Numpy
+Supported Mitsuba *Films / Output Drivers* : HDR (exr/hdr/pfm), Tiled HDR (exr), LDR (jpg, png), Matlab / Mathematica / Numpy
 
 Notes
 -
@@ -42,7 +42,7 @@ Usage
 - Unload as appropriate
 	- cmds.unloadPlugin( "MitsubaForMaya.py" )
 
-- ****VERY IMPORTANT**** 
+- ***VERY IMPORTANT*** 
 - The first field in the Render Settings Mituba tab is the path to the 'mitsuba' binary. You must set this to be able to render. The setting can be specified using the MITSUBA_PATH environment variable, as described below, or manually from the Render Settings UI. The path will be retained in a file's Render Settings so the value only has to be specified the first time you use a scene.
 
 	- OSX: ex. /path/where/you/downloaded/Mitsuba.app/Contents/MacOS/mitsuba
@@ -77,7 +77,7 @@ In order to render in Batch mode, you'll need to set two additional environment 
 
 	- MAYA_PLUG_IN_PATH = C:\path\to\MitsubaForMaya\plug-ins
 
-****VERY IMPORTANT**** 
+***VERY IMPORTANT*** 
 If your scene contains animation on the parameters of the Mitsuba lights, materials or volumes and you are using Maya 2016 or later, you will need to set the following environment variable
 
 - MAYA_RELEASE_PYTHON_GIL = 1
