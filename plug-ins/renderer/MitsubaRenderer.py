@@ -125,7 +125,7 @@ import MitsubaRendererUI
 # Renderer functions
 #
 
-# This registers a mel command to render with Maya
+# A command to render with Maya
 class mitsubaForMaya(OpenMayaMPx.MPxCommand):
     def __init__(self):
         OpenMayaMPx.MPxCommand.__init__(self)
@@ -287,9 +287,9 @@ class mitsubaForMaya(OpenMayaMPx.MPxCommand):
                         verbose=False):
 
         if frame != None:
-            # Calling this leads to Maya locking up
+            # Calling this can lead to Maya 2016 locking up if you don't have MAYA_RELEASE_PYTHON_GIL set
+            # See Readme
             cmds.currentTime(float(frame))
-            print( "Rendering frame " + str(frame) + " - frame set" )
         else:
             frame = 1
 
@@ -340,29 +340,55 @@ def commandRenderProcedure(options):
 def cmdCreator():
     return OpenMayaMPx.asMPxPtr( mitsubaForMaya() )
 
+def createMelPythonCallback(module, function, options=False):
+    # Return value for python mel command is documented as string[] but seems to return
+    # string in some cases. Commands that don't have options are assumed to return string.
+    # Commands with options are assumed to return string[]
+    mel = ""
+    if options:
+        mel += "global proc string[] melPythonCallbackOptions_%s_%s(string $options) { " % (module, function)
+        #mel += "    print(\"\\n\\n\\ncallback with options - %s, %s\\n\\n\\n\");" % (module, function)
+        mel += "    string $result[] = python( \"import %s; %s.%s(\\\"\" + $options + \"\\\")\" ); " % (module, module, function)
+        mel += "    return $result; "
+        mel += "} "
+        mel += "melPythonCallbackOptions_%s_%s" % (module, function)
+    else:
+        mel += "global proc string melPythonCallback_%s_%s() { " % (module, function)
+        #mel += "    print(\"\\n\\n\\ncallback w/o  options - %s, %s\\n\\n\\n\");" % (module, function)
+        mel += "    string $result = `python( \"import %s; %s.%s()\" )`; " % (module, module, function)
+        mel += "    return $result; "
+        mel += "} "
+        mel += "melPythonCallback_%s_%s" % (module, function)
+
+    return mel
+
 # Register Renderer
 def registerRenderer():
-    # Mel to call rendering functions
-    pluginDir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
-    renderSettingsMel = os.path.join(pluginDir, "MitsubaRenderer.mel")
-    mel.eval('source \"%s\";' % renderSettingsMel.replace('\\', '/'))
-
-    cmds.renderer("Mitsuba", rendererUIName="Mitsuba")
+    cmds.renderer("Mitsuba", rendererUIName=kPluginCmdName)
     cmds.renderer("Mitsuba", edit=True, renderProcedure=kPluginCmdName)
 
-    cmds.renderer("Mitsuba", edit=True, batchRenderProcedure="mitsubaBatchRenderProcedure")
-    cmds.renderer("Mitsuba", edit=True, batchRenderOptionsProcedure="mitsubaBatchRenderOptionsProcedure")
-    cmds.renderer("Mitsuba", edit=True, batchRenderOptionsStringProcedure="mitsubaBatchRenderOptionsStringProcedure")
-    cmds.renderer("Mitsuba", edit=True, cancelBatchRenderProcedure="mitsubaCancelBatchRenderProcedure")
-    cmds.renderer("Mitsuba", edit=True, commandRenderProcedure="mitsubaCommandRenderProcedure")
+    batchRenderProcedureMel = createMelPythonCallback("MitsubaRenderer", "batchRenderProcedure", True)
+    cmds.renderer("Mitsuba", edit=True, batchRenderProcedure=batchRenderProcedureMel)
+
+    commandRenderProcedureMel = createMelPythonCallback("MitsubaRenderer", "commandRenderProcedure", True)
+    cmds.renderer("Mitsuba", edit=True, commandRenderProcedure=commandRenderProcedureMel)
+
+    batchRenderOptionsProcedureMel = createMelPythonCallback("MitsubaRenderer", "batchRenderOptionsProcedure")
+    cmds.renderer("Mitsuba", edit=True, batchRenderOptionsProcedure=batchRenderOptionsProcedureMel)
+
+    batchRenderOptionsStringProcedureMel = createMelPythonCallback("MitsubaRenderer", "batchRenderOptionsStringProcedure")
+    cmds.renderer("Mitsuba", edit=True, batchRenderOptionsStringProcedure=batchRenderOptionsStringProcedureMel)
+
+    cancelBatchRenderProcedureMel = createMelPythonCallback("MitsubaRenderer", "cancelBatchRenderProcedure")
+    cmds.renderer("Mitsuba", edit=True, cancelBatchRenderProcedure=cancelBatchRenderProcedureMel)
 
     cmds.renderer("Mitsuba", edit=True, addGlobalsTab=("Common", 
         "createMayaSoftwareCommonGlobalsTab", 
         "updateMayaSoftwareCommonGlobalsTab"))
 
     cmds.renderer("Mitsuba", edit=True, addGlobalsTab=("Mitsuba Common", 
-        "mitsubaCreateRenderSettings", 
-        "mitsubaUpdateSettingsUpdate"))
+        createMelPythonCallback("MitsubaRendererUI", "createRenderSettings"),
+        createMelPythonCallback("MitsubaRenderer", "updateRenderSettings")))
 
     cmds.renderer("Mitsuba", edit=True, addGlobalsNode="defaultMitsubaRenderGlobals" )
 

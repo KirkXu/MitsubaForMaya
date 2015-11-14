@@ -604,7 +604,7 @@ def createIntegratorFrames():
     ptrSettings = createIntegratorFrameAdjointParticleTracer()
 
     # Virtual Point Lights Settings
-    #vplSettings = createIntegratorFrameVirtualPointLights()
+    vplSettings = createIntegratorFrameVirtualPointLights()
 
     integratorFrames.append(aoSettings)
     integratorFrames.append(diSettings)
@@ -619,7 +619,7 @@ def createIntegratorFrames():
     integratorFrames.append(mltSettings)
     integratorFrames.append(erptSettings)
     integratorFrames.append(ptrSettings)
-    #integratorFrames.append(vplSettings)
+    integratorFrames.append(vplSettings)
 
 def createMetaIntegratorFramesAdaptive():
     miAdaptiveMaxError = cmds.getAttr("%s.%s" % (renderSettings, "miAdaptiveMaxError"))
@@ -1090,7 +1090,7 @@ def createRenderSettingsUI():
     cmds.menuItem('Path Space Metropolis Light Transport')
     cmds.menuItem('Energy Redistribution Path Tracer')
     cmds.menuItem('Adjoint Particle Tracer')
-    #cmds.menuItem('Virtual Point Lights')
+    cmds.menuItem('Virtual Point Lights')
 
     createIntegratorFrames()
     if existingIntegrator not in ["", None]:
