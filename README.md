@@ -9,6 +9,7 @@ Supported Features
 Mitsuba 0.5.0 is the currently supported version.
 
 Supported Mitsuba Features:
+
 **BSDFs / Materials**: Diffuse, Rough Diffuse, Smooth Dielectric, Thin Dielectric, Rough Dielectric, Smooth Conductor, Rough Conductor, Smooth Plastic, Rough Plastic, Smooth Coating, Rough Coating, Bump Map, Phong, Ward, Mixture, Blend, Mask, Two Sided, Diffuse Transmitter, Hanrahan-Krueger, Irawan-Marschner Woven Cloth, Dipole SSS + Rough Plastic.
 
 **Emitters / Lights**: Point, Spot, Directional, Object Area Light, Sun Sky, Envmap (IBL)
