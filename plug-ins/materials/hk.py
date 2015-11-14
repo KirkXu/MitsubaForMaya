@@ -3,24 +3,21 @@ import maya.OpenMaya as OpenMaya
 import maya.OpenMayaMPx as OpenMayaMPx
 import maya.cmds as cmds
 
-kPluginNodeName = "MitsubaHomogeneousParticipatingMedium"
-kPluginNodeClassify = "shader/volume"
-kPluginNodeId = OpenMaya.MTypeId(0x87005)
+kPluginNodeName = "MitsubaHKShader"
+kPluginNodeClassify = "/shader/surface"
+kPluginNodeId = OpenMaya.MTypeId(0x87015)
 
-class homogeneous(OpenMayaMPx.MPxNode):
+class hk(OpenMayaMPx.MPxNode):
     def __init__(self):
         OpenMayaMPx.MPxNode.__init__(self)
         mMaterial = OpenMaya.MObject()
-
-        mUseSigmaAS = OpenMaya.MObject()
-        mSigmaA = OpenMaya.MObject()
+        mUseSigmaSA = OpenMaya.MObject()
         mSigmaS = OpenMaya.MObject()
-
-        mUserSigmaTAlbedo = OpenMaya.MObject()
+        mSigmaA = OpenMaya.MObject()
+        mUseSigmaTAlbedo = OpenMaya.MObject()
         mSigmaT = OpenMaya.MObject()
         mAlbedo = OpenMaya.MObject()
-
-        mScale = OpenMaya.MObject()
+        mThickness = OpenMaya.MObject()
 
         mPhaseFunction = OpenMaya.MObject()
         mPhaseFunctionHGG = OpenMaya.MObject()
@@ -29,24 +26,25 @@ class homogeneous(OpenMayaMPx.MPxNode):
         mOutColor = OpenMaya.MObject()
 
     def compute(self, plug, block):
-        if plug == homogeneous.mOutColor:
+        if plug == hk.mOutColor:
             resultColor = OpenMaya.MFloatVector(0.0,0.0,0.0)
             
-            outColorHandle = block.outputValue( homogeneous.mOutColor )
+            outColorHandle = block.outputValue( hk.mOutColor )
             outColorHandle.setMFloatVector(resultColor)
             outColorHandle.setClean()
         else:
             return OpenMaya.kUnknownParameter
 
+
 def nodeCreator():
-    return homogeneous()
+    return hk()
 
 def nodeInitializer():
     nAttr = OpenMaya.MFnNumericAttribute()
     eAttr = OpenMaya.MFnEnumAttribute()
 
     try:
-        homogeneous.mMaterial = eAttr.create("material", "mat")
+        hk.mMaterial = eAttr.create("material", "mat")
         eAttr.setKeyable(1) 
         eAttr.setStorable(1)
         eAttr.setReadable(1)
@@ -104,53 +102,59 @@ def nodeInitializer():
         # Default to Skin1
         eAttr.setDefault(6)
 
-        homogeneous.mUseSigmaAS = nAttr.create("useSigmaAS","sas", OpenMaya.MFnNumericData.kBoolean, False)
-        nAttr.setKeyable(0) 
-        nAttr.setStorable(1)
-        nAttr.setReadable(1)
-        nAttr.setWritable(1)
-
-        homogeneous.mSigmaA = nAttr.createColor("sigmaA", "sa")
+        hk.mUseSigmaSA = nAttr.create("useSigmaSA","ussa", OpenMaya.MFnNumericData.kBoolean, False)
         nAttr.setKeyable(1) 
         nAttr.setStorable(1)
         nAttr.setReadable(1)
         nAttr.setWritable(1)
-        nAttr.setDefault(1.0,1.0,1.0)
 
-        homogeneous.mSigmaS = nAttr.createColor("sigmaS", "ss")
+        hk.mSigmaS = nAttr.createColor("sigmaS", "ss")
         nAttr.setKeyable(1) 
         nAttr.setStorable(1)
         nAttr.setReadable(1)
         nAttr.setWritable(1)
-        nAttr.setDefault(1.0,1.0,1.0)
+        nAttr.setDefault(0.0,0.0,0.0)
 
-        homogeneous.mUserSigmaTAlbedo = nAttr.create("useSigmaTAlbedo","sta", OpenMaya.MFnNumericData.kBoolean, False)
-        nAttr.setKeyable(0) 
-        nAttr.setStorable(1)
-        nAttr.setReadable(1)
-        nAttr.setWritable(1)
-
-        homogeneous.mSigmaT = nAttr.createColor("sigmaT", "st")
+        hk.mSigmaA = nAttr.createColor("sigmaA", "sa")
         nAttr.setKeyable(1) 
         nAttr.setStorable(1)
         nAttr.setReadable(1)
         nAttr.setWritable(1)
-        nAttr.setDefault(1.0,1.0,1.0)
+        nAttr.setDefault(0.0,0.0,0.0)
 
-        homogeneous.mAlbedo = nAttr.createColor("albedo", "a")
+        hk.mUseSigmaTAlbedo = nAttr.create("useSigmaTAlbedo","usta", OpenMaya.MFnNumericData.kBoolean, False)
         nAttr.setKeyable(1) 
         nAttr.setStorable(1)
         nAttr.setReadable(1)
         nAttr.setWritable(1)
-        nAttr.setDefault(1.0,1.0,1.0)
 
-        homogeneous.mScale = nAttr.create("scale","s", OpenMaya.MFnNumericData.kFloat, 1.0)
-        nAttr.setKeyable(0) 
+        hk.mSigmaT = nAttr.createColor("sigmaT", "st")
+        nAttr.setKeyable(1) 
+        nAttr.setStorable(1)
+        nAttr.setReadable(1)
+        nAttr.setWritable(1)
+        nAttr.setDefault(0.0,0.0,0.0)
+
+        hk.mAlbedo = nAttr.createColor("albedo", "albedo")
+        nAttr.setKeyable(1) 
+        nAttr.setStorable(1)
+        nAttr.setReadable(1)
+        nAttr.setWritable(1)
+        nAttr.setDefault(0.0,0.0,0.0)
+
+        hk.mThickness = nAttr.create("thickness","t", OpenMaya.MFnNumericData.kFloat, 1.0)
+        nAttr.setKeyable(1) 
         nAttr.setStorable(1)
         nAttr.setReadable(1)
         nAttr.setWritable(1)
 
-        homogeneous.mPhaseFunction = eAttr.create("phaseFunction", "pf")
+        hk.mThickness = nAttr.create("thickness","t", OpenMaya.MFnNumericData.kFloat, 1.0)
+        nAttr.setKeyable(1) 
+        nAttr.setStorable(1)
+        nAttr.setReadable(1)
+        nAttr.setWritable(1)
+
+        hk.mPhaseFunction = eAttr.create("phaseFunction", "pf")
         eAttr.setKeyable(1) 
         eAttr.setStorable(1)
         eAttr.setReadable(1)
@@ -169,59 +173,44 @@ def nodeInitializer():
         # Default to Isotropic
         eAttr.setDefault(0)
 
-        homogeneous.mPhaseFunctionHGG = nAttr.create("phaseFunctionHGG","pfhgg", OpenMaya.MFnNumericData.kFloat, 0.0)
+        hk.mPhaseFunctionHGG = nAttr.create("phaseFunctionHGG","pfhgg", OpenMaya.MFnNumericData.kFloat, 0.0)
         nAttr.setKeyable(1) 
         nAttr.setStorable(1)
         nAttr.setReadable(1)
         nAttr.setWritable(1)
 
-        homogeneous.mPhaseFunctionMicroFlakeStdDev = nAttr.create("phaseFunctionMFSD","pfmfsd", OpenMaya.MFnNumericData.kFloat, 0.05)
+        hk.mPhaseFunctionMicroFlakeStdDev = nAttr.create("phaseFunctionMFSD","pfmfsd", OpenMaya.MFnNumericData.kFloat, 0.05)
         nAttr.setKeyable(1) 
         nAttr.setStorable(1)
         nAttr.setReadable(1)
         nAttr.setWritable(1)
 
-        homogeneous.mOutColor = nAttr.createColor("outColor", "oc")
+        hk.mOutColor = nAttr.createColor("outColor", "oc")
         nAttr.setStorable(0)
         nAttr.setHidden(0)
         nAttr.setReadable(1)
         nAttr.setWritable(0)
-
     except:
         sys.stderr.write("Failed to create attributes\n")
         raise
 
     try:
-        homogeneous.addAttribute(homogeneous.mMaterial)
-
-        homogeneous.addAttribute(homogeneous.mUseSigmaAS)
-        homogeneous.addAttribute(homogeneous.mSigmaA)
-        homogeneous.addAttribute(homogeneous.mSigmaS)
-
-        homogeneous.addAttribute(homogeneous.mUserSigmaTAlbedo)
-        homogeneous.addAttribute(homogeneous.mSigmaT)
-        homogeneous.addAttribute(homogeneous.mAlbedo)
-
-        homogeneous.addAttribute(homogeneous.mScale)
-
-        homogeneous.addAttribute(homogeneous.mPhaseFunction)
-        homogeneous.addAttribute(homogeneous.mPhaseFunctionHGG)
-        homogeneous.addAttribute(homogeneous.mPhaseFunctionMicroFlakeStdDev)
-
-        homogeneous.addAttribute(homogeneous.mOutColor)
+        hk.addAttribute(hk.mMaterial)
+        hk.addAttribute(hk.mUseSigmaSA)
+        hk.addAttribute(hk.mSigmaS)
+        hk.addAttribute(hk.mSigmaA)
+        hk.addAttribute(hk.mUseSigmaTAlbedo)
+        hk.addAttribute(hk.mSigmaT)
+        hk.addAttribute(hk.mAlbedo)
+        hk.addAttribute(hk.mThickness)
+        hk.addAttribute(hk.mPhaseFunction)
+        hk.addAttribute(hk.mPhaseFunctionHGG)
+        hk.addAttribute(hk.mPhaseFunctionMicroFlakeStdDev)
+        hk.addAttribute(hk.mOutColor)
     except:
         sys.stderr.write("Failed to add attributes\n")
         raise
 
-    '''
-    try:
-        homogeneous.attributeAffects (homogeneous.mSigmaA, homogeneous.mOutColor)
-        homogeneous.attributeAffects (homogeneous.mUseSigmaAS, homogeneous.mUserSigmaTAlbedo)
-        homogeneous.attributeAffects (homogeneous.mUserSigmaTAlbedo, homogeneous.mUseSigmaAS)
-    except:
-        sys.stderr.write("Failed in setting attributeAffects\n")
-        raise
-    '''
 
 # initialize the script plug-in
 def initializePlugin(mobject):

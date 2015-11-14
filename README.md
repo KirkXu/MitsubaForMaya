@@ -1,19 +1,49 @@
 MitsubaForMaya
 =
 
-A Maya plugin for the Mitsuba rendering engine.
+A [Maya](http://www.autodesk.com/products/maya) plugin for the [Mitsuba](http://www.mitsuba-renderer.org/) rendering engine.
+
+
+Supported Features
+-
+Mitsuba 0.5.0 is the currently supported version.
+
+Supported Mitsuba BSDFs / Materials: Diffuse, Rough Diffuse, Smooth Dielectric, Thin Dielectric, Rough Dielectric, Smooth Conductor, Rough Conductor, Smooth Plastic, Rough Plastic, Smooth Coating, Rough Coating, Bump Map, Phong, Ward, Mixture, Blend, Mask, Two Sided, Diffuse Transmitter, Hanrahan-Krueger, Irawan-Marschner Woven Cloth, Dipole SSS + Rough Plastic.
+
+Supported Mitsuba Emitters / Lights: Point, Spot, Directional, Object Area Light, Sun Sky, Envmap (IBL)
+
+Supported Mitsuba Volume Scattering Models: Homogeneous, Heterogeneous
+
+Supported Mitsuba Phase Functions: Isotropic, Henyey-Greenstein, Rayleigh, Kajiya-Kay, Micro-flake
+
+Supported Mitsuba Sensors: Perspective, Orthographic, Perspective with Thin Lens, Spherical, Telecentric, Radiance Meter, Fluence Meter, Perspective with Radial Distortion.
+
+Supported Mitsuba Integrators : Ambient Occlusion, Direct Illumination, Path Tracer, Simple Volumetric Path Tracer, Extended Volumetric Path Tracer, Bidirectional Path Tracer, Photon Map, Progressive Photon Mapping, Stochastic Progressive Photon Mapping, Primary Sample Space Metropolis Light Transport, Path Space Metropolis Light Transport, Energy Redistribution Path Tracing, Adjoint Particle Tracer, Adaptive, Irradiance Caching, Multi-Channel
+
+Supported Mitsuba Sampler Generators : Independent, Stratified, Low Discrepancy, Halton QMC, Hammersley QMC, Sobol QMC
+
+Supported Mitsuba Films / Output Drivers : HDR (exr/hdr/pfm), Tiled HDR (exr), LDR (jpg, png), Matlab / Mathematica / Numpy
+
+Notes
+-
+
+For a variety of Mitsuba materials, volumes and lights, check the Hypershade under Maya/Surface, Maya/Volumetric and Maya/Lights.
+
+The default lighting in Mitsuba is a sunsky, so if you do not use any lighting yourself, that is what this tool will default to as well.  The other lights available are point, spot, directional, environment maps (IBL) and object area lights.  Mitsuba supports a variety of other lights, but they have not been ported.  To use a directional light, simply create a normal, Maya directional light and position it as normal.  For an environment map or custom sunsky, see the appropriate nodes in the Hypershader, under Maya/Lights.  Note that you can specify either an environment map or sunsky node (ie you can not have one of each). To use an area light, assign the MitsubaObjectAreaLightShader shader as the Material for the object that you would like to act as an area light.
+
+Render settings have been set to balance render time vs. quality. The main thing that controls render quality is the sampleCount in the Image Sampler drop down.
 
 Usage
 -
 
-- Load from anywhere using Python command
+- Load from the download location using Python command
 	- cmds.loadPlugin( "/path/where/you/downloaded/MitsubaForMaya.py" )
 
 - Unload as appropriate
 	- cmds.unloadPlugin( "MitsubaForMaya.py" )
 
 - ****VERY IMPORTANT**** 
-- The first field in the Render Settings Mituba tab is the path to the 'mitsuba' binary. You must set this to be able to render. The setting can be specified using the MITSUBA_PATH environment variable, as described below, or manually from the Render Settings UI. The path will be retained in a file's Render Settings, so the value only has to be specified the first time you use a scene.
+- The first field in the Render Settings Mituba tab is the path to the 'mitsuba' binary. You must set this to be able to render. The setting can be specified using the MITSUBA_PATH environment variable, as described below, or manually from the Render Settings UI. The path will be retained in a file's Render Settings so the value only has to be specified the first time you use a scene.
 
 	- OSX: ex. /path/where/you/downloaded/Mitsuba.app/Contents/MacOS/mitsuba
 
@@ -21,13 +51,13 @@ Usage
 
 	- Windows: ex. C:/path/where/you/downloaded/Mitsuba 0.5.0 64bit/Mitsuba 0.5.0/mitsuba.exe
 
-- Currently, only Mitsuba Lights and Materials are supported. These can be found and assigned using the Hypershade
+- Currently, only Mitsuba Lights, Materials and Volumes are supported. These can be found and assigned using the Hypershade
 
 Installation and Application Environment
 - 
 The path to the Mitsuba binary has to be specified, either in the Render Settings manually or by using the Maya.env or other environment setup file.
 
-- The environment variable to set is MITSUBA_PATH 
+- To set the value in the Maya.env or in your shell environment, set the MITSUBA_PATH environment variable to  
 
 	- Windows: MITSUBA_PATH = C:\path\to\Mitsuba 0.5.0\mitsuba.exe
 
@@ -35,7 +65,7 @@ The path to the Mitsuba binary has to be specified, either in the Render Setting
 
 	- Linux: MITSUBA_PATH = /path/to/mitsuba
 
-In order to render in Batch mode, you'll need to set two environment variables
+In order to render in Batch mode, you'll need to set two additional environment variables
 
 - MAYA_RENDER_DESC_PATH has to point to the folder containing the MitsubaRenderer.xml file.
 
@@ -48,7 +78,7 @@ In order to render in Batch mode, you'll need to set two environment variables
 	- MAYA_PLUG_IN_PATH = C:\path\to\MitsubaForMaya\plug-ins
 
 ****VERY IMPORTANT**** 
-If your scene contains animated parameters for the Mitsuba lights or materials and you want to use Maya 2016 or later, you will need to set the following environment variable
+If your scene contains animation on the parameters of the Mitsuba lights, materials or volumes and you are using Maya 2016 or later, you will need to set the following environment variable
 
 - MAYA_RELEASE_PYTHON_GIL = 1
 
@@ -80,15 +110,6 @@ Rendering in Batch
 Rendering an animation in Batch mode works, with a couple of caveats
 
 - Batch renders can't be canceled from the UI
-
-Notes
--
-
-The default lighting in Mitsuba is a sunsky, so if you do not use any lighting yourself, that is what this tool will default to as well.  The other lights available are directional, environment maps and object area lights.  Mitsuba supports a variety of other lights, but they have not been ported.  To use a directional light, simply create a normal, Maya directional light and position it as normal.  For an environment map or custom sunsky, see the appropriate nodes in the Hypershader, under Maya/Lights.  Note that you can specify either an environment map or sunsky node (ie you can not have one of each). To use an area light, assign the MitsubaObjectAreaLightShader shader as the Material for the object that you would like to act as an area light.
-
-For a variety of Mitsuba materials, check the Hypershade under Maya/Surface.
-
-Render settings have been set to balance render time vs. quality. The main thing that controls render quality is the sampleCount in the Image Sampler drop down.
 
 References
 -

@@ -12,7 +12,7 @@ import pymel.core
 materialNodeTypes = []
 
 #
-# Formatted printing
+# XML formatted printing
 #
 def writeElementText(element, depth=0):
     #print( "element : %s" % str(element) )
@@ -46,6 +46,10 @@ def writeElementText(element, depth=0):
     else:
         elementText += "/>\n"
     
+    # Simple formatting cheat to make the files a little more readable
+    if depth == 1:
+        elementText += "\n"
+
     return elementText
 
 # Other options to be provided later
@@ -56,51 +60,93 @@ def writeElement(outFile, element, depth=0):
 #
 # IO functions
 #
-'''
-Returns the surfaceShader node for a piece of geometry (geom)
-'''
-def getShader(geom):
+
+#
+# General functionality
+#
+
+# Returns the surfaceShader node for a piece of geometry (geom)
+def getSurfaceShader(geom):
     shapeNode = cmds.listRelatives(geom, children=True, shapes=True)[0]
     sg = cmds.listConnections(shapeNode, type="shadingEngine")[0]
     shader = cmds.listConnections(sg+".surfaceShader")
-    if shader is None:
-        shader = cmds.listConnections(sg+".volumeShader")
-    return shader[0]
+    #if shader is None:
+    #    shader = cmds.listConnections(sg+".volumeShader")
+    if shader:
+        shader = shader[0]
+    return shader
 
-'''
-Writes a homogeneous medium to a Mitsuba scene file (outFile)
-tabbedSpace is a string of blank space to account for recursive xml
-'''
-def writeMedium(medium):
-    sigmaAS = cmds.getAttr(medium+".sigmaAS")
-    sigmaA = cmds.getAttr(medium+".sigmaA")
-    sigmaS = cmds.getAttr(medium+".sigmaS")
-    sigmaT = cmds.getAttr(medium+".sigmaT")
-    albedo = cmds.getAttr(medium+".albedo")
-    scale = cmds.getAttr(medium+".scale")    
+def getVolumeShader(geom):
+    shapeNode = cmds.listRelatives(geom, children=True, shapes=True)[0]
+    sg = cmds.listConnections(shapeNode, type="shadingEngine")[0]
+    shader = cmds.listConnections(sg+".volumeShader")
+    if shader:
+        shader = shader[0]
+    return shader
 
-    # Create a structure to be written
-    elementDict = {'type':'medium'}
-    elementDict['attributes'] = {'type':'homogeneous', 'name':'interior'}
+def listToMitsubaText(list):
+    return " ".join( map(str, list) )
 
-    elementDict['children'] = []
-
-    if sigmaAS:
-        elementDict['children'].append( { 'type':'rgb', 
-            'attributes':{ 'name':'sigmaA', 'value':str(sigmaA[0][0]) + " " + str(sigmaA[0][1]) + " " + str(sigmaA[0][2]) } } )
-        elementDict['children'].append( { 'type':'rgb', 
-            'attributes':{ 'name':'sigmaS', 'value':str(sigmaS[0][0]) + " " + str(sigmaS[0][1]) + " " + str(sigmaS[0][2]) } } )
+def booleanToMisubaText(b):
+    if b:
+        return "true"
     else:
-        elementDict['children'].append( { 'type':'rgb', 
-            'attributes':{ 'name':'sigmaT', 'value':str(sigmaT[0][0]) + " " + str(sigmaT[0][1]) + " " + str(sigmaT[0][2]) } } )
-        elementDict['children'].append( { 'type':'rgb', 
-            'attributes':{ 'name':'albedo', 'value':str(albedo[0][0]) + " " + str(albedo[0][1]) + " " + str(albedo[0][2]) } } )
+        return "false"
 
-    elementDict['children'].append( { 'type':'float', 
-        'attributes':{ 'name':'scale', 'value':str(scale) } } )
-
+def createSceneElement(typeName=None, id=None, elementType='bsdf'):
+    elementDict = {'type':elementType}
+    if typeName:
+        elementDict['attributes'] = { 'type':typeName }
+    if id:
+        elementDict['attributes']['id'] = id
+    elementDict['children'] = []
     return elementDict
 
+def createBooleanElement(name, value):
+    return { 'type':'boolean', 'attributes':{ 'name':name, 'value':booleanToMisubaText(value) } }
+
+def createIntegerElement(name, value):
+    return { 'type':'integer', 'attributes':{ 'name':name, 'value':str(value) } }
+
+def createFloatElement(name, value):
+    return { 'type':'float', 'attributes':{ 'name':name, 'value':str(value) } }
+
+def createStringElement(name, value):
+    return { 'type':'string', 'attributes':{ 'name':name, 'value':str(value) } }
+
+def createColorElement(name, value, colorspace='srgb'):
+    return { 'type':colorspace, 'attributes':{ 'name':name, 'value':listToMitsubaText(value) } }
+
+def createSpectrumElement(name, value):
+    return { 'type':'spectrum', 'attributes':{ 'name':name, 'value':str(value) } }
+
+def createNestedBSDFElement(material, connectedAttribute="bsdf", useDefault=True):
+    hasNestedBSDF = False
+    shaderElement = None
+
+    connections = cmds.listConnections(material, connections=True)
+    for i in range(len(connections)):
+        if i%2==1:
+            connection = connections[i]
+            connectionType = cmds.nodeType(connection)
+
+            if connectionType in materialNodeTypes and connections[i-1]==(material + "." + connectedAttribute):
+                #We've found the nested bsdf, so build a structure for it
+                shaderElement = writeShader(connection, connection)
+
+                # Remove the id so there's no chance of this embedded definition conflicting with another
+                # definition of the same BSDF
+                del( shaderElement['attributes']['id'] )
+
+                hasNestedBSDF = True
+
+    if useDefault and not hasNestedBSDF:
+        bsdf = cmds.getAttr(material + "." + connectedAttribute)
+
+        shaderElement = createSceneElement('diffuse')
+        shaderElement['children'].append( createColorElement('reflectance', bsdf[0], colorspace='srgb') )
+
+    return shaderElement
 
 def getTextureFile(material, connectionAttr):
     connections = cmds.listConnections(material, connections=True)
@@ -126,176 +172,392 @@ def getTextureFile(material, connectionAttr):
 
     return fileTexture
 
-def writeShaderSmoothCoating(material, materialName):
-    intIOR = cmds.getAttr(material+".intIOR")
-    extIOR = cmds.getAttr(material+".extIOR")
-    thickness = cmds.getAttr(material+".thickness")
-    sigmaA = cmds.getAttr(material+".sigmaA")
-    specularReflectance = cmds.getAttr(material+".specularReflectance")
+def createTextureElement(name, texturePath, scale=None):
+    textureElementDict = createSceneElement('bitmap', elementType='texture')
+    textureElementDict['children'].append( createStringElement('filename', texturePath) )
+
+    if scale:
+        scaleElementDict = createSceneElement('scale', elementType='texture')
+        scaleElementDict['children'].append( createFloatElement('scale', scale) )
+        scaleElementDict['children'].append( textureElementDict )
+        textureElementDict = scaleElementDict
+
+    return textureElementDict
+
+def createVolumeElement(name, volumePath):
+    volumeElementDict = createSceneElement('gridvolume', elementType='volume')
+    volumeElementDict['attributes']['name'] = name
+    volumeElementDict['children'].append( createStringElement('filename', volumePath) )
+
+    return volumeElementDict
+
+def createTexturedColorAttributeElement(material, attribute, mitsubaParameter=None, colorspace='srgb', scale=None):
+    if not mitsubaParameter:
+        mitsubaParameter = attribute
+    fileTexture = getTextureFile(material, attribute)
+    if fileTexture:
+        element = createTextureElement(mitsubaParameter, fileTexture, scale)
+    else:
+        value = cmds.getAttr(material + "." + attribute)
+        element = createColorElement(mitsubaParameter, value[0], colorspace )
+
+    return element
+
+def createTexturedFloatAttributeElement(material, attribute, mitsubaParameter=None, scale=None):
+    if not mitsubaParameter:
+        mitsubaParameter = attribute
+    fileTexture = getTextureFile(material, attribute)
+    if fileTexture:
+        element = createTextureElement(mitsubaParameter, fileTexture, scale)
+    else:
+        value = cmds.getAttr(material + "." + attribute)
+        element = createFloatElement(mitsubaParameter, value )
+
+    return element
+
+def createTexturedVolumeAttributeElement(material, attribute, mitsubaParameter=None):
+    if not mitsubaParameter:
+        mitsubaParameter = attribute
+    fileTexture = getTextureFile(material, attribute)
+    if fileTexture:
+        element = createVolumeElement(mitsubaParameter, fileTexture)
+    else:
+        value = cmds.getAttr(material + "." + attribute)
+        element = createSpectrumElement('value', value)
+
+        volumeWrapperElement = createSceneElement('constvolume', elementType='volume')
+        volumeWrapperElement['attributes']['name'] = mitsubaParameter
+        volumeWrapperElement['children'].append( element )
+        element = volumeWrapperElement
+
+    return element
+
+# UI to API name mappings
+conductorUIToPreset = {
+    "100\% reflecting mirror" : "none",
+    "Amorphous carbon" : "a-C",
+    "Silver" : "Ag",
+    "Aluminium" : "Al",
+    "Cubic aluminium arsenide" : "AlAs",
+    "Cubic aluminium antimonide" : "AlSb",
+    "Gold" : "Au",
+    "Polycrystalline beryllium" : "Be",
+    "Chromium" : "Cr",
+    "Cubic caesium iodide" : "CsI",
+    "Copper" : "Cu",
+    "Copper (I) oxide" : "Cu2O",
+    "Copper (II) oxide" : "CuO",
+    "Cubic diamond" : "d-C",
+    "Mercury" : "Hg",
+    "Mercury telluride" : "HgTe",
+    "Iridium" : "Ir",
+    "Polycrystalline potassium" : "K",
+    "Lithium" : "Li",
+    "Magnesium oxide" : "MgO",
+    "Molybdenum" : "Mo",
+    "Sodium" : "Na_palik",
+    "Niobium" : "Nb",
+    "Nickel" : "Ni_palik",
+    "Rhodium" : "Rh",
+    "Selenium" : "Se",
+    "Hexagonal silicon carbide" : "SiC",
+    "Tin telluride" : "SnTe",
+    "Tantalum" : "Ta",
+    "Trigonal tellurium" : "Te",
+    "Polycryst. thorium (IV) fuoride" : "ThF4",
+    "Polycrystalline titanium carbide" : "TiC",
+    "Titanium nitride" : "TiN",
+    "Tetragonal titan. dioxide" : "TiO2",
+    "Vanadium carbide" : "VC",
+    "Vanadium" : "V_palik",
+    "Vanadium nitride" : "VN",
+    "Tungsten" : "W",
+}
+
+distributionUIToPreset = {
+    "Beckmann" : "beckmann",
+    "GGX" : "ggx",
+    "Phong" : "phong",
+    "Ashikhmin Shirley" : "as",
+}
+
+iorMaterialUIToPreset = {
+    "Vacuum" : "vacuum",
+    "Helum"  : "helium",
+    "Hydrogen" : "hydrogen",
+    "Air" : "air",
+    "Carbon Dioxide" : "carbon dioxide",
+    "Water" : "water",
+    "Acetone" : "acetone",
+    "Ethanol" : "ethanol",
+    "Carbon Tetrachloride" : "carbon tetrachloride",
+    "Glycerol" : "glycerol",
+    "Benzene" : "benzene",
+    "Silicone Oil" : "silicone oil",
+    "Bromine" : "bromine",
+    "Water Ice" : "water ice",
+    "Fused Quartz" : "fused quartz",
+    "Pyrex" : "pyrex",
+    "Acrylic Glass" : "acrylic glass",
+    "Polypropylene" : "polypropylene",
+    "BK7" : "bk7",
+    "Sodium Chloride" : "sodium chloride",
+    "Amber" : "amber",
+    "Pet" : "pet",
+    "Diamond" : "diamond",
+}
+
+wardVariantUIToPreset = {
+    "Ward" : "ward",
+    "Ward-Duer" : "ward-duer",
+    "Balanced" : "balanced",
+}
+
+mediumMaterialUIToPreset = {
+    "Apple" : "Apple",
+    "Cream" : "Cream",
+    "Skimmilk" : "Skimmilk",
+    "Spectralon" : "Spectralon",
+    "Chicken1" : "Chicken1",
+    "Ketchup" : "Ketchup",
+    "Skin1" : "Skin1",
+    "Wholemilk" : "Wholemilk",
+    "Chicken2" : "Chicken2",
+    "Potato" : "Potato",
+    "Skin2" : "Skin2",
+    "Lowfat Milk" : "Lowfat Milk",
+    "Reduced Milk" : "Reduced Milk",
+    "Regular Milk" : "Regular Milk",
+    "Espresso" : "Espresso",
+    "Mint Mocha Coffee" : "Mint Mocha Coffee",
+    "Lowfat Soy Milk" : "Lowfat Soy Milk",
+    "Regular Soy Milk" : "Regular Soy Milk",
+    "Lowfat Chocolate Milk" : "Lowfat Chocolate Milk",
+    "Regular Chocolate Milk" : "Regular Chocolate Milk",
+    "Coke" : "Coke",
+    "Pepsi Sprite" : "Pepsi Sprite",
+    "Gatorade" : "Gatorade",
+    "Chardonnay" : "Chardonnay",
+    "White Zinfandel" : "White Zinfandel",
+    "Merlot" : "Merlot",
+    "Budweiser Beer" : "Budweiser Beer",
+    "Coors Light Beer" : "Coors Light Beer",
+    "Clorox" : "Clorox",
+    "Apple Juice" : "Apple Juice",
+    "Cranberry Juice" : "Cranberry Juice",
+    "Grape Juice" : "Grape Juice",
+    "Ruby Grapefruit Juice" : "Ruby Grapefruit Juice",
+    "White Grapefruit Juice" : "White Grapefruit Juice",
+    "Shampoo" : "Shampoo",
+    "Strawberry Shampoo" : "Strawberry Shampoo",
+    "Head & Shoulders Shampoo" : "Head & Shoulders Shampoo",
+    "Lemon Tea Powder" : "Lemon Tea Powder",
+    "Orange Juice Powder" : "Orange Juice Powder",
+    "Pink Lemonade Powder" : "Pink Lemonade Powder",
+    "Cappuccino Powder" : "Cappuccino Powder",
+    "Salt Powder" : "Salt Powder",
+    "Sugar Powder" : "Sugar Powder",
+    "Suisse Mocha" : "Suisse Mocha",
+}
+
+phaseFunctionUIToPreset = {
+    "Isotropic" : "isotropic",
+    "Henyey-Greenstein" : "hg",
+    "Rayleigh" : "rayleigh",
+    "Kajiya-Kay" : "kkay",
+    "Micro-Flake" : "microflake",
+}
+
+samplingMethodUIToPreset = {
+    "Simpson" : "simpson",
+    "Woodcock" : "woodcock",
+}
+
+#
+# Medium Scattering Models
+#
+
+# A homogeneous medium
+def writeMediumHomogeneous(medium, mediumName):
+    useSigmaAS = cmds.getAttr(medium+".useSigmaAS")
+    useSigmaTAlbedo = cmds.getAttr(medium+".useSigmaTAlbedo")
+    sigmaA = cmds.getAttr(medium+".sigmaA")
+    sigmaS = cmds.getAttr(medium+".sigmaS")
+    sigmaT = cmds.getAttr(medium+".sigmaT")
+    albedo = cmds.getAttr(medium+".albedo")
+    scale = cmds.getAttr(medium+".scale")    
 
     # Create a structure to be written
-    elementDict = {'type':'bsdf'}
-    elementDict['attributes'] = {'type':'coating', 'id':materialName}
+    mediumElement = createSceneElement('homogeneous', mediumName, elementType='medium')
 
-    elementDict['children'] = []
-    elementDict['children'].append( { 'type':'float', 
-        'attributes':{ 'name':'intIOR', 'value':str(intIOR) } } )
-    elementDict['children'].append( { 'type':'float', 
-        'attributes':{ 'name':'extIOR', 'value':str(extIOR) } } )
-    elementDict['children'].append( { 'type':'float', 
-        'attributes':{ 'name':'thickness', 'value':str(thickness) } } )
-    elementDict['children'].append( { 'type':'srgb', 
-        'attributes':{ 'name':'sigmaA', 'value':str(sigmaA[0][0]) + " " + str(sigmaA[0][1]) + " " + str(sigmaA[0][2]) } } )
-    elementDict['children'].append( { 'type':'srgb', 
-        'attributes':{ 'name':'specularReflectance', 'value':str(specularReflectance[0][0]) + " " + str(specularReflectance[0][1]) + " " + str(specularReflectance[0][2]) } } )
+    if useSigmaAS:
+        mediumElement['children'].append( createColorElement('sigmaA', sigmaA[0], colorspace='rgb') )
+        mediumElement['children'].append( createColorElement('sigmaS', sigmaS[0], colorspace='rgb') )
 
-    #Nested bsdf
-    hasNestedBSDF = False
-    connections = cmds.listConnections(material, connections=True)
-    for i in range(len(connections)):
-        if i%2==1:
-            connection = connections[i]
-            connectionType = cmds.nodeType(connection)
-            if connectionType in materialNodeTypes and connections[i-1]==material+".bsdf":
-                #We've found the nested bsdf, so write it
-                shaderElement = writeShader(connection, connection)
-                elementDict['children'].append(shaderElement)
-                hasNestedBSDF = True
+    elif useSigmaTAlbedo:
+        mediumElement['children'].append( createColorElement('sigmaT', sigmaT[0], colorspace='rgb') )
+        mediumElement['children'].append( createColorElement('albedo', albedo[0], colorspace='rgb') )
 
-    if not hasNestedBSDF:
-        bsdf = cmds.getAttr(material+".bsdf")
-        nestedBSDFElement = {'type':'bsdf'}
-        nestedBSDFElement['attributes'] = {'type':'diffuse'}
+    else:
+        materialString = cmds.getAttr(medium+".material", asString=True)
+        mediumElement['children'].append( createStringElement('material', materialString) )
 
-        nestedBSDFElement['children'] = []
-        nestedBSDFElement['children'].append( { 'type':'srgb', 
-            'attributes':{ 'name':'reflectance', 'value':str(bsdf[0][0]) + " " + str(bsdf[0][1]) + " " + str(bsdf[0][2]) } } )
+    mediumElement['children'].append( createFloatElement('scale', scale) )
 
-        elementDict['children'].append( nestedBSDFElement )
+    phaseFunctionUIName = cmds.getAttr(medium+".phaseFunction", asString=True)
+    if phaseFunctionUIName in phaseFunctionUIToPreset:
+        phaseFunctionName = phaseFunctionUIToPreset[phaseFunctionUIName]
 
-    return elementDict
+        phaseFunctionElement = createSceneElement(phaseFunctionName, elementType='phase')
+        if phaseFunctionName == 'hg':
+            g = cmds.getAttr(medium+".phaseFunctionHGG")
+            phaseFunctionElement['children'].append( createFloatElement('g', g) )
+        elif phaseFunctionName == 'microflake':
+            s = cmds.getAttr(medium+".phaseFunctionMFSD")
+            phaseFunctionElement['children'].append( createFloatElement('stddev', s) )
+
+        mediumElement['children'].append( phaseFunctionElement  )
+
+    return mediumElement
+
+# A heterogeneous medium
+def writeMediumHeterogeneous(medium, mediumName):
+    # Create a structure to be written
+    mediumElement = createSceneElement('heterogeneous', mediumName, elementType='medium')
+
+    samplingMethodUIName = cmds.getAttr(medium+".samplingMethod", asString=True)
+    if samplingMethodUIName in samplingMethodUIToPreset:
+        samplingMethodName = samplingMethodUIToPreset[samplingMethodUIName]
+    mediumElement['children'].append( createStringElement('method', samplingMethodName) )
+
+    mediumElement['children'].append( createTexturedVolumeAttributeElement(medium, 'density') )
+    mediumElement['children'].append( createTexturedVolumeAttributeElement(medium, 'albedo') )
+
+    fileTexture = getTextureFile(medium, 'orientation')
+    if fileTexture:
+        mediumElement['children'].append( createVolumeElement('orientation', fileTexture) )
+
+    scale = cmds.getAttr(medium+".scale")
+    mediumElement['children'].append( createFloatElement('scale', scale) )
+
+    phaseFunctionUIName = cmds.getAttr(medium+".phaseFunction", asString=True)
+    if phaseFunctionUIName in phaseFunctionUIToPreset:
+        phaseFunctionName = phaseFunctionUIToPreset[phaseFunctionUIName]
+
+        phaseFunctionElement = createSceneElement(phaseFunctionName, elementType='phase')
+        if phaseFunctionName == 'hg':
+            g = cmds.getAttr(medium+".phaseFunctionHGG")
+            phaseFunctionElement['children'].append( createFloatElement('g', g) )
+        elif phaseFunctionName == 'microflake':
+            s = cmds.getAttr(medium+".phaseFunctionMFSD")
+            phaseFunctionElement['children'].append( createFloatElement('stddev', s) )
+
+        mediumElement['children'].append( phaseFunctionElement  )
+
+    return mediumElement
+
+
+#
+# Surface Scattering Models
+#
+def writeShaderSmoothCoating(material, materialName):
+    bsdfElement = createSceneElement('coating', materialName)
+
+    thickness = cmds.getAttr(material+".thickness")
+    bsdfElement['children'].append( createFloatElement('thickness', thickness) )
+
+    bsdfElement['children'].append( createTexturedColorAttributeElement(material, "sigmaA") )
+    bsdfElement['children'].append( createTexturedColorAttributeElement(material, "specularReflectance") )
+
+    # Get interior IOR preset or value
+    interiorMaterialName = cmds.getAttr(material + ".interiorMaterial", asString=True)
+    interiorMaterialName = interiorMaterialName.split('-')[0].strip()
+    if interiorMaterialName in iorMaterialUIToPreset:
+        interiorMaterialPreset = iorMaterialUIToPreset[interiorMaterialName]
+
+        bsdfElement['children'].append( createStringElement('intIOR', interiorMaterialPreset)  )
+    else:
+        intIOR = cmds.getAttr(material+".intior")
+        bsdfElement['children'].append( createFloatElement('intIOR', intIOR)  )
+
+    # Get exterior IOR preset or value
+    exteriorMaterialName = cmds.getAttr(material + ".exteriorMaterial", asString=True)
+    exteriorMaterialName = exteriorMaterialName.split('-')[0].strip()
+    if exteriorMaterialName in iorMaterialUIToPreset:
+        exteriorMaterialPreset = iorMaterialUIToPreset[exteriorMaterialName]
+
+        bsdfElement['children'].append( createStringElement('extIOR', exteriorMaterialPreset)  )
+    else:
+        extIOR = cmds.getAttr(material+".extior")
+        bsdfElement['children'].append( createFloatElement('extIOR', extIOR)  )
+
+    # Get connected BSDF
+    nestedBSDFElement = createNestedBSDFElement(material, "bsdf")
+    if nestedBSDFElement:
+        bsdfElement['children'].append( nestedBSDFElement )
+
+    return bsdfElement
 
 def writeShaderConductor(material, materialName):
-    conductorMaterialUI = cmds.getAttr(material+".material", asString=True)
     extEta = cmds.getAttr(material+".extEta")
 
-    conductorMaterialUIToPreset = {
-        "100\% reflecting mirror" : "none",
-        "Amorphous carbon" : "a-C",
-        "Silver" : "Ag",
-        "Aluminium" : "Al",
-        "Cubic aluminium arsenide" : "AlAs",
-        "Cubic aluminium antimonide" : "AlSb",
-        "Gold" : "Au",
-        "Polycrystalline beryllium" : "Be",
-        "Chromium" : "Cr",
-        "Cubic caesium iodide" : "CsI",
-        "Copper" : "Cu",
-        "Copper (I) oxide" : "Cu2O",
-        "Copper (II) oxide" : "CuO",
-        "Cubic diamond" : "d-C",
-        "Mercury" : "Hg",
-        "Mercury telluride" : "HgTe",
-        "Iridium" : "Ir",
-        "Polycrystalline potassium" : "K",
-        "Lithium" : "Li",
-        "Magnesium oxide" : "MgO",
-        "Molybdenum" : "Mo",
-        "Sodium" : "Na_palik",
-        "Niobium" : "Nb",
-        "Nickel" : "Ni_palik",
-        "Rhodium" : "Rh",
-        "Selenium" : "Se",
-        "Hexagonal silicon carbide" : "SiC",
-        "Tin telluride" : "SnTe",
-        "Tantalum" : "Ta",
-        "Trigonal tellurium" : "Te",
-        "Polycryst. thorium (IV) fuoride" : "ThF4",
-        "Polycrystalline titanium carbide" : "TiC",
-        "Titanium nitride" : "TiN",
-        "Tetragonal titan. dioxide" : "TiO2",
-        "Vanadium carbide" : "VC",
-        "Vanadium" : "V_palik",
-        "Vanadium nitride" : "VN",
-        "Tungsten" : "W",
-    }
-
-    if conductorMaterialUI in conductorMaterialUIToPreset:
-        conductorMaterialPreset = conductorMaterialUIToPreset[conductorMaterialUI]
+    conductorMaterialUI = cmds.getAttr(material+".material", asString=True)
+    if conductorMaterialUI in conductorUIToPreset:
+        conductorMaterialPreset = conductorUIToPreset[conductorMaterialUI]
     else:
         # Default to a perfectly reflective mirror
         conductorMaterialPreset = "none"
 
     # Create a structure to be written
-    elementDict = {'type':'bsdf'}
-    elementDict['attributes'] = {'type':'conductor', 'id':materialName}
+    bsdfElement = createSceneElement('conductor', materialName)
 
-    elementDict['children'] = []
-    elementDict['children'].append( { 'type':'string', 
-        'attributes':{ 'name':'material', 'value':str(conductorMaterialPreset) } } )
-    elementDict['children'].append( { 'type':'float', 
-        'attributes':{ 'name':'extEta', 'value':str(extEta) } } )
+    bsdfElement['children'].append( createStringElement('material', conductorMaterialPreset) )
+    bsdfElement['children'].append( createFloatElement('extEta', extEta) )
+    bsdfElement['children'].append( createTexturedColorAttributeElement(material, "specularReflectance") )
 
-    return elementDict
+    return bsdfElement
 
 def writeShaderDielectric(material, materialName):
-    #Get all of the required attributes
-    intIOR = cmds.getAttr(material+".intIOR")
-    extIOR = cmds.getAttr(material+".extIOR")
+    bsdfElement = createSceneElement('dielectric', materialName)
 
-    # Create a structure to be written
-    elementDict = {'type':'bsdf'}
-    elementDict['attributes'] = {'type':'dielectric', 'id':materialName}
+    # Get interior IOR preset or value
+    interiorMaterialName = cmds.getAttr(material + ".interiorMaterial", asString=True)
+    interiorMaterialName = interiorMaterialName.split('-')[0].strip()
+    if interiorMaterialName in iorMaterialUIToPreset:
+        interiorMaterialPreset = iorMaterialUIToPreset[interiorMaterialName]
 
-    elementDict['children'] = []
-    elementDict['children'].append( { 'type':'float', 
-        'attributes':{ 'name':'intIOR', 'value':str(intIOR) } } )
-    elementDict['children'].append( { 'type':'float', 
-        'attributes':{ 'name':'extIOR', 'value':str(extIOR) } } )
+        bsdfElement['children'].append( createStringElement('intIOR', interiorMaterialPreset)  )
+    else:
+        intIOR = cmds.getAttr(material+".intior")
+        bsdfElement['children'].append( createFloatElement('intIOR', intIOR)  )
 
-    return elementDict
+    # Get exterior IOR preset or value
+    exteriorMaterialName = cmds.getAttr(material + ".exteriorMaterial", asString=True)
+    exteriorMaterialName = exteriorMaterialName.split('-')[0].strip()
+    if exteriorMaterialName in iorMaterialUIToPreset:
+        exteriorMaterialPreset = iorMaterialUIToPreset[exteriorMaterialName]
+
+        bsdfElement['children'].append( createStringElement('extIOR', exteriorMaterialPreset)  )
+    else:
+        extIOR = cmds.getAttr(material+".extior")
+        bsdfElement['children'].append( createFloatElement('extIOR', extIOR)  )
+
+    bsdfElement['children'].append( createTexturedColorAttributeElement(material, "specularReflectance") )
+    bsdfElement['children'].append( createTexturedColorAttributeElement(material, "specularTransmittance") )
+
+    return bsdfElement
 
 def writeShaderDiffuseTransmitter(material, materialName):
-    # Get values from the scene
-    transmittance = cmds.getAttr(material+".reflectance")
+    bsdfElement = createSceneElement('difftrans', materialName)
+    bsdfElement['children'].append( createTexturedColorAttributeElement(material, "transmittance") )
 
-    # Create a structure to be written
-    elementDict = {'type':'bsdf'}
-    elementDict['attributes'] = {'type':'diffuse', 'id':materialName}
-
-    elementDict['children'] = []
-    elementDict['children'].append( { 'type':'srgb', 
-        'attributes':{ 'name':'reflectance', 'value':str(transmittance[0][0]) + " " + str(transmittance[0][1]) + " " + str(transmittance[0][2]) } } )
-
-    return elementDict
+    return bsdfElement
 
 def writeShaderDiffuse(material, materialName):
-    # Get values from the scene
-    #texture
-    connectionAttr = "reflectance"
-    fileTexture = getTextureFile(material, connectionAttr)
-    if not fileTexture:
-        reflectance = cmds.getAttr(material+".reflectance")
+    bsdfElement = createSceneElement('diffuse', materialName)
+    bsdfElement['children'].append( createTexturedColorAttributeElement(material, "reflectance") )
 
-    # Create a structure to be written
-    elementDict = {'type':'bsdf'}
-    elementDict['attributes'] = {'type':'diffuse', 'id':materialName}
-
-    elementDict['children'] = []
-    if fileTexture:
-        textureElementDict = {'type':'texture'}
-        textureElementDict['attributes'] = {'type':'bitmap', 'name':'reflectance'}
-
-        textureElementDict['children'] = []
-        textureElementDict['children'].append( { 'type':'string', 
-            'attributes':{ 'name':'filename', 'value':fileTexture } } )
-
-        elementDict['children'].append( textureElementDict )
-    else:
-        elementDict['children'].append( { 'type':'srgb', 
-            'attributes':{ 'name':'reflectance', 'value':str(reflectance[0][0]) + " " + str(reflectance[0][1]) + " " + str(reflectance[0][2]) } } )
-
-    return elementDict
+    return bsdfElement
 
 def writeShaderPhong(material, materialName):
     exponent = cmds.getAttr(material+".exponent")
@@ -303,258 +565,279 @@ def writeShaderPhong(material, materialName):
     diffuseReflectance = cmds.getAttr(material+".diffuseReflectance")
 
     # Create a structure to be written
-    elementDict = {'type':'bsdf'}
-    elementDict['attributes'] = {'type':'phong', 'id':materialName}
+    bsdfElement = createSceneElement('phong', materialName)
 
-    elementDict['children'] = []
-    elementDict['children'].append( { 'type':'float', 
-        'attributes':{ 'name':'exponent', 'value':str(exponent) } } )
-    elementDict['children'].append( { 'type':'srgb', 
-        'attributes':{ 'name':'specularReflectance', 'value':str(specularReflectance[0][0]) + " " + str(specularReflectance[0][1]) + " " + str(specularReflectance[0][2]) } } )
-    elementDict['children'].append( { 'type':'srgb', 
-        'attributes':{ 'name':'diffuseReflectance', 'value':str(diffuseReflectance[0][0]) + " " + str(diffuseReflectance[0][1]) + " " + str(diffuseReflectance[0][2]) } } )
+    bsdfElement['children'].append( createTexturedFloatAttributeElement(material, "exponent")  )
+    bsdfElement['children'].append( createTexturedColorAttributeElement(material, "diffuseReflectance") )
+    bsdfElement['children'].append( createTexturedColorAttributeElement(material, "specularReflectance") )
 
-    return elementDict
-
+    return bsdfElement
 
 def writeShaderPlastic(material, materialName):
-    intIOR = cmds.getAttr(material+".intIOR")
-    extIOR = cmds.getAttr(material+".extIOR")
-    specularReflectance = cmds.getAttr(material+".specularReflectance")
-    diffuseReflectance = cmds.getAttr(material+".diffuseReflectance")
+    bsdfElement = createSceneElement('plastic', materialName)
 
-    # Create a structure to be written
-    elementDict = {'type':'bsdf'}
-    elementDict['attributes'] = {'type':'plastic', 'id':materialName}
+    # Get interior IOR preset or value
+    interiorMaterialName = cmds.getAttr(material + ".interiorMaterial", asString=True)
+    interiorMaterialName = interiorMaterialName.split('-')[0].strip()
+    if interiorMaterialName in iorMaterialUIToPreset:
+        interiorMaterialPreset = iorMaterialUIToPreset[interiorMaterialName]
 
-    elementDict['children'] = []
-    elementDict['children'].append( { 'type':'float', 
-        'attributes':{ 'name':'intIOR', 'value':str(intIOR) } } )
-    elementDict['children'].append( { 'type':'float', 
-        'attributes':{ 'name':'extIOR', 'value':str(extIOR) } } )
-    elementDict['children'].append( { 'type':'srgb', 
-        'attributes':{ 'name':'specularReflectance', 'value':str(specularReflectance[0][0]) + " " + str(specularReflectance[0][1]) + " " + str(specularReflectance[0][2]) } } )
-    elementDict['children'].append( { 'type':'srgb', 
-        'attributes':{ 'name':'diffuseReflectance', 'value':str(diffuseReflectance[0][0]) + " " + str(diffuseReflectance[0][1]) + " " + str(diffuseReflectance[0][2]) } } )
+        bsdfElement['children'].append( createStringElement('intIOR', interiorMaterialPreset)  )
+    else:
+        intIOR = cmds.getAttr(material+".intior")
+        bsdfElement['children'].append( createFloatElement('intIOR', intIOR)  )
 
-    return elementDict
+    # Get exterior IOR preset or value
+    exteriorMaterialName = cmds.getAttr(material + ".exteriorMaterial", asString=True)
+    exteriorMaterialName = exteriorMaterialName.split('-')[0].strip()
+    if exteriorMaterialName in iorMaterialUIToPreset:
+        exteriorMaterialPreset = iorMaterialUIToPreset[exteriorMaterialName]
+
+        bsdfElement['children'].append( createStringElement('extIOR', exteriorMaterialPreset)  )
+    else:
+        extIOR = cmds.getAttr(material+".extior")
+        bsdfElement['children'].append( createFloatElement('extIOR', extIOR)  )
+
+    bsdfElement['children'].append( createTexturedColorAttributeElement(material, "diffuseReflectance") )
+    bsdfElement['children'].append( createTexturedColorAttributeElement(material, "specularReflectance") )
+
+    nonlinear = cmds.getAttr(material+".nonlinear")
+    bsdfElement['children'].append( createBooleanElement('nonlinear', nonlinear)  )
+
+    return bsdfElement
 
 def writeShaderRoughCoating(material, materialName):
-    distribution = cmds.getAttr(material+".distribution", asString=True)
-    alpha = cmds.getAttr(material+".alpha")
-    intIOR = cmds.getAttr(material+".intIOR")
-    extIOR = cmds.getAttr(material+".extIOR")
+    bsdfElement = createSceneElement('roughcoating', materialName)
+
     thickness = cmds.getAttr(material+".thickness")
-    sigmaA = cmds.getAttr(material+".sigmaA")
-    specularReflectance = cmds.getAttr(material+".specularReflectance")
+    bsdfElement['children'].append( createFloatElement('thickness', thickness) )
+    bsdfElement['children'].append( createTexturedFloatAttributeElement(material, "alpha") )
+    bsdfElement['children'].append( createTexturedColorAttributeElement(material, "sigmaA") )
+    bsdfElement['children'].append( createTexturedColorAttributeElement(material, "specularReflectance") )
 
-    # Create a structure to be written
-    elementDict = {'type':'bsdf'}
-    elementDict['attributes'] = {'type':'coating', 'id':materialName}
+    distributionUI = cmds.getAttr(material+".distribution", asString=True)
 
-    elementDict['children'] = []
-    elementDict['children'].append( { 'type':'string', 
-        'attributes':{ 'name':'distribution', 'value':str(distribution) } } )
-    elementDict['children'].append( { 'type':'float', 
-        'attributes':{ 'name':'alpha', 'value':str(alpha) } } )
-    elementDict['children'].append( { 'type':'float', 
-        'attributes':{ 'name':'intIOR', 'value':str(intIOR) } } )
-    elementDict['children'].append( { 'type':'float', 
-        'attributes':{ 'name':'extIOR', 'value':str(extIOR) } } )
-    elementDict['children'].append( { 'type':'float', 
-        'attributes':{ 'name':'thickness', 'value':str(thickness) } } )
-    elementDict['children'].append( { 'type':'srgb', 
-        'attributes':{ 'name':'sigmaA', 'value':str(sigmaA[0][0]) + " " + str(sigmaA[0][1]) + " " + str(sigmaA[0][2]) } } )
-    elementDict['children'].append( { 'type':'srgb', 
-        'attributes':{ 'name':'specularReflectance', 'value':str(specularReflectance[0][0]) + " " + str(specularReflectance[0][1]) + " " + str(specularReflectance[0][2]) } } )
+    if distributionUI in distributionUIToPreset:
+        distributionPreset = distributionUIToPreset[distributionUI]
+    else:
+        distributionPreset = "beckmann"
 
-    #Nested bsdf
-    hasNestedBSDF = False
-    connections = cmds.listConnections(material, connections=True)
-    for i in range(len(connections)):
-        if i%2==1:
-            connection = connections[i]
-            connectionType = cmds.nodeType(connection)
-            if connectionType in materialNodeTypes and connections[i-1]==material+".bsdf":
-                #We've found the nested bsdf, so write it
-                shaderElement = writeShader(connection, connection)
-                elementDict['children'].append(shaderElement)
-                hasNestedBSDF = True
+    bsdfElement['children'].append( createStringElement('distribution', distributionPreset) )
 
-    if not hasNestedBSDF:
-        bsdf = cmds.getAttr(material+".bsdf")
-        nestedBSDFElement = {'type':'bsdf'}
-        nestedBSDFElement['attributes'] = {'type':'diffuse'}
+    # Get interior IOR preset or value
+    interiorMaterialName = cmds.getAttr(material + ".interiorMaterial", asString=True)
+    interiorMaterialName = interiorMaterialName.split('-')[0].strip()
+    if interiorMaterialName in iorMaterialUIToPreset:
+        interiorMaterialPreset = iorMaterialUIToPreset[interiorMaterialName]
 
-        nestedBSDFElement['children'] = []
-        nestedBSDFElement['children'].append( { 'type':'srgb', 
-            'attributes':{ 'name':'reflectance', 'value':str(bsdf[0][0]) + " " + str(bsdf[0][1]) + " " + str(bsdf[0][2]) } } )
+        bsdfElement['children'].append( createStringElement('intIOR', interiorMaterialPreset)  )
+    else:
+        intIOR = cmds.getAttr(material+".intior")
+        bsdfElement['children'].append( createFloatElement('intIOR', intIOR)  )
 
-        elementDict['children'].append( nestedBSDFElement )
+    # Get exterior IOR preset or value
+    exteriorMaterialName = cmds.getAttr(material + ".exteriorMaterial", asString=True)
+    exteriorMaterialName = exteriorMaterialName.split('-')[0].strip()
+    if exteriorMaterialName in iorMaterialUIToPreset:
+        exteriorMaterialPreset = iorMaterialUIToPreset[exteriorMaterialName]
 
-    return elementDict
+        bsdfElement['children'].append( createStringElement('extIOR', exteriorMaterialPreset)  )
+    else:
+        extIOR = cmds.getAttr(material+".extior")
+        bsdfElement['children'].append( createFloatElement('extIOR', extIOR)  )
 
+    # Get connected BSDF
+    nestedBSDFElement = createNestedBSDFElement(material, "bsdf")
+    if nestedBSDFElement:
+        bsdfElement['children'].append( nestedBSDFElement )
+
+    return bsdfElement
 
 def writeShaderRoughConductor(material, materialName):
-    distribution = cmds.getAttr(material+".distribution", asString=True)
+    distributionUI = cmds.getAttr(material+".distribution", asString=True)
     alphaUV = cmds.getAttr(material+".alphaUV")
     alpha = cmds.getAttr(material+".alpha")
-    conductorMaterial = cmds.getAttr(material+".material")
-    extEta = cmds.getAttr(material+"extEta")
+    conductorMaterialUI = cmds.getAttr(material+".material")
+    extEta = cmds.getAttr(material+".extEta")
+
+    if distributionUI in distributionUIToPreset:
+        distributionPreset = distributionUIToPreset[distributionUI]
+    else:
+        distributionPreset = "beckmann"
+
+    if conductorMaterialUI in conductorUIToPreset:
+        conductorMaterialPreset = conductorUIToPreset[conductorMaterialUI]
+    else:
+        conductorMaterialPreset = "Cu"
 
     # Create a structure to be written
-    elementDict = {'type':'bsdf'}
-    elementDict['attributes'] = {'type':'roughconductor', 'id':materialName}
+    bsdfElement = createSceneElement('roughconductor', materialName)
 
-    elementDict['children'] = []
-
-    elementDict['children'].append( { 'type':'string', 
-        'attributes':{ 'name':'distribution', 'value':str(distribution) } } )
-    if distribution == "as":
-        elementDict['children'].append( { 'type':'float', 
-            'attributes':{ 'name':'alphaU', 'value':str(alphaUV[0]) } } )
-        elementDict['children'].append( { 'type':'float', 
-            'attributes':{ 'name':'alphaV', 'value':str(alphaUV[1]) } } )
+    bsdfElement['children'].append( createStringElement('distribution', distributionPreset) )
+    if distributionPreset == "as":
+        bsdfElement['children'].append( createFloatElement('alphaU', alphaUV[0]) )
+        bsdfElement['children'].append( createFloatElement('alphaV', alphaUV[1]) )
     else:
-        elementDict['children'].append( { 'type':'float', 
-            'attributes':{ 'name':'alpha', 'value':str(alpha) } } )
+        bsdfElement['children'].append( createFloatElement('alpha', alpha) )
 
-    elementDict['children'].append( { 'type':'string', 
-        'attributes':{ 'name':'material', 'value':str(conductorMaterial) } } )
-    elementDict['children'].append( { 'type':'float', 
-        'attributes':{ 'name':'extEta', 'value':str(extEta) } } )
+    bsdfElement['children'].append( createStringElement('material', conductorMaterialPreset) )
+    bsdfElement['children'].append( createFloatElement('extEta', extEta) )
 
-    return elementDict
+    bsdfElement['children'].append( createTexturedColorAttributeElement(material, "specularReflectance") )
+
+    return bsdfElement
 
 def writeShaderRoughDielectric(material, materialName):
-    #Get all of the required attributes
-    intIOR = cmds.getAttr(material+".intIOR")
-    extIOR = cmds.getAttr(material+".extIOR")
-    specularReflectance = cmds.getAttr(material+".specularReflectance")
-    specularTransmittance = cmds.getAttr(material+".specularTransmittance")
-    distribution = cmds.getAttr(material+".distribution", asString=True)
-    alphaUV = cmds.getAttr(material+".alphaUV")
-    alpha = cmds.getAttr(material+".alpha")
+    bsdfElement = createSceneElement('roughdielectric', materialName)
 
-    # Create a structure to be written
-    elementDict = {'type':'bsdf'}
-    elementDict['attributes'] = {'type':'roughdielectric', 'id':materialName}
-
-    elementDict['children'] = []
-
-    elementDict['children'].append( { 'type':'string', 
-        'attributes':{ 'name':'distribution', 'value':str(distribution) } } )
-    if distribution == "as":
-        elementDict['children'].append( { 'type':'float', 
-            'attributes':{ 'name':'alphaU', 'value':str(alphaUV[0]) } } )
-        elementDict['children'].append( { 'type':'float', 
-            'attributes':{ 'name':'alphaV', 'value':str(alphaUV[1]) } } )
+    distributionUI = cmds.getAttr(material+".distribution", asString=True)
+    if distributionUI in distributionUIToPreset:
+        distributionPreset = distributionUIToPreset[distributionUI]
     else:
-        elementDict['children'].append( { 'type':'float', 
-            'attributes':{ 'name':'alpha', 'value':str(alpha) } } )
+        distributionPreset = "beckmann"
 
-    elementDict['children'].append( { 'type':'float', 
-        'attributes':{ 'name':'intIOR', 'value':str(intIOR) } } )
-    elementDict['children'].append( { 'type':'float', 
-        'attributes':{ 'name':'extIOR', 'value':str(extIOR) } } )
-    elementDict['children'].append( { 'type':'srgb', 
-        'attributes':{ 'name':'specularReflectance', 'value':str(specularReflectance[0][0]) + " " + str(specularReflectance[0][1]) + " " + str(specularReflectance[0][2]) } } )
-    elementDict['children'].append( { 'type':'srgb', 
-        'attributes':{ 'name':'specularTransmittance', 'value':str(specularTransmittance[0][0]) + " " + str(specularTransmittance[0][1]) + " " + str(specularTransmittance[0][2]) } } )
+    bsdfElement['children'].append( createStringElement('distribution', distributionPreset) )
+    if distributionPreset == "as":
+        alphaUV = cmds.getAttr(material+".alphaUV")
+        bsdfElement['children'].append( createFloatElement('alphaU', alphaUV[0])  )
+        bsdfElement['children'].append( createFloatElement('alphaV', alphaUV[1])  )
+    else:
+        alpha = cmds.getAttr(material+".alpha")
+        bsdfElement['children'].append( createTexturedFloatAttributeElement(material, "alpha") )
 
-    return elementDict
+    # Get interior IOR preset or value
+    interiorMaterialName = cmds.getAttr(material + ".interiorMaterial", asString=True)
+    interiorMaterialName = interiorMaterialName.split('-')[0].strip()
+    if interiorMaterialName in iorMaterialUIToPreset:
+        interiorMaterialPreset = iorMaterialUIToPreset[interiorMaterialName]
 
+        bsdfElement['children'].append( createStringElement('intIOR', interiorMaterialPreset)  )
+    else:
+        intIOR = cmds.getAttr(material+".intior")
+        bsdfElement['children'].append( createFloatElement('intIOR', intIOR)  )
+
+    # Get exterior IOR preset or value
+    exteriorMaterialName = cmds.getAttr(material + ".exteriorMaterial", asString=True)
+    exteriorMaterialName = exteriorMaterialName.split('-')[0].strip()
+    if exteriorMaterialName in iorMaterialUIToPreset:
+        exteriorMaterialPreset = iorMaterialUIToPreset[exteriorMaterialName]
+
+        bsdfElement['children'].append( createStringElement('extIOR', exteriorMaterialPreset)  )
+    else:
+        extIOR = cmds.getAttr(material+".extior")
+        bsdfElement['children'].append( createFloatElement('extIOR', extIOR)  )
+
+    bsdfElement['children'].append( createTexturedColorAttributeElement(material, "specularReflectance") )
+    bsdfElement['children'].append( createTexturedColorAttributeElement(material, "specularTransmittance") )
+
+    return bsdfElement
 
 def writeShaderRoughDiffuse(material, materialName):
-    reflectance = cmds.getAttr(material+".reflectance")
     alpha = cmds.getAttr(material+".alpha")
     useFastApprox = cmds.getAttr(material+".useFastApprox")
-    useFastApproxText = 'true' if useFastApprox else 'false'
 
     # Create a structure to be written
-    elementDict = {'type':'bsdf'}
-    elementDict['attributes'] = {'type':'roughdiffuse', 'id':materialName}
+    bsdfElement = createSceneElement('roughdiffuse', materialName)
 
-    elementDict['children'] = []
-    elementDict['children'].append( { 'type':'srgb', 
-        'attributes':{ 'name':'reflectance', 'value':str(specularReflectance[0][0]) + " " + str(specularReflectance[0][1]) + " " + str(specularReflectance[0][2]) } } )
-    elementDict['children'].append( { 'type':'float', 
-        'attributes':{ 'name':'alpha', 'value':str(alpha) } } )
-    elementDict['children'].append( { 'type':'boolean', 
-        'attributes':{ 'name':'useFastApprox', 'value':str(useFastApproxText) } } )
+    bsdfElement['children'].append( createTexturedColorAttributeElement(material, "reflectance") )
+    bsdfElement['children'].append( createFloatElement('alpha', alpha)  )
+    bsdfElement['children'].append( createBooleanElement('useFastApprox', useFastApprox)  )
 
-    return elementDict
+    return bsdfElement
 
 def writeShaderRoughPlastic(material, materialName):
-    distribution = cmds.getAttr(material+".distribution", asString=True)
+    bsdfElement = createSceneElement('roughplastic', materialName)
+
+    bsdfElement['children'].append( createTexturedColorAttributeElement(material, "specularReflectance") )
+    bsdfElement['children'].append( createTexturedColorAttributeElement(material, "diffuseReflectance") )
+
+    distributionUI = cmds.getAttr(material+".distribution", asString=True)
+    if distributionUI in distributionUIToPreset:
+        distributionPreset = distributionUIToPreset[distributionUI]
+    else:
+        distributionPreset = "beckmann"
+
+    bsdfElement['children'].append( createStringElement('distribution', distributionPreset) )
+
     alpha = cmds.getAttr(material+".alpha")
-    intIOR = cmds.getAttr(material+".intIOR")
-    extIOR = cmds.getAttr(material+".extIOR")
-    specularReflectance = cmds.getAttr(material+".specularReflectance")
-    diffuseReflectance = cmds.getAttr(material+".diffuseReflectance")
+    bsdfElement['children'].append( createTexturedFloatAttributeElement(material, "alpha") )
 
-    # Create a structure to be written
-    elementDict = {'type':'bsdf'}
-    elementDict['attributes'] = {'type':'roughplastic', 'id':materialName}
+    # Get interior IOR preset or value
+    interiorMaterialName = cmds.getAttr(material + ".interiorMaterial", asString=True)
+    interiorMaterialName = interiorMaterialName.split('-')[0].strip()
+    if interiorMaterialName in iorMaterialUIToPreset:
+        interiorMaterialPreset = iorMaterialUIToPreset[interiorMaterialName]
 
-    elementDict['children'] = []
-    elementDict['children'].append( { 'type':'string', 
-        'attributes':{ 'name':'distribution', 'value':str(distribution) } } )
-    elementDict['children'].append( { 'type':'float', 
-        'attributes':{ 'name':'alpha', 'value':str(alpha) } } )
-    elementDict['children'].append( { 'type':'float', 
-        'attributes':{ 'name':'intIOR', 'value':str(intIOR) } } )
-    elementDict['children'].append( { 'type':'float', 
-        'attributes':{ 'name':'extIOR', 'value':str(extIOR) } } )
-    elementDict['children'].append( { 'type':'srgb', 
-        'attributes':{ 'name':'specularReflectance', 'value':str(specularReflectance[0][0]) + " " + str(specularReflectance[0][1]) + " " + str(specularReflectance[0][2]) } } )
-    elementDict['children'].append( { 'type':'srgb', 
-        'attributes':{ 'name':'diffuseReflectance', 'value':str(diffuseReflectance[0][0]) + " " + str(diffuseReflectance[0][1]) + " " + str(diffuseReflectance[0][2]) } } )
+        bsdfElement['children'].append( createStringElement('intIOR', interiorMaterialPreset)  )
+    else:
+        intIOR = cmds.getAttr(material+".intior")
+        bsdfElement['children'].append( createFloatElement('intIOR', intIOR)  )
 
-    return elementDict
+    # Get exterior IOR preset or value
+    exteriorMaterialName = cmds.getAttr(material + ".exteriorMaterial", asString=True)
+    exteriorMaterialName = exteriorMaterialName.split('-')[0].strip()
+    if exteriorMaterialName in iorMaterialUIToPreset:
+        exteriorMaterialPreset = iorMaterialUIToPreset[exteriorMaterialName]
 
+        bsdfElement['children'].append( createStringElement('extIOR', exteriorMaterialPreset)  )
+    else:
+        extIOR = cmds.getAttr(material+".extior")
+        bsdfElement['children'].append( createFloatElement('extIOR', extIOR)  )
+
+    nonlinear = cmds.getAttr(material+".nonlinear")
+    bsdfElement['children'].append( createBooleanElement('nonlinear', nonlinear) )
+
+    return bsdfElement
 
 def writeShaderThinDielectric(material, materialName):
-    #Get all of the required attributes
-    intIOR = cmds.getAttr(material+".intIOR")
-    extIOR = cmds.getAttr(material+".extIOR")
+    bsdfElement = createSceneElement('thindielectric', materialName)
 
-    # Create a structure to be written
-    elementDict = {'type':'bsdf'}
-    elementDict['attributes'] = {'type':'thindielectric', 'id':materialName}
+    # Get interior IOR preset or value
+    interiorMaterialName = cmds.getAttr(material + ".interiorMaterial", asString=True)
+    interiorMaterialName = interiorMaterialName.split('-')[0].strip()
+    if interiorMaterialName in iorMaterialUIToPreset:
+        interiorMaterialPreset = iorMaterialUIToPreset[interiorMaterialName]
 
-    elementDict['children'] = []
-    elementDict['children'].append( { 'type':'float', 
-        'attributes':{ 'name':'intIOR', 'value':str(intIOR) } } )
-    elementDict['children'].append( { 'type':'float', 
-        'attributes':{ 'name':'extIOR', 'value':str(extIOR) } } )
+        bsdfElement['children'].append( createStringElement('intIOR', interiorMaterialPreset)  )
+    else:
+        intIOR = cmds.getAttr(material+".intior")
+        bsdfElement['children'].append( createFloatElement('intIOR', intIOR)  )
 
-    return elementDict
+    # Get exterior IOR preset or value
+    exteriorMaterialName = cmds.getAttr(material + ".exteriorMaterial", asString=True)
+    exteriorMaterialName = exteriorMaterialName.split('-')[0].strip()
+    if exteriorMaterialName in iorMaterialUIToPreset:
+        exteriorMaterialPreset = iorMaterialUIToPreset[exteriorMaterialName]
+
+        bsdfElement['children'].append( createStringElement('extIOR', exteriorMaterialPreset)  )
+    else:
+        extIOR = cmds.getAttr(material+".extior")
+        bsdfElement['children'].append( createFloatElement('extIOR', extIOR)  )
+
+    bsdfElement['children'].append( createTexturedColorAttributeElement(material, "specularReflectance") )
+    bsdfElement['children'].append( createTexturedColorAttributeElement(material, "specularTransmittance") )
+
+    return bsdfElement
 
 
 def writeShaderWard(material, materialName):
+    bsdfElement = createSceneElement('ward', materialName)
+
     variant = cmds.getAttr(material+".variant", asString=True)
-    alphaUV = cmds.getAttr(material+".alphaUV")
-    specularReflectance = cmds.getAttr(material+".specularReflectance")
-    diffuseReflectance = cmds.getAttr(material+".diffuseReflectance")
+    if variant in wardVariantUIToPreset:
+        variantPreset = wardVariantUIToPreset[variant]
+    else:
+        variantPreset = "balanced"
 
-    # Create a structure to be written
-    elementDict = {'type':'bsdf'}
-    elementDict['attributes'] = {'type':'phong', 'id':materialName}
+    bsdfElement['children'].append( createStringElement('variant', variantPreset)  )
 
-    elementDict['children'] = []
-    elementDict['children'].append( { 'type':'string', 
-        'attributes':{ 'name':'variant', 'value':str(variant) } } )
-    elementDict['children'].append( { 'type':'float', 
-        'attributes':{ 'name':'alphaU', 'value':str(alphaUV[0][0]) } } )
-    elementDict['children'].append( { 'type':'float', 
-        'attributes':{ 'name':'alphaV', 'value':str(alphaUV[0][1]) } } )
-    elementDict['children'].append( { 'type':'srgb', 
-        'attributes':{ 'name':'specularReflectance', 'value':str(specularReflectance[0][0]) + " " + str(specularReflectance[0][1]) + " " + str(specularReflectance[0][2]) } } )
-    elementDict['children'].append( { 'type':'srgb', 
-        'attributes':{ 'name':'diffuseReflectance', 'value':str(diffuseReflectance[0][0]) + " " + str(diffuseReflectance[0][1]) + " " + str(diffuseReflectance[0][2]) } } )
+    bsdfElement['children'].append( createTexturedFloatAttributeElement(material, "alphaU") )
+    bsdfElement['children'].append( createTexturedFloatAttributeElement(material, "alphaV") )
 
-    return elementDict
+    bsdfElement['children'].append( createTexturedColorAttributeElement(material, "diffuseReflectance") )
+    bsdfElement['children'].append( createTexturedColorAttributeElement(material, "specularReflectance") )
+
+    return bsdfElement
 
 def writeShaderIrawan(material, materialName):
     filename = cmds.getAttr(material+".filename", asString=True)
@@ -565,71 +848,245 @@ def writeShaderIrawan(material, materialName):
     weftkd = cmds.getAttr(material+".weftkd")
     weftks = cmds.getAttr(material+".weftks")
 
-    # Create a structure to be written
-    elementDict = {'type':'bsdf'}
-    elementDict['attributes'] = {'type':'irawan', 'id':materialName}
+    bsdfElement = createSceneElement('irawan', materialName)
 
-    elementDict['children'] = []
-    elementDict['children'].append( { 'type':'string', 
-        'attributes':{ 'name':'filename', 'value':filename } } )
-    elementDict['children'].append( { 'type':'float', 
-        'attributes':{ 'name':'repeatU', 'value':str(repeatu) } } )
-    elementDict['children'].append( { 'type':'float', 
-        'attributes':{ 'name':'repeatV', 'value':str(repeatv) } } )
-    elementDict['children'].append( { 'type':'rgb', 
-        'attributes':{ 'name':'warp_kd', 'value':str(warpkd[0][0]) + " " + str(warpkd[0][1]) + " " + str(warpkd[0][2]) } } )
-    elementDict['children'].append( { 'type':'rgb', 
-        'attributes':{ 'name':'warp_ks', 'value':str(warpks[0][0]) + " " + str(warpks[0][1]) + " " + str(warpks[0][2]) } } )
-    elementDict['children'].append( { 'type':'rgb', 
-        'attributes':{ 'name':'weft_kd', 'value':str(weftkd[0][0]) + " " + str(weftkd[0][1]) + " " + str(weftkd[0][2]) } } )
-    elementDict['children'].append( { 'type':'rgb', 
-        'attributes':{ 'name':'weft_ks', 'value':str(weftks[0][0]) + " " + str(weftks[0][1]) + " " + str(weftks[0][2]) } } )
+    bsdfElement['children'].append( createStringElement('filename', filename) )
+    bsdfElement['children'].append( createFloatElement('repeatU', repeatu) )
+    bsdfElement['children'].append( createFloatElement('repeatV', repeatv) )
 
-    return elementDict
+    bsdfElement['children'].append( createColorElement('warp_kd', warpkd[0], colorspace='rgb') )
+    bsdfElement['children'].append( createColorElement('warp_ks', warpks[0], colorspace='rgb') )
 
+    bsdfElement['children'].append( createColorElement('weft_kd', weftkd[0], colorspace='rgb') )
+    bsdfElement['children'].append( createColorElement('weft_ks', weftks[0], colorspace='rgb') )
+
+    return bsdfElement
+
+def writeShaderTwoSided(material, materialName):
+    bsdfElement = createSceneElement('twosided', materialName)
+
+    frontBSDFElement = createNestedBSDFElement(material, "frontBSDF")
+    bsdfElement['children'].append( frontBSDFElement )
+
+    backBSDFElement = createNestedBSDFElement(material, "backBSDF", useDefault=False)
+    if backBSDFElement:
+        bsdfElement['children'].append( backBSDFElement )
+
+    return bsdfElement
+
+def writeShaderMixture(material, materialName):
+    bsdfElement = createSceneElement('mixturebsdf', materialName)
+
+    weight1 = cmds.getAttr(material+".weight1")
+    weight2 = cmds.getAttr(material+".weight2")
+    weight3 = cmds.getAttr(material+".weight3")
+    weight4 = cmds.getAttr(material+".weight4")
+
+    weights = [weight1, weight2, weight3, weight4]
+    weights = [x for x in weights if x != 0]
+    weightString = ", ".join(map(str, weights))
+
+    if weight1 > 0.0:
+        bsdf1Element = createNestedBSDFElement(material, "bsdf1")
+        bsdfElement['children'].append( bsdf1Element )
+
+    if weight2 > 0.0:
+        bsdf2Element = createNestedBSDFElement(material, "bsdf2")
+        bsdfElement['children'].append( bsdf2Element )
+
+    if weight3 > 0.0:
+        bsdf3Element = createNestedBSDFElement(material, "bsdf3")
+        bsdfElement['children'].append( bsdf3Element )
+
+    if weight4 > 0.0:
+        bsdf4Element = createNestedBSDFElement(material, "bsdf4")
+        bsdfElement['children'].append( bsdf4Element )
+
+    bsdfElement['children'].append( createStringElement('weights', weightString) )
+
+    return bsdfElement
+
+def writeShaderBlend(material, materialName):
+    bsdfElement = createSceneElement('blendbsdf', materialName)
+
+    bsdfElement['children'].append( createTexturedFloatAttributeElement(material, "weight") )
+
+    bsdf1Element = createNestedBSDFElement(material, "bsdf1")
+    bsdfElement['children'].append( bsdf1Element )
+
+    bsdf2Element = createNestedBSDFElement(material, "bsdf2")
+    bsdfElement['children'].append( bsdf2Element )
+
+    return bsdfElement
+
+def writeShaderMask(material, materialName):
+    bsdfElement = createSceneElement('mask', materialName)
+
+    bsdfElement['children'].append( createTexturedColorAttributeElement(material, "opacity") )
+
+    bsdf1Element = createNestedBSDFElement(material, "bsdf")
+    bsdfElement['children'].append( bsdf1Element )
+
+    return bsdfElement
+
+def writeShaderBump(material, materialName):
+    bsdfElement = createSceneElement('bumpmap', materialName)
+
+    bumpScale = cmds.getAttr(material+".bumpScale")
+    bsdfElement['children'].append( createTexturedColorAttributeElement(material, "texture", scale=bumpScale) )
+
+    bsdf1Element = createNestedBSDFElement(material, "bsdf")
+    bsdfElement['children'].append( bsdf1Element )
+
+    return bsdfElement
+
+def writeShaderHK(material, materialName):
+    bsdfElement = createSceneElement('hk', materialName)
+
+    useSigmaSA = cmds.getAttr(material+".useSigmaSA")
+    useSigmaTAlbedo = cmds.getAttr(material+".useSigmaTAlbedo")
+    if useSigmaSA:
+        bsdfElement['children'].append( createTexturedColorAttributeElement(material, "sigmaS") )
+        bsdfElement['children'].append( createTexturedColorAttributeElement(material, "sigmaA") )
+
+    elif useSigmaTAlbedo:
+        bsdfElement['children'].append( createTexturedColorAttributeElement(material, "sigmaT") )
+        bsdfElement['children'].append( createTexturedColorAttributeElement(material, "albedo") )
+
+    else:
+        materialString = cmds.getAttr(material+".material", asString=True)
+        bsdfElement['children'].append( createStringElement('material', materialString) )
+
+    thickness = cmds.getAttr(material+".thickness")
+    bsdfElement['children'].append( createFloatElement('thickness', thickness) )
+
+    phaseFunctionUIName = cmds.getAttr(material+".phaseFunction", asString=True)
+    if phaseFunctionUIName in phaseFunctionUIToPreset:
+        phaseFunctionName = phaseFunctionUIToPreset[phaseFunctionUIName]
+
+        phaseFunctionElement = createSceneElement(phaseFunctionName, elementType='phase')
+        if phaseFunctionName == 'hg':
+            g = cmds.getAttr(material+".phaseFunctionHGG")
+            phaseFunctionElement['children'].append( createFloatElement('g', g) )
+        elif phaseFunctionName == 'microflake':
+            s = cmds.getAttr(material+".phaseFunctionMFSD")
+            phaseFunctionElement['children'].append( createFloatElement('stddev', s) )
+
+        bsdfElement['children'].append( phaseFunctionElement  )
+
+    return bsdfElement
 
 def writeShaderObjectAreaLight(material, materialName):
+    elementDict = createSceneElement('area', materialName, 'emitter')
+
     color = cmds.getAttr(material+".radiance")
     samplingWeight = cmds.getAttr(material+".samplingWeight")
 
-    # Create a structure to be written
-    elementDict = {'type':'emitter'}
-    elementDict['attributes'] = {'type':'area', 'id':materialName}
-
-    elementDict['children'] = []
-    elementDict['children'].append( { 'type':'rgb', 
-        'attributes':{ 'name':'radiance', 'value':str(color[0][0]) + " " + str(color[0][1]) + " " + str(color[0][2]) } } )
-    elementDict['children'].append( { 'type':'float', 
-        'attributes':{ 'name':'samplingWeight', 'value':str(samplingWeight) } } )
+    elementDict['children'].append( createColorElement('radiance', color[0], colorspace='rgb') )
+    elementDict['children'].append( createFloatElement('samplingWeight', samplingWeight) )
 
     return elementDict
 
-def writeShaderTwoSided(material, materialName):
-    # Create a structure to be written
-    elementDict = {'type':'bsdf'}
-    elementDict['attributes'] = {'type':'twosided', 'id':materialName}
+def writeShaderDipoleSSS(material, materialName):
+    # roughplastic bsdf
+    bsdfElement = createSceneElement('roughplastic')
 
-    elementDict['children'] = []
+    bsdfElement['children'].append( createTexturedColorAttributeElement(material, "specularReflectance") )
 
-    #Nested bsdf
-    connections = cmds.listConnections(material, connections=True)
-    for i in range(len(connections)):
-        if i%2==1:
-            connection = connections[i]
-            connectionType = cmds.nodeType(connection)
-            if connectionType in materialNodeTypes and connections[i-1]==material+".bsdf":
-                #We've found the nested bsdf, so write it
-                childElement = writeShader(connection, connection)
+    distributionUI = cmds.getAttr(material+".surfaceDistribution", asString=True)
+    if distributionUI in distributionUIToPreset:
+        distributionPreset = distributionUIToPreset[distributionUI]
+    else:
+        distributionPreset = "beckmann"
 
-                elementDict['children'].append( { 'type':'ref', 
-                    'attributes':{ 'id':childElement['attributes']['id'] } } )
+    bsdfElement['children'].append( createStringElement('distribution', distributionPreset) )
 
-    return elementDict
+    bsdfElement['children'].append( createTexturedFloatAttributeElement(material, "surfaceAlpha", mitsubaParameter="alpha") )
+
+    # Get interior IOR preset or value
+    interiorMaterialName = cmds.getAttr(material + ".interiorMaterial", asString=True)
+    interiorMaterialName = interiorMaterialName.split('-')[0].strip()
+    if interiorMaterialName in iorMaterialUIToPreset:
+        interiorMaterialPreset = iorMaterialUIToPreset[interiorMaterialName]
+
+        bsdfElement['children'].append( createStringElement('intIOR', interiorMaterialPreset)  )
+    else:
+        intIOR = cmds.getAttr(material+".intior")
+        bsdfElement['children'].append( createFloatElement('intIOR', intIOR)  )
+
+    # Get exterior IOR preset or value
+    exteriorMaterialName = cmds.getAttr(material + ".exteriorMaterial", asString=True)
+    exteriorMaterialName = exteriorMaterialName.split('-')[0].strip()
+    if exteriorMaterialName in iorMaterialUIToPreset:
+        exteriorMaterialPreset = iorMaterialUIToPreset[exteriorMaterialName]
+
+        bsdfElement['children'].append( createStringElement('extIOR', exteriorMaterialPreset)  )
+    else:
+        extIOR = cmds.getAttr(material+".extior")
+        bsdfElement['children'].append( createFloatElement('extIOR', extIOR)  )
+
+    nonlinear = cmds.getAttr(material+".nonlinear")
+    bsdfElement['children'].append( createBooleanElement('nonlinear', nonlinear) )
+
+    useSingleScatteringModel = cmds.getAttr(material+".useSingleScatteringModel")
+
+    # dipole sss
+    sssElement = createSceneElement('dipole', elementType='subsurface')
+
+    useSigmaSA = cmds.getAttr(material+".useSigmaSA")
+    useSigmaTAlbedo = cmds.getAttr(material+".useSigmaTAlbedo")
+    if useSigmaSA:
+        sigmaS = cmds.getAttr(material+".sigmaS")
+        sigmaA = cmds.getAttr(material+".sigmaA")
+        sssElement['children'].append( createFloatElement("sigmaS", sigmaS) )
+        sssElement['children'].append( createFloatElement("sigmaA", sigmaA) )
+
+    elif useSigmaTAlbedo:
+        sigmaT = cmds.getAttr(material+".sigmaT")
+        albedo = cmds.getAttr(material+".albedo")
+        sssElement['children'].append( createFloatElement("sigmaT", sigmaT) )
+        sssElement['children'].append( createFloatElement("albedo", albedo) )
+
+    else:
+        materialString = cmds.getAttr(material+".material", asString=True)
+        sssElement['children'].append( createStringElement('material', materialString) )
+
+    scale = cmds.getAttr(material+".scale")
+    sssElement['children'].append( createFloatElement("scale", scale) )
+
+    irrSamples = cmds.getAttr(material+".irrSamples")
+    sssElement['children'].append( createIntegerElement("irrSamples", irrSamples) )
+
+    # Get interior IOR preset or value
+    interiorMaterialName = cmds.getAttr(material + ".interiorMaterial", asString=True)
+    interiorMaterialName = interiorMaterialName.split('-')[0].strip()
+    if interiorMaterialName in iorMaterialUIToPreset:
+        interiorMaterialPreset = iorMaterialUIToPreset[interiorMaterialName]
+
+        sssElement['children'].append( createStringElement('intIOR', interiorMaterialPreset)  )
+    else:
+        intIOR = cmds.getAttr(material+".intior")
+        sssElement['children'].append( createFloatElement('intIOR', intIOR)  )
+
+    # Get exterior IOR preset or value
+    exteriorMaterialName = cmds.getAttr(material + ".exteriorMaterial", asString=True)
+    exteriorMaterialName = exteriorMaterialName.split('-')[0].strip()
+    if exteriorMaterialName in iorMaterialUIToPreset:
+        exteriorMaterialPreset = iorMaterialUIToPreset[exteriorMaterialName]
+
+        sssElement['children'].append( createStringElement('extIOR', exteriorMaterialPreset)  )
+    else:
+        extIOR = cmds.getAttr(material+".extior")
+        sssElement['children'].append( createFloatElement('extIOR', extIOR)  )
+
+    if not useSingleScatteringModel:
+        bsdfElement = None
+
+    return sssElement, bsdfElement
 
 
 '''
 Write a surface material (material) to a Mitsuba scene file (outFile)
-tabbedSpace is a string of blank space to account for recursive xml
 '''
 def writeShader(material, materialName):
     matType = cmds.nodeType(material)
@@ -640,7 +1097,7 @@ def writeShader(material, materialName):
         "MitsubaDielectricShader" : writeShaderDielectric,
         "MitsubaDiffuseTransmitterShader" : writeShaderDiffuseTransmitter,
         "MitsubaDiffuseShader" : writeShaderDiffuse,
-        "writeShaderPhong" : writeShaderPhong,
+        "MitsubaPhongShader" : writeShaderPhong,
         "MitsubaPlasticShader" : writeShaderPlastic,
         "MitsubaRoughCoatingShader" : writeShaderRoughCoating,
         "MitsubaRoughConductorShader" : writeShaderRoughConductor,
@@ -652,9 +1109,14 @@ def writeShader(material, materialName):
         "MitsubaIrawanShader" : writeShaderIrawan,
         "MitsubaObjectAreaLightShader" : writeShaderObjectAreaLight,
         "MitsubaTwoSidedShader" : writeShaderTwoSided,
+        "MitsubaMixtureShader" : writeShaderMixture,
+        "MitsubaBlendShader" : writeShaderBlend,
+        "MitsubaMaskShader" : writeShaderMask,
+        "MitsubaBumpShader" : writeShaderBump,
+        "MitsubaHKShader" : writeShaderHK,
+        "MitsubaHomogeneousParticipatingMedium" : writeMediumHomogeneous,
+        "MitsubaHeterogeneousParticipatingMedium" : writeMediumHeterogeneous,
     }
-
-    # Need to support : MitsubaBumpShader, MitsubaMaskShader, MitsubaMixtureShader
 
     if matType in mayaMaterialTypeToShaderFunction:
         writeShaderFunction = mayaMaterialTypeToShaderFunction[matType]
@@ -1404,12 +1866,6 @@ def writeReconstructionFilter(renderSettings):
 
     return rfilterElement
 
-def booleanToMisubaText(b):
-    if b:
-        return "true"
-    else:
-        return "false"
-
 def writeFilmHDR(renderSettings, filmMitsuba):
     fHDRFilmFileFormat = cmds.getAttr("%s.%s" % (renderSettings, "fHDRFilmFileFormat"))
     fHDRFilmPixelFormat = cmds.getAttr("%s.%s" % (renderSettings, "fHDRFilmPixelFormat"))
@@ -1803,9 +2259,9 @@ def writeSensor(frameNumber, renderSettings):
         transformDict['children'].append( { 'type':'scale', 
             'attributes':{ 'x':str(orthographicWidth), 'y':str(orthographicWidth) } } )
     transformDict['children'].append( { 'type':'lookat', 
-        'attributes':{ 'target':str(camAim[0]) + " " + str(camAim[1]) + " " + str(camAim[2]), 
-            'origin':str(camPos[0]) + " " + str(camPos[1]) + " " + str(camPos[2]),
-             'up':str(camUp[0]) + " " + str(camUp[1]) + " " + str(camUp[2])} } )
+        'attributes':{ 'target':listToMitsubaText(camAim), 
+            'origin':listToMitsubaText(camPos),
+             'up':listToMitsubaText(camUp) } } )
 
     elementDict['children'].append(transformDict)
 
@@ -1836,7 +2292,7 @@ def writeLightDirectional(light):
     elementDict['children'] = []
 
     elementDict['children'].append( { 'type':'srgb', 
-        'attributes':{ 'name':'irradiance', 'value':str(irradiance[0]) + " " + str(irradiance[1]) + " " + str(irradiance[2]) } } )
+        'attributes':{ 'name':'irradiance', 'value':listToMitsubaText(irradiance) } } )
     elementDict['children'].append( { 'type':'vector', 
         'attributes':{ 'name':'direction', 'x':str(lightDir[0]), 'y':str(lightDir[1]), 'z':str(lightDir[2]) } } )
 
@@ -1859,7 +2315,7 @@ def writeLightPoint(light):
     elementDict['children'] = []
 
     elementDict['children'].append( { 'type':'srgb', 
-        'attributes':{ 'name':'intensity', 'value':str(irradiance[0]) + " " + str(irradiance[1]) + " " + str(irradiance[2]) } } )
+        'attributes':{ 'name':'intensity', 'value':listToMitsubaText(irradiance) } } )
     elementDict['children'].append( { 'type':'point', 
         'attributes':{ 'name':'position', 'x':str(position[0]), 'y':str(position[1]), 'z':str(position[2]) } } )
 
@@ -1889,7 +2345,7 @@ def writeLightSpot(light):
     elementDict['children'] = []
 
     elementDict['children'].append( { 'type':'rgb', 
-        'attributes':{ 'name':'intensity', 'value':str(irradiance[0]) + " " + str(irradiance[1]) + " " + str(irradiance[2]) } } )
+        'attributes':{ 'name':'intensity', 'value':listToMitsubaText(irradiance) } } )
     elementDict['children'].append( { 'type':'float', 
         'attributes':{ 'name':'cutoffAngle', 'value':str(coneAngle + penumbraAngle) } } )
     elementDict['children'].append( { 'type':'float', 
@@ -1954,7 +2410,7 @@ def writeLightSunSky(sunsky):
     elementDict['children'].append( { 'type':'float', 
         'attributes':{ 'name':'turbidity', 'value':str(turbidity) } } )
     elementDict['children'].append( { 'type':'srgb', 
-        'attributes':{ 'name':'albedo', 'value':str(albedo[0][0]) + " " + str(albedo[0][1]) + " " + str(albedo[0][2]) } } )
+        'attributes':{ 'name':'albedo', 'value':listToMitsubaText(albedo[0]) } } )
 
     elementDict['children'].append( { 'type':'integer', 
         'attributes':{ 'name':'year', 'value':str(date[0][0]) } } )
@@ -2068,7 +2524,7 @@ def writeLightEnvMap(envmap):
             elementDict['children'] = []
 
             elementDict['children'].append( { 'type':'srgb', 
-                'attributes':{ 'name':'radiance', 'value':str(radiance[0]) + " " + str(radiance[1]) + " " + str(radiance[2]) } } )
+                'attributes':{ 'name':'radiance', 'value':listToMitsubaText(radiance[0]) } } )
             elementDict['children'].append( { 'type':'float', 
                 'attributes':{ 'name':'samplingWeight', 'value':str(samplingWeight) } } )
 
@@ -2132,33 +2588,47 @@ def getRenderableGeometry():
 
     return geoms
 
+def addTwoSided(material, materialElement):
+    # Create a structure to be written
+    elementDict = createSceneElement('twosided', material)
+
+    materialElement['attributes']['id'] = material + "InnerMaterial"
+    elementDict['children'].append(materialElement)
+    
+    return elementDict
+
+
 def writeMaterials(geoms):
     writtenMaterials = []
     materialElements = []
 
     #Write the material for each piece of geometry in the scene
     for geom in geoms:
-        material = getShader(geom)          #Gets the user define names of the shader
-        materialType = cmds.nodeType(material)
-        if materialType in materialNodeTypes:
-            if material not in writtenMaterials:
-                if "twosided" in cmds.listAttr(material) and cmds.getAttr(material+".twosided"):
-                    # Create a structure to be written
-                    elementDict = {'type':'bsdf'}
-                    elementDict['attributes'] = {'type':'twosided', 'id':material}
+        # Surface shader
+        material = getSurfaceShader(geom)
+        if material and material not in writtenMaterials:
 
-                    elementDict['children'] = []
+            materialType = cmds.nodeType(material)
+            if materialType in materialNodeTypes:
+                if materialType not in ["MitsubaObjectAreaLightShader", "MitsubaSSSDipoleShader"]:
+                    materialElement = writeShader(material, material)
 
-                    childElement = writeShader(material, material+"InnerMaterial")
-                    elementDict['children'].append(childElement)
-                    
-                    materialElements.append(elementDict)
-                else:
-                    if materialType != "MitsubaObjectAreaLightShader":
-                        materialElement = writeShader(material, material)
-                        materialElements.append( materialElement )
+                    if "twosided" in cmds.listAttr(material) and cmds.getAttr(material+".twosided"):
+                            materialElement = addTwoSided(material, materialElement)
 
-                writtenMaterials.append(material)
+                    materialElements.append(materialElement)
+                    writtenMaterials.append(material)
+
+        # Medium / Volume shaders
+        mediumMaterial = getVolumeShader(geom)
+        if mediumMaterial and mediumMaterial not in writtenMaterials:
+
+            materialType = cmds.nodeType(mediumMaterial)
+            if materialType in materialNodeTypes:
+                mediumMaterialElement = writeShader(mediumMaterial, mediumMaterial)
+
+                materialElements.append(mediumMaterialElement)
+                writtenMaterials.append(mediumMaterial)
         
     return writtenMaterials, materialElements
 
@@ -2168,6 +2638,7 @@ def exportGeometry(geom, renderDir):
     objFile = cmds.file(output, op=True, typ="OBJexport", options="groups=1;ptgroups=1;materials=0;smoothing=1;normals=1", exportSelected=True, force=True)
     return objFile
 
+'''
 def findAndWriteMedium(geom, shader):
     #check for a homogeneous material
     #this checks if there is a homogeneous medium, and returns the attribute that it
@@ -2186,36 +2657,47 @@ def findAndWriteMedium(geom, shader):
         mediumElement = None
 
     return mediumElement
+'''
 
-def writeShape(geom, shader, renderDir):
-    shapeDict = {'type':'shape'}
-    shapeDict['attributes'] = {'type':'obj'}
+def writeShape(geom, surfaceShader, mediumShader, renderDir):
+    shapeDict = createSceneElement('obj', elementType='shape')
 
-    shapeDict['children'] = []
-    shapeDict['children'].append( { 'type':'string', 
-        'attributes':{ 'name':'filename', 'value':geom + ".obj" } } )
+    shapeDict['children'].append( createStringElement('filename', geom + ".obj") )
 
-    if cmds.nodeType(shader) in materialNodeTypes:
+    # Write medium shader
+    if mediumShader and cmds.nodeType(mediumShader) in materialNodeTypes:
+        refDict = createSceneElement(elementType='ref')
+        refDict['attributes'] = {'name':'interior', 'id':mediumShader}
+
+        shapeDict['children'].append(refDict)
+
+    # Write surface shader
+    if surfaceShader and cmds.nodeType(surfaceShader) in materialNodeTypes:
         # Check for area lights
-        if cmds.nodeType(shader) == "MitsubaObjectAreaLightShader":
-            shaderElement = writeShader(shader, shader)
+        if cmds.nodeType(surfaceShader) == "MitsubaObjectAreaLightShader":
+            shaderElement = writeShaderObjectAreaLight(surfaceShader, surfaceShader)
             shapeDict['children'].append(shaderElement)
+
+        # Check for dipole sss
+        elif cmds.nodeType(surfaceShader) == "MitsubaSSSDipoleShader":
+            sssElement, bsdfElement = writeShaderDipoleSSS(surfaceShader, surfaceShader)
+            shapeDict['children'].append(sssElement)
+            if bsdfElement:
+                shapeDict['children'].append(bsdfElement)
 
         # Otherwise refer to the already written material
         else:
-            refDict = {'type':'ref'}
-            refDict['attributes'] = {'id':shader}
+            refDict = createSceneElement(elementType='ref')
+            refDict['attributes'] = {'id':surfaceShader}
+
             shapeDict['children'].append(refDict)
 
-        # Write volume definition, if one exists
-        mediumDict = findAndWriteMedium(geom, shader)
-        if mediumDict:
-            shapeDict['children'].append(mediumDict)
-
-    elif cmds.nodeType(shader) == "MitsubaVolume":
+    '''
+    elif cmds.nodeType(surfaceShader) == "MitsubaVolume":
         volumeElement = writeVolume(renderDir, shader, geom)
         if volumeElement:
             shapeDict['children'].append(volumeElement)
+    '''
     
     return shapeDict
 
@@ -2230,16 +2712,18 @@ def writeGeometryAndMaterials(renderDir):
 
     #Write each piece of geometry with references to materials
     for geom in geoms:
-        shader = getShader(geom)
+        surfaceShader = getSurfaceShader(geom)
+        volumeShader  = getVolumeShader(geom)
 
         exportedGeo = exportGeometry(geom, renderDir)
         geoFiles.append( exportedGeo )
 
-        shapeElement = writeShape(geom, shader, renderDir)
+        shapeElement = writeShape(geom, surfaceShader, volumeShader, renderDir)
         shapeElements.append(shapeElement)
 
     return (geoFiles, shapeElements, materialElements)
 
+'''
 def getVtxPos(shapeNode):
     vtxWorldPosition = []    # will contain positions un space of all object vertex
     vtxIndexList = cmds.getAttr( shapeNode+".vrts", multiIndices=True )
@@ -2251,7 +2735,7 @@ def getVtxPos(shapeNode):
 #
 # Needs to be generalized
 #
-def writeVolume(renderDir, material, geom):
+def convertVolumeFormatXtoMitsuba(renderDir, material, geom):
     #sourceFileName = "smoke_source\\text\\smoke_test_"
     hasFile = False
     fileTexture = ""
@@ -2356,6 +2840,11 @@ def writeVolume(renderDir, material, geom):
     volFile.close()
     sourceFile.close()
 
+    return volFileName
+
+def writeVolume(renderDir, material, geom):
+    volFileName = convertVolumeFormatXtoMitsuba(renderDir, material, geom)
+
     # Create a structure to be written
     mediumDict = {'type':'medium'}
     mediumDict['attributes'] = {'type':'heterogeneous', 'name':'interior'}
@@ -2382,16 +2871,16 @@ def writeVolume(renderDir, material, geom):
     mediumDict['children'].append(volume2Dict)
 
     return mediumDict
+'''
 
 def writeScene(outFileName, renderDir, renderSettings):
-    outFile = open(outFileName, 'w+')
+    #
+    # Generate scene element hierarchy
+    #
+    sceneElement = createSceneElement(elementType='scene')
 
-    #Scene stuff
-    outFile.write("<?xml version=\'1.0\' encoding=\'utf-8\'?>\n")
-
-    sceneElement = {'type':'scene'}
+    # Should make this query the binary...
     sceneElement['attributes'] = {'version':'0.5.0'}
-    sceneElement['children'] = []
 
     #Get integrator
     integratorElement = writeIntegrator(renderSettings)
@@ -2415,9 +2904,11 @@ def writeScene(outFileName, renderDir, renderSettings):
     if shapeElements:
         sceneElement['children'].extend(shapeElements)
 
+    #
     # Write the structure to disk
-    writeElement(outFile, sceneElement)
-
-    outFile.close()
+    #
+    with open(outFileName, 'w+') as outFile:
+        outFile.write("<?xml version=\'1.0\' encoding=\'utf-8\'?>\n")
+        writeElement(outFile, sceneElement)
 
     return exportedGeometryFiles

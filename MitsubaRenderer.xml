@@ -69,6 +69,7 @@
     <!-- ______________________________________________________________ -->
     <sep desc="Path options"/>
     <attrString n="mfm:mp" s="defaultMitsubaRenderGlobals.mitsubaPath" t="string" h="Mitsuba path."/>
+    <attr n="mfm:sc" s="defaultMitsubaRenderGlobals.sampleCount" t="int" h="Set sample count for the image sampler"/>
     <sep/>
     <!-- ______________________________________________________________ -->
     <!-- Generic options below -->

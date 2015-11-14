@@ -61,14 +61,41 @@ x add support for film parameters
 x support animated parameters in batch mode
  x added MAYA_RELEASE_PYTHON_GIL = 1 to Maya.env
 
-x figure out what pixelFormat to use for the 'albedo' field
-
 x expand support for predefined 'conductor' materials
+x clean up materials
+ x diffuse, roughdiffuse, 
+ x dielectric, thindielectric, roughdielectric
+ x conductor, roughconductor, 
+ x plastic, roughplastic
+ x phong, ward
+ x diffuse transmitter
+ x irawan
+ x twosided
+ x coating
+ x roughcoating
+ x mixturebsdf
+ x blendbsdf
+ x mask
+ x bump
+ x hk - uses phase functions
+ x dipole
+ x homogeneous
+ x heterogeneous
 
-figure out how to load multichannel exrs into the Maya Render View
+x Support all surface scattering models
+x Support all subsurface scattering models
+x Support combination of surface and medium scattering models
+
+x make plugin ids consistent
+
+x indent code to 4 space tabs
+
+use pre-generated mip-maps if they exist
+
+figure out if you can load multichannel exrs into the Maya Render View
 add support for metadata and label annotations with ldrfilm and hdrfilm
 standardize callbacks used in UI
-add support for crop coordinates (pulled from general render settings)
+add support for crop coordinates (pulled from general render settings or render view selection rectangle)
 
 organize UI
 - connect activation of multichannel and metaintegrators to choice of base integrator
@@ -76,21 +103,22 @@ organize UI
 add support for writing lightmaps using irradiancemeter sensor type
 - need workflow design
 
-generalize support for volumes
-
 support render cancel
 support batch render cancel
 support interactive render view / update / cancel
 
 create renderData/mitsuba directory for temporary render files
 
-indent code to 4 space tabs
 replace all mel functions with automatically generated mel which immediately calls back into Python
-make plugin ids consistent
 
 replace xml writing with etree
 
-Note references
+
+
+
+Notes / references
+
+
 http://knowledge.autodesk.com/support/maya/troubleshooting/caas/sfdcarticles/sfdcarticles/Registering-a-custom-renderer-for-batch-rendering.html
 
 http://help.autodesk.com/view/MAYAUL/2016/ENU/
@@ -108,6 +136,46 @@ Notes on usage
 - Energyredistributionpathtracing, maxChains is noted as a float attribute in the documentation but the implementation expects an integer
 - Energyredistributionpathtracing seems to render, with continuous "Unable to recreate specular vertex in perturbation" errors
 - Progressive Photon Map crashes
+- The roughdiffuse bsdf alpha parameter is described as a 'spectrum or texture' but plugin expects a float
+- What material does the 'Bk7' IOR correspond to?
+- Kajia-Kay phase function produces NaNs when used with the HK surface shader
+
+
+Node IDs
+materials	roughplastic.py		0x87000
+materials	thindielectric.py	0x87001
+materials	conductor.py		0x87002
+materials	diffuse.py			0x87003
+materials	dielectric.py		0x87004
+volumes		homogeneous.py		0x87005
+materials	plastic.py			0x87006
+materials	roughconductor.py	0x87008
+materials	roughdielectric.py	0x87009
+materials	roughdiffuse.py		0x8700A
+materials	phong.py			0x8700B
+materials	ward.py				0x8700C
+materials	difftrans.py		0x8700D
+materials	coating.py			0x8700E
+materials	roughcoating.py		0x8700F
+
+materials	bump.py				0x87010
+materials	mixturebsdf.py		0x87011
+materials	mask.py				0x87012
+materials	twosided.py			0x87013
+materials	blendbsdf.py		0x87014
+materials	hk.py				0x87015
+materials	dipole.py			0x87016
+materials	heterogenous.py		0x87017
+
+materials	irawan.py			0x87020
+renderer	MitsubaRenderSettings.py	0x87021
+lights		arealight.py		0x87024
+
+lights		sunsky.py			0x87031
+lights		envmap.py			0x87032
+volumes		volume.py			0x87033
+
+
 
 
 

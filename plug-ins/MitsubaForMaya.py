@@ -21,47 +21,7 @@ from renderer import (
 
 from materials import (
     bump,
-    coating,
-    conductor,
-    dielectric,
-    difftrans,
-    diffuse,
-    mask,
-    mixturebsdf,
-    phong,
-    plastic,
-    roughcoating,
-    roughconductor,
-    roughdielectric,
-    roughdiffuse,
-    roughplastic,
-    thindielectric,
-    twosided,
-    ward,
-    irawan)
-
-from lights import (
-    envmap,
-    sunsky,
-    arealight)
-
-from volumes import (
-    homogeneous,
-    volume)
-
-global rendererModules
-global generalNodeModules
-global materialNodeModules
-
-rendererModules = [
-    MitsubaRenderer]
-
-generalNodeModules = [
-    MitsubaRenderSettings]
-
-materialNodeModules = [
-    # materials
-    bump,
+    blendbsdf,
     coating,
     conductor,
     dielectric,
@@ -80,13 +40,59 @@ materialNodeModules = [
     twosided,
     ward,
     irawan,
+    hk,
+    dipole)
+
+from lights import (
+    envmap,
+    sunsky,
+    arealight)
+
+from volumes import (
+    homogeneous,
+    heterogeneous)
+
+global rendererModules
+global generalNodeModules
+global materialNodeModules
+
+rendererModules = [
+    MitsubaRenderer]
+
+generalNodeModules = [
+    MitsubaRenderSettings]
+
+materialNodeModules = [
+    # materials
+    bump,
+    blendbsdf,
+    coating,
+    conductor,
+    dielectric,
+    difftrans,
+    diffuse,
+    mask,
+    mixturebsdf,
+    phong,
+    plastic,
+    roughcoating,
+    roughconductor,
+    roughdielectric,
+    roughdiffuse,
+    roughplastic,
+    thindielectric,
+    twosided,
+    ward,
+    irawan,
+    hk,
+    dipole,
     # lights
     envmap,
     sunsky,
     arealight,
     # volumes
     homogeneous,
-    volume]
+    heterogeneous]
 
 # Initialize the script plug-in
 def initializePlugin(mobject):
@@ -117,7 +123,7 @@ def initializePlugin(mobject):
             sys.stderr.write( "%s - Failed to register node: %s\n" % (kPluginName, generalNodeModule.kPluginNodeName) )
             raise
 
-    # Register Materials
+    # Register Materials / Volumes / Lights
     try:
         for materialNodeModule in materialNodeModules:
             mplugin.registerNode( materialNodeModule.kPluginNodeName, 

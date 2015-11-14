@@ -460,7 +460,8 @@ class Process:
                         except:
                             self.log_line(line)
                 except:
-                    self.log_line('Logging error : %s' % sys.exc_info()[0])
+                    self.log_line('Logging error - info : %s' % sys.exc_info()[0])
+                    #self.log_line('Logging error - line : %s' % line)
 
                 self.status = process.returncode
 
@@ -496,7 +497,8 @@ class Process:
                 if not exit_code:
                     exit_code = 0
             except:
-                self.log_line('Logging error : %s' % sys.exc_info()[0])
+                self.log_line('Logging error - info : %s' % sys.exc_info()[0])
+                #self.log_line('Logging error - line : %s' % line)
 
             self.status = exit_code
 
