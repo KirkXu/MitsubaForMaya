@@ -8,30 +8,33 @@ Supported Features
 -
 Mitsuba 0.5.0 is the currently supported version.
 
-Supported Mitsuba **BSDFs / Materials**: Diffuse, Rough Diffuse, Smooth Dielectric, Thin Dielectric, Rough Dielectric, Smooth Conductor, Rough Conductor, Smooth Plastic, Rough Plastic, Smooth Coating, Rough Coating, Bump Map, Phong, Ward, Mixture, Blend, Mask, Two Sided, Diffuse Transmitter, Hanrahan-Krueger, Irawan-Marschner Woven Cloth, Dipole SSS + Rough Plastic.
+Supported Mitsuba Features:
+**BSDFs / Materials**: Diffuse, Rough Diffuse, Smooth Dielectric, Thin Dielectric, Rough Dielectric, Smooth Conductor, Rough Conductor, Smooth Plastic, Rough Plastic, Smooth Coating, Rough Coating, Bump Map, Phong, Ward, Mixture, Blend, Mask, Two Sided, Diffuse Transmitter, Hanrahan-Krueger, Irawan-Marschner Woven Cloth, Dipole SSS + Rough Plastic.
 
-Supported Mitsuba **Emitters / Lights**: Point, Spot, Directional, Object Area Light, Sun Sky, Envmap (IBL)
+**Emitters / Lights**: Point, Spot, Directional, Object Area Light, Sun Sky, Envmap (IBL)
 
-Supported Mitsuba **Volume Scattering Models**: Homogeneous, Heterogeneous
+**Volume Scattering Models**: Homogeneous, Heterogeneous
 
-Supported Mitsuba **Phase Functions**: Isotropic, Henyey-Greenstein, Rayleigh, Kajiya-Kay, Micro-flake
+**Phase Functions**: Isotropic, Henyey-Greenstein, Rayleigh, Kajiya-Kay, Micro-flake
 
-Supported Mitsuba **Sensors**: Perspective, Orthographic, Perspective with Thin Lens, Spherical, Telecentric, Radiance Meter, Fluence Meter, Perspective with Radial Distortion.
+**Sensors**: Perspective, Orthographic, Perspective with Thin Lens, Spherical, Telecentric, Radiance Meter, Fluence Meter, Perspective with Radial Distortion.
 
-Supported Mitsuba **Integrators** : Ambient Occlusion, Direct Illumination, Path Tracer, Simple Volumetric Path Tracer, Extended Volumetric Path Tracer, Bidirectional Path Tracer, Photon Map, Progressive Photon Mapping, Stochastic Progressive Photon Mapping, Primary Sample Space Metropolis Light Transport, Path Space Metropolis Light Transport, Energy Redistribution Path Tracing, Adjoint Particle Tracer, Adaptive, Irradiance Caching, Multi-Channel
+**Integrators** : Ambient Occlusion, Direct Illumination, Path Tracer, Simple Volumetric Path Tracer, Extended Volumetric Path Tracer, Bidirectional Path Tracer, Photon Map, Progressive Photon Mapping, Stochastic Progressive Photon Mapping, Primary Sample Space Metropolis Light Transport, Path Space Metropolis Light Transport, Energy Redistribution Path Tracing, Adjoint Particle Tracer, Adaptive, Irradiance Caching, Multi-Channel
 
-Supported Mitsuba **Sampler Generators** : Independent, Stratified, Low Discrepancy, Halton QMC, Hammersley QMC, Sobol QMC
+**Sampler Generators** : Independent, Stratified, Low Discrepancy, Halton QMC, Hammersley QMC, Sobol QMC
 
-Supported Mitsuba **Films / Output Drivers** : HDR (exr/hdr/pfm), Tiled HDR (exr), LDR (jpg, png), Matlab / Mathematica / Numpy
+**Films / Output Drivers** : HDR (exr/hdr/pfm), Tiled HDR (exr), LDR (jpg, png), Matlab / Mathematica / Numpy
 
 Notes
 -
 
 For a variety of Mitsuba materials, volumes and lights, check the Hypershade under Maya/Surface, Maya/Volumetric and Maya/Lights.
 
-The default lighting in Mitsuba is a sunsky, so if you do not use any lighting yourself, that is what this tool will default to as well.  The other lights available are point, spot, directional, environment maps (IBL) and object area lights.  Mitsuba supports a variety of other lights, but they have not been ported.  To use a directional light, simply create a normal, Maya directional light and position it as normal.  For an environment map or custom sunsky, see the appropriate nodes in the Hypershader, under Maya/Lights.  Note that you can specify either an environment map or sunsky node (ie you can not have one of each). To use an area light, assign the MitsubaObjectAreaLightShader shader as the Material for the object that you would like to act as an area light.
-
 Render settings have been set to balance render time vs. quality. The main thing that controls render quality is the sampleCount in the Image Sampler drop down.
+
+The default lighting in Mitsuba is a sunsky, so if you do not set up any lighting, that is what this plugin will default to as well. For normal Maya lights, environment maps or the Sun+Sky model, see the appropriate nodes in the Hypershader under Maya/Lights. To use an area light, assign the MitsubaObjectAreaLightShader shader as the Material for the object that you would like to act as an area light.
+
+To set up volumetric scattering, assign one of the Volumetric Scattering models to a Material's Shading Group's 'Volume Material' slot. Be sure to use either the Simple Volumetric Path Tracer or Extended Volumetric Path Tracer Integrator when rendering with Volume Scattering Models.
 
 Usage
 -
