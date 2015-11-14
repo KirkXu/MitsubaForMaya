@@ -8,21 +8,21 @@ Supported Features
 -
 Mitsuba 0.5.0 is the currently supported version.
 
-Supported Mitsuba *BSDFs / Materials*: Diffuse, Rough Diffuse, Smooth Dielectric, Thin Dielectric, Rough Dielectric, Smooth Conductor, Rough Conductor, Smooth Plastic, Rough Plastic, Smooth Coating, Rough Coating, Bump Map, Phong, Ward, Mixture, Blend, Mask, Two Sided, Diffuse Transmitter, Hanrahan-Krueger, Irawan-Marschner Woven Cloth, Dipole SSS + Rough Plastic.
+Supported Mitsuba **BSDFs / Materials**: Diffuse, Rough Diffuse, Smooth Dielectric, Thin Dielectric, Rough Dielectric, Smooth Conductor, Rough Conductor, Smooth Plastic, Rough Plastic, Smooth Coating, Rough Coating, Bump Map, Phong, Ward, Mixture, Blend, Mask, Two Sided, Diffuse Transmitter, Hanrahan-Krueger, Irawan-Marschner Woven Cloth, Dipole SSS + Rough Plastic.
 
-Supported Mitsuba *Emitters / Lights*: Point, Spot, Directional, Object Area Light, Sun Sky, Envmap (IBL)
+Supported Mitsuba **Emitters / Lights**: Point, Spot, Directional, Object Area Light, Sun Sky, Envmap (IBL)
 
-Supported Mitsuba *Volume Scattering Models*: Homogeneous, Heterogeneous
+Supported Mitsuba **Volume Scattering Models**: Homogeneous, Heterogeneous
 
-Supported Mitsuba *Phase Functions*: Isotropic, Henyey-Greenstein, Rayleigh, Kajiya-Kay, Micro-flake
+Supported Mitsuba **Phase Functions**: Isotropic, Henyey-Greenstein, Rayleigh, Kajiya-Kay, Micro-flake
 
-Supported Mitsuba *Sensors*: Perspective, Orthographic, Perspective with Thin Lens, Spherical, Telecentric, Radiance Meter, Fluence Meter, Perspective with Radial Distortion.
+Supported Mitsuba **Sensors**: Perspective, Orthographic, Perspective with Thin Lens, Spherical, Telecentric, Radiance Meter, Fluence Meter, Perspective with Radial Distortion.
 
-Supported Mitsuba *Integrators* : Ambient Occlusion, Direct Illumination, Path Tracer, Simple Volumetric Path Tracer, Extended Volumetric Path Tracer, Bidirectional Path Tracer, Photon Map, Progressive Photon Mapping, Stochastic Progressive Photon Mapping, Primary Sample Space Metropolis Light Transport, Path Space Metropolis Light Transport, Energy Redistribution Path Tracing, Adjoint Particle Tracer, Adaptive, Irradiance Caching, Multi-Channel
+Supported Mitsuba **Integrators** : Ambient Occlusion, Direct Illumination, Path Tracer, Simple Volumetric Path Tracer, Extended Volumetric Path Tracer, Bidirectional Path Tracer, Photon Map, Progressive Photon Mapping, Stochastic Progressive Photon Mapping, Primary Sample Space Metropolis Light Transport, Path Space Metropolis Light Transport, Energy Redistribution Path Tracing, Adjoint Particle Tracer, Adaptive, Irradiance Caching, Multi-Channel
 
-Supported Mitsuba *Sampler Generators* : Independent, Stratified, Low Discrepancy, Halton QMC, Hammersley QMC, Sobol QMC
+Supported Mitsuba **Sampler Generators** : Independent, Stratified, Low Discrepancy, Halton QMC, Hammersley QMC, Sobol QMC
 
-Supported Mitsuba *Films / Output Drivers* : HDR (exr/hdr/pfm), Tiled HDR (exr), LDR (jpg, png), Matlab / Mathematica / Numpy
+Supported Mitsuba **Films / Output Drivers** : HDR (exr/hdr/pfm), Tiled HDR (exr), LDR (jpg, png), Matlab / Mathematica / Numpy
 
 Notes
 -
