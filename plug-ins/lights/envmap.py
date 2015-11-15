@@ -9,6 +9,7 @@ kPluginNodeId = OpenMaya.MTypeId(0x87032)
 class envmap(OpenMayaMPx.MPxNode):
     def __init__(self):
         OpenMayaMPx.MPxNode.__init__(self)
+        mVisibility = OpenMaya.MObject()
         mSource = OpenMaya.MObject()
         mScale = OpenMaya.MObject()
         mAutoGamma = OpenMaya.MObject()
@@ -48,6 +49,12 @@ def nodeInitializer():
     nAttr = OpenMaya.MFnNumericAttribute()
 
     try:
+        envmap.mVisibility = nAttr.create("visibility", "v", OpenMaya.MFnNumericData.kBoolean, True)
+        nAttr.setKeyable(1) 
+        nAttr.setStorable(1)
+        nAttr.setReadable(0)
+        nAttr.setWritable(1)
+
         envmap.mSource = nAttr.createColor("source", "src")
         nAttr.setKeyable(1) 
         nAttr.setStorable(1)
@@ -109,6 +116,7 @@ def nodeInitializer():
         raise
 
     try:
+        envmap.addAttribute(envmap.mVisibility)
         envmap.addAttribute(envmap.mSource)
         envmap.addAttribute(envmap.mGamma)
         envmap.addAttribute(envmap.mAutoGamma)

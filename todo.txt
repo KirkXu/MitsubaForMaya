@@ -92,6 +92,20 @@ x indent code to 4 space tabs
 
 x replace all mel functions with automatically generated mel which immediately calls back into Python
 
+fixes based to use:
+x eliminate duplicate geometry export
+x replace illegal characters in exported geometry file names
+x fixed broken texture element creation
+x made all geometry references use the full dag path name
+
+x respect visibility of lights
+x handle object visibility better, i.e. look at visibility of parents
+x fixed dipole sigma A, S, T and Albedo export types
+x made light irradiance values linear (rgb, instead of srgb)
+
+allow dipole sss to be used in mixture and blended bsdfs
+make object area lights two sided
+
 support render cancel
 support batch render cancel
 support interactive render view / update / cancel

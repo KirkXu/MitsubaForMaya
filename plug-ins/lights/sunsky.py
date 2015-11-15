@@ -9,6 +9,7 @@ kPluginNodeId = OpenMaya.MTypeId(0x87031)
 class sunsky(OpenMayaMPx.MPxNode):
     def __init__(self):
         OpenMayaMPx.MPxNode.__init__(self)
+        mVisibility = OpenMaya.MObject()
         mUseSun = OpenMaya.MObject()
         mUseSky = OpenMaya.MObject()
         mTurbidity = OpenMaya.MObject()
@@ -48,6 +49,12 @@ def nodeInitializer():
     nAttr = OpenMaya.MFnNumericAttribute()
 
     try:
+        envmap.mVisibility = nAttr.create("visibility", "v", OpenMaya.MFnNumericData.kBoolean, True)
+        nAttr.setKeyable(1) 
+        nAttr.setStorable(1)
+        nAttr.setReadable(0)
+        nAttr.setWritable(1)
+
         sunsky.mUseSun = nAttr.create("useSun", "sun", OpenMaya.MFnNumericData.kBoolean, True)
         nAttr.setKeyable(1) 
         nAttr.setStorable(1)
@@ -147,6 +154,7 @@ def nodeInitializer():
         raise
 
     try:
+        sunsky.addAttribute(sunsky.mVisibility)
         sunsky.addAttribute(sunsky.mUseSun)
         sunsky.addAttribute(sunsky.mUseSky)
         sunsky.addAttribute(sunsky.mTurbidity)

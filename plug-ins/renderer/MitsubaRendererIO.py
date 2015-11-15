@@ -138,7 +138,8 @@ def createNestedBSDFElement(material, connectedAttribute="bsdf", useDefault=True
 
                 # Remove the id so there's no chance of this embedded definition conflicting with another
                 # definition of the same BSDF
-                del( shaderElement['attributes']['id'] )
+                if 'id' in shaderElement['attributes']:
+                    del( shaderElement['attributes']['id'] )
 
                 hasNestedBSDF = True
 
@@ -1041,14 +1042,14 @@ def writeShaderDipoleSSS(material, materialName):
     if useSigmaSA:
         sigmaS = cmds.getAttr(material+".sigmaS")
         sigmaA = cmds.getAttr(material+".sigmaA")
-        sssElement['children'].append( createFloatElement("sigmaS", sigmaS) )
-        sssElement['children'].append( createFloatElement("sigmaA", sigmaA) )
+        sssElement['children'].append( createColorElement("sigmaS", sigmaS[0]) )
+        sssElement['children'].append( createColorElement("sigmaA", sigmaA[0]) )
 
     elif useSigmaTAlbedo:
         sigmaT = cmds.getAttr(material+".sigmaT")
         albedo = cmds.getAttr(material+".albedo")
-        sssElement['children'].append( createFloatElement("sigmaT", sigmaT) )
-        sssElement['children'].append( createFloatElement("albedo", albedo) )
+        sssElement['children'].append( createColorElement("sigmaT", sigmaT[0]) )
+        sssElement['children'].append( createColorElement("albedo", albedo[0]) )
 
     else:
         materialString = cmds.getAttr(material+".material", asString=True)
@@ -2294,7 +2295,7 @@ def writeLightDirectional(light):
 
     elementDict['children'] = []
 
-    elementDict['children'].append( { 'type':'srgb', 
+    elementDict['children'].append( { 'type':'rgb', 
         'attributes':{ 'name':'irradiance', 'value':listToMitsubaText(irradiance) } } )
     elementDict['children'].append( { 'type':'vector', 
         'attributes':{ 'name':'direction', 'x':str(lightDir[0]), 'y':str(lightDir[1]), 'z':str(lightDir[2]) } } )
@@ -2317,7 +2318,7 @@ def writeLightPoint(light):
 
     elementDict['children'] = []
 
-    elementDict['children'].append( { 'type':'srgb', 
+    elementDict['children'].append( { 'type':'rgb', 
         'attributes':{ 'name':'intensity', 'value':listToMitsubaText(irradiance) } } )
     elementDict['children'].append( { 'type':'point', 
         'attributes':{ 'name':'position', 'x':str(position[0]), 'y':str(position[1]), 'z':str(position[2]) } } )
@@ -2526,7 +2527,7 @@ def writeLightEnvMap(envmap):
 
             elementDict['children'] = []
 
-            elementDict['children'].append( { 'type':'srgb', 
+            elementDict['children'].append( { 'type':'rgb', 
                 'attributes':{ 'name':'radiance', 'value':listToMitsubaText(radiance[0]) } } )
             elementDict['children'].append( { 'type':'float', 
                 'attributes':{ 'name':'samplingWeight', 'value':str(samplingWeight) } } )
@@ -2537,6 +2538,33 @@ def writeLightEnvMap(envmap):
 '''
 Write lights
 '''
+def isVisible(object):
+    print( "Checking visibility : %s" % object )
+    visible = True
+
+    if cmds.attributeQuery("visibility", node=object, exists=True):
+        visible = visible and cmds.getAttr(object+".visibility")
+
+    if cmds.attributeQuery("intermediateObject", node=object, exists=True):
+        visible = visible and not cmds.getAttr(object+".intermediateObject")
+
+    if cmds.attributeQuery("overrideEnabled", node=object, exists=True):
+        visible = visible and cmds.getAttr(object+".overrideVisibility")
+
+    if visible:
+        parents = cmds.listRelatives(object, fullPath=True, parent=True)
+        if parents:
+            for parent in parents:
+                parentVisible = isVisible(parent)
+                if not parentVisible:
+                    print( "\tParent not visible. Breaking : %s" % parent )
+                    visible = False
+                    break
+                
+    print( "\tVisibility : %s" % visible )
+    
+    return visible
+
 def writeLights():
     lights = cmds.ls(type="light", long=True)
     sunskyLights = cmds.ls(type="MitsubaSunsky", long=True)
@@ -2551,23 +2579,26 @@ def writeLights():
 
     # Gather element definitions for standard lights
     for light in lights:
-        lightType = cmds.nodeType(light)
-        if lightType == "directionalLight":
-            lightElements.append( writeLightDirectional(light) )
-        elif lightType == "pointLight":
-            lightElements.append( writeLightPoint(light) )
-        elif lightType == "spotLight":
-            lightElements.append( writeLightSpot(light) )
+        if isVisible(light):
+            lightType = cmds.nodeType(light)
+            if lightType == "directionalLight":
+                lightElements.append( writeLightDirectional(light) )
+            elif lightType == "pointLight":
+                lightElements.append( writeLightPoint(light) )
+            elif lightType == "spotLight":
+                lightElements.append( writeLightSpot(light) )
 
     # Gather element definitions for Sun and Sky lights
     if sunskyLights:
         sunsky = sunskyLights[0]
-        lightElements.append( writeLightSunSky(sunsky) )
+        if isVisible(sunsky):
+            lightElements.append( writeLightSunSky(sunsky) )
 
     # Gather element definitions for Environment lights
     if envLights:
         envmap = envLights[0]
-        lightElements.append( writeLightEnvMap(envmap) )
+        if isVisible(envmap):
+            lightElements.append( writeLightEnvMap(envmap) )
 
     return lightElements
 
@@ -2581,11 +2612,7 @@ def getRenderableGeometry():
         if rels:
             for rel in rels:
                 if cmds.nodeType(rel)=="mesh":
-                    visible = cmds.getAttr(transform+".visibility")
-                    if cmds.attributeQuery("intermediateObject", node=transform, exists=True):
-                        visible = visible and not cmds.getAttr(transform+".intermediateObject")
-                    if cmds.attributeQuery("overrideEnabled", node=transform, exists=True):
-                        visible = visible and cmds.getAttr(transform+".overrideVisibility")
+                    visible = isVisible(transform)
                     if visible:
                         if transform not in geoms:
                             geoms.append(transform)
