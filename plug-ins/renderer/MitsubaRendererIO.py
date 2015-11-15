@@ -2647,7 +2647,7 @@ def writeMaterials(geoms):
                     materialElement = writeShader(material, material)
 
                     if "twosided" in cmds.listAttr(material) and cmds.getAttr(material+".twosided"):
-                            materialElement = addTwoSided(material, materialElement)
+                        materialElement = addTwoSided(material, materialElement)
 
                     materialElements.append(materialElement)
                     writtenMaterials.append(material)

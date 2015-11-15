@@ -49,7 +49,7 @@ def nodeInitializer():
     nAttr = OpenMaya.MFnNumericAttribute()
 
     try:
-        envmap.mVisibility = nAttr.create("visibility", "v", OpenMaya.MFnNumericData.kBoolean, True)
+        sunsky.mVisibility = nAttr.create("visibility", "visibility", OpenMaya.MFnNumericData.kBoolean, True)
         nAttr.setKeyable(1) 
         nAttr.setStorable(1)
         nAttr.setReadable(0)
