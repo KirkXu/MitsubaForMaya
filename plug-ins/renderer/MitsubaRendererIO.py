@@ -2105,6 +2105,28 @@ def writeFilmMath(renderSettings, filmMitsuba):
 
     return elementDict
 
+def addRenderRegionCropCoordinates(filmElement):
+    editor = cmds.renderWindowEditor(q=True, editorName=True )
+    #print( "addRenderRegionCropCoordinates - editor : %s" % editor )
+    if editor:
+        renderRegion = cmds.renderWindowEditor(editor, q=True, mq=True)
+        #print( "addRenderRegionCropCoordinates - render region : %s" % renderRegion )
+        if renderRegion:
+            left = cmds.getAttr( "defaultRenderGlobals.left" )
+            right = cmds.getAttr( "defaultRenderGlobals.rght" )
+            top = cmds.getAttr( "defaultRenderGlobals.top" )
+            bottom = cmds.getAttr( "defaultRenderGlobals.bot" )
+
+            imageWidth = cmds.getAttr("defaultResolution.width")
+            imageHeight = cmds.getAttr("defaultResolution.height")
+
+            filmElement['children'].append( createIntegerElement('cropOffsetX', left) )
+            filmElement['children'].append( createIntegerElement('cropOffsetY', imageHeight-top-1 ) )
+            filmElement['children'].append( createIntegerElement('cropWidth',   right-left+1 ) )
+            filmElement['children'].append( createIntegerElement('cropHeight',  top-bottom+1 ) )
+
+    return filmElement
+
 def writeFilm(frameNumber, renderSettings):
     #Resolution
     imageWidth = cmds.getAttr("defaultResolution.width")
@@ -2138,19 +2160,17 @@ def writeFilm(frameNumber, renderSettings):
 
     filmElement = writeFilmFunction(renderSettings, filmMitsuba)
 
+
     rfilterElement = writeReconstructionFilter(renderSettings)
 
-    #elementDict = {'type':'film'}
-    #elementDict['attributes'] = {'type':filmMitsuba}
+    # Set resolution
+    imageWidth = cmds.getAttr("defaultResolution.width")
+    imageHeight = cmds.getAttr("defaultResolution.height")
+    filmElement['children'].append( createIntegerElement('height', imageHeight) )
+    filmElement['children'].append( createIntegerElement('width', imageWidth) )
 
-    #elementDict['children'] = []
-    #elementDict['children'].append( { 'type':'boolean', 'attributes':{ 'name':'banner', 'value':'false' } } )
-
-    filmElement['children'].append( { 'type':'integer', 
-        'attributes':{ 'name':'height', 'value':str(imageHeight) } } )
-    filmElement['children'].append( { 'type':'integer', 
-        'attributes':{ 'name':'width', 'value':str(imageWidth) } } )
-    filmElement['children'].append( rfilterElement )
+    # Set crop window
+    filmElement = addRenderRegionCropCoordinates(filmElement)
 
     multichannel = cmds.getAttr("%s.%s" % (renderSettings, "multichannel"))
     if multichannel and filmMitsuba in ["hdrfilm", "tiledhdrfilm"]:
@@ -2539,7 +2559,7 @@ def writeLightEnvMap(envmap):
 Write lights
 '''
 def isVisible(object):
-    print( "Checking visibility : %s" % object )
+    #print( "Checking visibility : %s" % object )
     visible = True
 
     if cmds.attributeQuery("visibility", node=object, exists=True):
@@ -2557,11 +2577,11 @@ def isVisible(object):
             for parent in parents:
                 parentVisible = isVisible(parent)
                 if not parentVisible:
-                    print( "\tParent not visible. Breaking : %s" % parent )
+                    #print( "\tParent not visible. Breaking : %s" % parent )
                     visible = False
                     break
                 
-    print( "\tVisibility : %s" % visible )
+    #print( "\tVisibility : %s" % visible )
     
     return visible
 

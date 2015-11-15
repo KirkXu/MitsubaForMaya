@@ -103,8 +103,9 @@ x handle object visibility better, i.e. look at visibility of parents
 x fixed dipole sigma A, S, T and Albedo export types
 x made light irradiance values linear (rgb, instead of srgb)
 
+x add support for crop coordinates (pulled from general render settings or render view selection rectangle)
+
 allow dipole sss to be used in mixture and blended bsdfs
-make object area lights two sided
 
 support render cancel
 support batch render cancel
@@ -113,8 +114,6 @@ support interactive render view / update / cancel
 create renderData/mitsuba directory for temporary render files
 
 use pre-generated mip-maps if they exist
-
-add support for crop coordinates (pulled from general render settings or render view selection rectangle)
 
 figure out if you can load multichannel exrs into the Maya Render View
 add support for metadata and label annotations with ldrfilm and hdrfilm

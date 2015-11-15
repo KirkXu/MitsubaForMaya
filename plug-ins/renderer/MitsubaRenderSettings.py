@@ -11,6 +11,7 @@ kPluginNodeId = OpenMaya.MTypeId(0x87021)
 class MitsubaRenderSetting(OpenMayaMPx.MPxNode):
     # Class variables
     mMitsubaPath = OpenMaya.MObject()
+    mOIIOToolPath = OpenMaya.MObject()
 
     # Integrator variables
     mIntegrator = OpenMaya.MObject()
@@ -274,11 +275,17 @@ def nodeInitializer():
     nAttr = OpenMaya.MFnNumericAttribute()
 
     try:
-        # Path to executable
+        # Path to mitsuba executable
         defaultMitsubaPath = os.getenv( "MITSUBA_PATH" )
         if not defaultMitsubaPath:
             defaultMitsubaPath = ""
         MitsubaRenderSetting.addStringAttribute(sAttr, "mMitsubaPath", "mitsubaPath", "mp", defaultMitsubaPath)
+
+        # Path to oiiotool executable
+        defaultOIIOToolPath = os.getenv( "OIIOTOOL_PATH" )
+        if not defaultOIIOToolPath:
+            defaultOIIOToolPath = ""
+        MitsubaRenderSetting.addStringAttribute(sAttr, "mOIIOToolPath", "oiiotoolPath", "oiiotp", defaultOIIOToolPath)
 
         # Integrator variables
         MitsubaRenderSetting.addStringAttribute(sAttr,  "mIntegrator", "integrator", "ig", "Path Tracer")
@@ -498,8 +505,9 @@ def nodeInitializer():
         raise
 
     try:
-        # Path to executable
+        # Path to executables
         MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mMitsubaPath)
+        MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mOIIOToolPath)
 
         # Integrator variables
         MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mIntegrator)

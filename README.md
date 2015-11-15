@@ -55,6 +55,8 @@ Usage
 
 	- Windows: ex. C:/path/where/you/downloaded/Mitsuba 0.5.0 64bit/Mitsuba 0.5.0/mitsuba.exe
 
+- The second field in the Render Settings Mituba tab is the path to the 'oiiotool' binary. You must set this to be able to use Maya's render region functionality. The setting can be specified using the OIIOTOOL_PATH environment variable, as described below, or manually from the Render Settings UI. The path will be retained in a file's Render Settings so the value only has to be specified the first time you use a scene.
+
 - Currently, only Mitsuba Lights, Materials and Volumes are supported. These can be found and assigned using the Hypershade
 
 Installation and Application Environment
@@ -89,6 +91,25 @@ If your scene contains animation on the parameters of the Mitsuba lights, materi
 - Without this setting, Maya will lock up.
 
 - [Discussion on Python Programming for Autodesk Maya Google Group](https://groups.google.com/forum/?hl=en#!topic/python_inside_maya/Zk7FKPu7J_A)
+
+
+In order for the Maya render region functionality to work, the path to the [OpenImageIO](https://github.com/OpenImageIO/oiio) 'oiiotool' binary has to be specified, either in the Render Settings manually or by using the Maya.env or other environment setup file.
+
+- To set the value in the Maya.env or in your shell environment, set the OIIOTOOL_PATH environment variable to  
+
+	- Windows: OIIOTOOL_PATH = C:\path\to\oiiotool.exe
+
+	- Mac: OIIOTOOL_PATH = /path/to/oiiotool
+
+	- Linux: OIIOTOOL_PATH = /path/to/oiiotool
+
+- Resources for OpenImageIO include
+
+	- [OpenImageIO github](https://github.com/OpenImageIO/oiio)
+
+	- [Prebuilt Windows binaries](http://www.lfd.uci.edu/~gohlke/pythonlibs/#openimageio)
+
+	- [Build instructions for Linux and OSX](https://github.com/OpenImageIO/oiio/blob/master/INSTALL)
 
 
 Maya.env

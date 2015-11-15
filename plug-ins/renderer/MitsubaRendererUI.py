@@ -1068,6 +1068,16 @@ def createRenderSettingsUI():
     cmds.textFieldButtonGrp(mitsubaPathGroup, e=1, 
         buttonCommand=lambda: getRenderSettingsPath(mitsubaPathGroup, "mitsubaPath"))
 
+    # Path to executable
+    oiiotoolPathGroup = cmds.textFieldButtonGrp(label="oiiotool Path", 
+        buttonLabel="Open", buttonCommand="browseFiles")
+    # Get default
+    existingOIIOToolPath = cmds.getAttr( "%s.%s" % (renderSettings, "oiiotoolPath"))
+    if existingOIIOToolPath not in ["", None]:
+        cmds.textFieldButtonGrp(oiiotoolPathGroup, e=1, text=existingOIIOToolPath)
+    cmds.textFieldButtonGrp(oiiotoolPathGroup, e=1, 
+        buttonCommand=lambda: getRenderSettingsPath(oiiotoolPathGroup, "oiiotoolPath"))
+
     # Integrator controls
     cmds.frameLayout(label='Integrator', collapsable=True, collapse=False)
     cmds.columnLayout(adjustableColumn=True)

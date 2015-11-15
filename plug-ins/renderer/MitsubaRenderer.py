@@ -151,6 +151,7 @@ class mitsubaForMaya(OpenMayaMPx.MPxCommand):
 
         # Get render settings
         mitsubaPath = cmds.getAttr("%s.%s" % (renderSettings, "mitsubaPath"))
+        oiiotoolPath = cmds.getAttr("%s.%s" % (renderSettings, "oiiotoolPath"))
         mtsDir = os.path.split(mitsubaPath)[0]
         integrator = cmds.getAttr("%s.%s" % (renderSettings, "integrator"))
         sampler = cmds.getAttr("%s.%s" % (renderSettings, "sampler"))
@@ -158,7 +159,6 @@ class mitsubaForMaya(OpenMayaMPx.MPxCommand):
         reconstructionFilter = cmds.getAttr("%s.%s" % (renderSettings, "reconstructionFilter"))
         keepTempFiles = cmds.getAttr("%s.%s" % (renderSettings, "keepTempFiles"))
         verbose = cmds.getAttr("%s.%s" % (renderSettings, "verbose"))
-        animation = cmds.getAttr("defaultRenderGlobals.animation")
 
         print( "Render Settings - Mitsuba Path    : %s" % mitsubaPath )
         print( "Render Settings - Integrator      : %s" % integrator )
@@ -167,9 +167,47 @@ class mitsubaForMaya(OpenMayaMPx.MPxCommand):
         print( "Render Settings - Reconstruction  : %s" % reconstructionFilter )
         print( "Render Settings - Keep Temp Files : %s" % keepTempFiles )
         print( "Render Settings - Verbose         : %s" % verbose )
-        print( "Render Settings - Animation       : %s" % animation )
         print( "Render Settings - Render Dir      : %s" % renderDir )
+        print( "Render Settings - oiiotool Path   : %s" % mitsubaPath )
 
+        animation = self.isAnimation()
+        print( "Render Settings - Animation       : %s" % animation )
+
+        # Animation
+        if animation:
+            startFrame = int(cmds.getAttr("defaultRenderGlobals.startFrame"))
+            endFrame = int(cmds.getAttr("defaultRenderGlobals.endFrame"))
+            byFrame = int(cmds.getAttr("defaultRenderGlobals.byFrameStep"))
+            print( "Animation frame range : %d to %d, step %d" % (
+                startFrame, endFrame, byFrame) )
+
+            for frame in range(startFrame, endFrame+1, byFrame):
+                print( "Rendering frame " + str(frame) + " - begin" )
+
+                self.exportAndRender(renderDir, renderSettings, mitsubaPath, oiiotoolPath,
+                    mtsDir, keepTempFiles, animation, frame, verbose)
+
+                print( "Rendering frame " + str(frame) + " - end" )
+
+            print( "Animation finished" )
+
+        # Single frame
+        else:
+            imageName = self.exportAndRender(renderDir, renderSettings, mitsubaPath, oiiotoolPath,
+                mtsDir, keepTempFiles, animation, None, verbose)
+
+            # Display the render
+            if not cmds.about(batch=True):
+                MitsubaRendererUI.showRender(imageName)
+
+        # Select the objects that the user had selected before they rendered, or clear the selection
+        if len(userSelection) > 0:
+            cmds.select(userSelection)
+        else:
+            cmds.select(cl=True)
+
+    def isAnimation(self):
+        animation = cmds.getAttr("defaultRenderGlobals.animation")
         if not cmds.about(batch=True) and animation:
             print( "Animation isn't currently supported outside of Batch mode. Rendering current frame." )
             animation = False
@@ -183,40 +221,51 @@ class mitsubaForMaya(OpenMayaMPx.MPxCommand):
             print( "\n\n\n\n")
             animation = False
 
-        # Animation doesn't work
-        if animation:
-            startFrame = int(cmds.getAttr("defaultRenderGlobals.startFrame"))
-            endFrame = int(cmds.getAttr("defaultRenderGlobals.endFrame"))
-            byFrame = int(cmds.getAttr("defaultRenderGlobals.byFrameStep"))
-            print( "Animation frame range : %d to %d, step %d" % (
-                startFrame, endFrame, byFrame) )
+        return animation
 
-            for frame in range(startFrame, endFrame+1, byFrame):
-                print( "Rendering frame " + str(frame) + " - begin" )
+    def resetImageDataWindow(self, imageName, oiiotoolPath):
+        editor = cmds.renderWindowEditor(q=True, editorName=True )
+        #print( "resetImageDataWindow - editor : %s" % editor )
+        if editor:
+            renderRegion = cmds.renderWindowEditor(editor, q=True, mq=True)
+            #print( "resetImageDataWindow - render region : %s" % renderRegion )
+            if renderRegion:
+                left = cmds.getAttr( "defaultRenderGlobals.left" )
+                right = cmds.getAttr( "defaultRenderGlobals.rght" )
+                top = cmds.getAttr( "defaultRenderGlobals.top" )
+                bottom = cmds.getAttr( "defaultRenderGlobals.bot" )
+            
+                imageWidth = cmds.getAttr("defaultResolution.width")
+                imageHeight = cmds.getAttr("defaultResolution.height")
 
-                self.exportAndRender(renderDir, renderSettings, mitsubaPath, mtsDir, keepTempFiles, animation, frame, verbose)
+                pathTokens = os.path.splitext(imageName)
+                imageNameCropped = "%s_crop%s" % (pathTokens[0], pathTokens[1])
+                #print( "Generating cropped image : %s" % imageNameCropped )
 
-                print( "Rendering frame " + str(frame) + " - end" )
+                oiiotoolResult = None
+                try:
+                    #cmd = '/usr/local/bin/oiiotool'
+                    cropArgs = '%dx%d-%d-%d' % (imageWidth, imageHeight, left, imageHeight-top)
+                    args = ['-v', imageName, '--crop', cropArgs, '--noautocrop', '-o', imageNameCropped]
+                    oiiotool = Process(description='reset image data window',
+                        cmd=oiiotoolPath,
+                        args=args)
+                    oiiotool.execute()
+                    oiiotoolResult = oiiotool.status
+                    #print( "oiiotool result : %s" % oiiotoolResult )
+                except:
+                    print( "Unable to run oiiotool" )
+                    oiiotoolResult = None
 
-            print( "Animation finished" )
-        else:
-            imageName = self.exportAndRender(renderDir, renderSettings, mitsubaPath, 
-                mtsDir, keepTempFiles, animation, None, verbose)
-
-            # Display the render
-            if not cmds.about(batch=True):
-                MitsubaRendererUI.showRender(imageName)
-
-        # Select the objects that the user had selected before they rendered, or clear the selection
-        if len(userSelection) > 0:
-            cmds.select(userSelection)
-        else:
-            cmds.select(cl=True)
+                # Move the image with the new data window over the original rendered image
+                if oiiotoolResult in [0, None]:
+                    os.rename(imageNameCropped, imageName)
 
     def renderScene(self,
                     outFileName, 
                     renderDir, 
-                    mitsubaPath, 
+                    mitsubaPath,
+                    oiiotoolPath, 
                     mtsDir, 
                     keepTempFiles, 
                     geometryFiles, 
@@ -262,6 +311,9 @@ class mitsubaForMaya(OpenMayaMPx.MPxCommand):
 
         print( "Render execution returned : %s" % mitsubaRender.status )
 
+        if oiiotoolPath != "":
+            self.resetImageDataWindow(imageName, oiiotoolPath)
+
         if not keepTempFiles:
             #Delete all of the temp file we just made
             os.chdir(renderDir)
@@ -283,6 +335,7 @@ class mitsubaForMaya(OpenMayaMPx.MPxCommand):
                         renderDir,
                         renderSettings,
                         mitsubaPath,
+                        oiiotoolPath,
                         mtsDir, 
                         keepTempFiles,  
                         animation, 
@@ -302,7 +355,7 @@ class mitsubaForMaya(OpenMayaMPx.MPxCommand):
         geometryFiles = MitsubaRendererIO.writeScene(outFileName, renderDir, renderSettings)
 
         # Render scene, delete scene and geometry
-        imageName = self.renderScene(outFileName, renderDir, mitsubaPath, 
+        imageName = self.renderScene(outFileName, renderDir, mitsubaPath, oiiotoolPath,
             mtsDir, keepTempFiles, geometryFiles, animation, frame, verbose,
             renderSettings)
 
@@ -384,6 +437,8 @@ def registerRenderer():
 
     cancelBatchRenderProcedureMel = createMelPythonCallback("MitsubaRenderer", "cancelBatchRenderProcedure")
     cmds.renderer("Mitsuba", edit=True, cancelBatchRenderProcedure=cancelBatchRenderProcedureMel)
+
+    cmds.renderer("Mitsuba", edit=True, renderRegionProcedure="mayaRenderRegion" )
 
     cmds.renderer("Mitsuba", edit=True, addGlobalsTab=("Common", 
         "createMayaSoftwareCommonGlobalsTab", 
