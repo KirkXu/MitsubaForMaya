@@ -8,6 +8,8 @@ import maya.OpenMayaMPx as OpenMayaMPx
 
 import pymel.core
 
+from process import Process
+
 # Will be populated as materials are registered with Maya
 materialNodeTypes = []
 
@@ -67,7 +69,7 @@ def writeElement(outFile, element, depth=0):
 
 # Returns the surfaceShader node for a piece of geometry (geom)
 def getSurfaceShader(geom):
-    shapeNode = cmds.listRelatives(geom, children=True, shapes=True)[0]
+    shapeNode = cmds.listRelatives(geom, children=True, shapes=True, fullPath=True)[0]
     sg = cmds.listConnections(shapeNode, type="shadingEngine")[0]
     shader = cmds.listConnections(sg+".surfaceShader")
     #if shader is None:
@@ -77,7 +79,7 @@ def getSurfaceShader(geom):
     return shader
 
 def getVolumeShader(geom):
-    shapeNode = cmds.listRelatives(geom, children=True, shapes=True)[0]
+    shapeNode = cmds.listRelatives(geom, children=True, shapes=True, fullPath=True)[0]
     sg = cmds.listConnections(shapeNode, type="shadingEngine")[0]
     shader = cmds.listConnections(sg+".volumeShader")
     if shader:
@@ -182,6 +184,7 @@ def createTextureElement(name, texturePath, scale=None):
         scaleElementDict['children'].append( textureElementDict )
         textureElementDict = scaleElementDict
 
+    textureElementDict['attributes']['name'] = name
     return textureElementDict
 
 def createVolumeElement(name, volumePath):
@@ -2158,7 +2161,7 @@ def writeFilm(frameNumber, renderSettings):
 Write sensor, which include camera, image sampler, and film
 '''
 def getRenderableCamera():
-    cams = cmds.ls(type="camera")
+    cams = cmds.ls(type="camera", long=True)
     rCamShape = ""
     for cam in cams:
         isRenderable = cmds.getAttr(cam+".renderable")
@@ -2335,7 +2338,7 @@ def writeLightSpot(light):
     matrix = cmds.getAttr(light+".worldMatrix")
     position = [matrix[12],matrix[13],matrix[14]]
 
-    transform = cmds.listRelatives( light, parent=True )[0]
+    transform = cmds.listRelatives( light, parent=True, fullPath=True )[0]
     rotation = cmds.getAttr(transform+".rotate")[0]
 
     # Create a structure to be written
@@ -2535,9 +2538,9 @@ def writeLightEnvMap(envmap):
 Write lights
 '''
 def writeLights():
-    lights = cmds.ls(type="light")
-    sunskyLights = cmds.ls(type="MitsubaSunsky")
-    envLights = cmds.ls(type="MitsubaEnvironmentLight")
+    lights = cmds.ls(type="light", long=True)
+    sunskyLights = cmds.ls(type="MitsubaSunsky", long=True)
+    envLights = cmds.ls(type="MitsubaEnvironmentLight", long=True)
 
     if sunskyLights and envLights or sunskyLights and len(sunskyLights)>1 or envLights and len(envLights)>1:
         print "Cannot specify more than one environment light (MitsubaSunsky and MitsubaEnvironmentLight)"
@@ -2570,11 +2573,11 @@ def writeLights():
 
 def getRenderableGeometry():
     # Build list of visible geometry
-    transforms = cmds.ls(type="transform")
+    transforms = cmds.ls(type="transform", long=True)
     geoms = []
 
     for transform in transforms:
-        rels = cmds.listRelatives(transform)
+        rels = cmds.listRelatives(transform, fullPath=True)
         if rels:
             for rel in rels:
                 if cmds.nodeType(rel)=="mesh":
@@ -2584,7 +2587,9 @@ def getRenderableGeometry():
                     if cmds.attributeQuery("overrideEnabled", node=transform, exists=True):
                         visible = visible and cmds.getAttr(transform+".overrideVisibility")
                     if visible:
-                        geoms.append(transform)
+                        if transform not in geoms:
+                            geoms.append(transform)
+                            #print( "getRenderableGeometry - transform : %s" % transform )
 
     return geoms
 
@@ -2604,6 +2609,7 @@ def writeMaterials(geoms):
 
     #Write the material for each piece of geometry in the scene
     for geom in geoms:
+        #print( "writeMaterials - geom : %s" % geom )
         # Surface shader
         material = getSurfaceShader(geom)
         if material and material not in writtenMaterials:
@@ -2633,36 +2639,20 @@ def writeMaterials(geoms):
     return writtenMaterials, materialElements
 
 def exportGeometry(geom, renderDir):
-    output = os.path.join(renderDir, geom + ".obj")
+    geomFilename = geom.replace(':', '__').replace('|', '__')
+
     cmds.select(geom)
-    objFile = cmds.file(output, op=True, typ="OBJexport", options="groups=1;ptgroups=1;materials=0;smoothing=1;normals=1", exportSelected=True, force=True)
-    return objFile
 
-'''
-def findAndWriteMedium(geom, shader):
-    #check for a homogeneous material
-    #this checks if there is a homogeneous medium, and returns the attribute that it
-    #is connected to if there is one
-    connections = cmds.listConnections(shader, type="HomogeneousParticipatingMedium", connections=True)
-    #We want to make sure it is connected to the ".material" attribute
-    hasMedium = False
-    medium = ""
-    if connections and connections[0]==shader+".material":
-        hasMedium = True
-        medium = connections[1]
+    objFilenameFullPath = os.path.join(renderDir, geomFilename + ".obj")
+    objFile = cmds.file(objFilenameFullPath, op=True, typ="OBJexport", options="groups=1;ptgroups=1;materials=0;smoothing=1;normals=1", exportSelected=True, force=True)
 
-    if hasMedium:
-        mediumElement = writeMedium(medium)
-    else:
-        mediumElement = None
+    return objFilenameFullPath
 
-    return mediumElement
-'''
-
-def writeShape(geom, surfaceShader, mediumShader, renderDir):
+def writeShape(geomFilename, surfaceShader, mediumShader, renderDir):
     shapeDict = createSceneElement('obj', elementType='shape')
 
-    shapeDict['children'].append( createStringElement('filename', geom + ".obj") )
+    # Add reference to exported geometry
+    shapeDict['children'].append( createStringElement('filename', geomFilename) )
 
     # Write medium shader
     if mediumShader and cmds.nodeType(mediumShader) in materialNodeTypes:
@@ -2691,13 +2681,6 @@ def writeShape(geom, surfaceShader, mediumShader, renderDir):
             refDict['attributes'] = {'id':surfaceShader}
 
             shapeDict['children'].append(refDict)
-
-    '''
-    elif cmds.nodeType(surfaceShader) == "MitsubaVolume":
-        volumeElement = writeVolume(renderDir, shader, geom)
-        if volumeElement:
-            shapeDict['children'].append(volumeElement)
-    '''
     
     return shapeDict
 
@@ -2712,166 +2695,20 @@ def writeGeometryAndMaterials(renderDir):
 
     #Write each piece of geometry with references to materials
     for geom in geoms:
+        #print( "writeGeometryAndMaterials - geometry : %s" % geom )
         surfaceShader = getSurfaceShader(geom)
         volumeShader  = getVolumeShader(geom)
 
-        exportedGeo = exportGeometry(geom, renderDir)
-        geoFiles.append( exportedGeo )
+        #print( "\tsurface : %s" % surfaceShader )
+        #print( "\tvolume  : %s" % volumeShader )
 
-        shapeElement = writeShape(geom, surfaceShader, volumeShader, renderDir)
+        geomFilename = exportGeometry(geom, renderDir)
+        geoFiles.append(geomFilename)
+
+        shapeElement = writeShape(geomFilename, surfaceShader, volumeShader, renderDir)
         shapeElements.append(shapeElement)
 
     return (geoFiles, shapeElements, materialElements)
-
-'''
-def getVtxPos(shapeNode):
-    vtxWorldPosition = []    # will contain positions un space of all object vertex
-    vtxIndexList = cmds.getAttr( shapeNode+".vrts", multiIndices=True )
-    for i in vtxIndexList :
-        curPointPosition = cmds.xform( str(shapeNode)+".pnts["+str(i)+"]", query=True, translation=True, worldSpace=True )    # [1.1269192869360154, 4.5408735275268555, 1.3387055339628269]
-        vtxWorldPosition.append( curPointPosition )
-    return vtxWorldPosition
-
-#
-# Needs to be generalized
-#
-def convertVolumeFormatXtoMitsuba(renderDir, material, geom):
-    #sourceFileName = "smoke_source\\text\\smoke_test_"
-    hasFile = False
-    fileTexture = ""
-    connections = cmds.listConnections(material, connections=True)
-    for i in range(len(connections)):
-        if i%2==1:
-            connection = connections[i]
-            connectionType = cmds.nodeType(connection)
-            if connectionType == "file" and connections[i-1]==material+".sourceFile":
-                inFileName = cmds.getAttr(connection+".fileTextureName")
-                hasFile=True
-
-    if not hasFile:
-        print "please supply a file for the mitsuba volume"
-        return None
-
-    sourceFile = open(inFileName, 'r')
-
-    volFileName = os.path.join(renderDir, "temp.vol")
-    volFile = open(volFileName, 'wb+')
-
-    #grid dimensions
-    gd = cmds.getAttr(material+".gridDimensions")[0]
-    height = int(gd[0])
-    width  = int(gd[1])
-    depth  = int(gd[2])
-    #I only use color, but you could send data that had n components
-    chans  = 1
-
-    vtxPos = getVtxPos(geom)
-
-    maxV = [-1000,-1000,-1000]
-    minV = [ 1000, 1000, 1000]
-
-
-    for vtx in vtxPos:
-        if vtx[0] > maxV[0]:
-            maxV[0] = vtx[0]
-        elif vtx[0] < minV[0]:
-            minV[0] = vtx[0]
-        if vtx[1] > maxV[1]:
-            maxV[1] = vtx[1]
-        elif vtx[1] < minV[1]:
-            minV[1] = vtx[1]
-        if vtx[2] > maxV[2]:
-            maxV[2] = vtx[2]
-        elif vtx[2] < minV[2]:
-            minV[2] = vtx[2]
-    #Mitsuba requires you to define an AABB for the volume data
-    xmin = minV[0]
-    ymin = minV[1]
-    zmin = minV[2]
-    xmax = maxV[0]
-    ymax = maxV[1]
-    zmax = maxV[2]
-
-    #Pre-package the data from 563 data files to send to Mitsuba
-    data = [0 for i in range(int(depth*width*height*chans))]
-
-    for i in range(width):
-        for j in range(height):
-            for k in range(depth):
-                temp = sourceFile.readline()
-                tempFloat = 0
-                try:
-                    tempFloat = float(temp)
-                except:
-                    tempFloat = 0
-                data[((k*height+j)*width+i)] = tempFloat
-
-
-    #VOL
-    volFile.write('VOL')
-    #version number
-    volFile.write(struct.pack('<b', 3))
-
-    #encoding id
-    volFile.write(struct.pack('<i', 1))
-
-    #x,y,z dimensions
-    volFile.write(struct.pack('<i', height))
-    volFile.write(struct.pack('<i', width))
-    volFile.write(struct.pack('<i', depth))
-
-    #number of channels
-    volFile.write(struct.pack('<i', 1))
-
-    #AABB (xmin,ymin,zmin, xmax,ymax,zmax)
-    volFile.write(struct.pack('<f', xmin))
-    volFile.write(struct.pack('<f', ymin))
-    volFile.write(struct.pack('<f', zmin))
-
-    volFile.write(struct.pack('<f', xmax))
-    volFile.write(struct.pack('<f', ymax))
-    volFile.write(struct.pack('<f', zmax))
-
-    #Smoke densities
-    for i in range(depth*width*height*chans):
-        density = data[i]
-        volFile.write(struct.pack('<f', density))
-
-    volFile.close()
-    sourceFile.close()
-
-    return volFileName
-
-def writeVolume(renderDir, material, geom):
-    volFileName = convertVolumeFormatXtoMitsuba(renderDir, material, geom)
-
-    # Create a structure to be written
-    mediumDict = {'type':'medium'}
-    mediumDict['attributes'] = {'type':'heterogeneous', 'name':'interior'}
-
-    mediumDict['children'] = []
-    mediumDict['children'].append( { 'type':'string', 
-        'attributes':{ 'name':'method', 'value':'woodcock' } } )
-
-    volume1Dict = {'type':'volume'}
-    volume1Dict['attributes'] = {'type':'gridvolume', 'name':'density'}
-
-    volume1Dict['children'] = []
-    volume1Dict['children'].append( { 'type':'string', 
-        'attributes':{ 'name':'filename', 'value':volFileName } } )
-
-    volume2Dict = {'type':'volume'}
-    volume2Dict['attributes'] = {'type':'constvolume', 'name':'albedo'}
-
-    volume2Dict['children'] = []
-    volume2Dict['children'].append( { 'type':'spectrum', 
-        'attributes':{ 'name':'value', 'value':str(0.9) } } )
-
-    mediumDict['children'].append(volume1Dict)
-    mediumDict['children'].append(volume2Dict)
-
-    return mediumDict
-'''
 
 def writeScene(outFileName, renderDir, renderSettings):
     #

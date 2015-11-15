@@ -266,8 +266,11 @@ class mitsubaForMaya(OpenMayaMPx.MPxCommand):
             #Delete all of the temp file we just made
             os.chdir(renderDir)
             for geometryFile in geometryFiles:
-                #print( "Removing geometry : %s" % geometryFile )
-                os.remove(geometryFile)
+                try:
+                    #print( "Removing geometry : %s" % geometryFile )
+                    os.remove(geometryFile)
+                except:
+                    print( "Error removing temporary file : %s" % geometryFile )
             #print( "Removing mitsuba scene description : %s" % outFileName )
             os.remove(outFileName)
             #os.remove(logName)

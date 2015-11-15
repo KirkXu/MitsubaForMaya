@@ -17,12 +17,6 @@ class diffuse(OpenMayaMPx.MPxNode):
         if plug == diffuse.mOutColor:
             resultColor = OpenMaya.MFloatVector(0.0,0.0,0.0)
             
-            color = block.inputValue( diffuse.mReflectance ).asFloatVector()
-
-            resultColor.x = color.x
-            resultColor.y = color.y
-            resultColor.z = color.z
-
             outColorHandle = block.outputValue( diffuse.mOutColor )
             outColorHandle.setMFloatVector(resultColor)
             outColorHandle.setClean()
