@@ -28,7 +28,6 @@ class roughcoating(OpenMayaMPx.MPxNode):
 
     def compute(self, plug, block):
         if plug == roughcoating.mOutColor or plug.parent() == roughcoating.mOutColor:
-            #color = block.inputValue( roughcoating.mBSDF ).asFloatVector()
             resultColor = OpenMaya.MFloatVector(0.0,0.0,0.0)
 
             outColorHandle = block.outputValue( roughcoating.mOutColor )

@@ -24,11 +24,6 @@ class ward(OpenMayaMPx.MPxNode):
         if plug == ward.mOutColor:
             resultColor = OpenMaya.MFloatVector(0.0,0.0,0.0)
             
-            color = block.inputValue( ward.mDiffuse ).asFloatVector()
-            resultColor.x=color.x
-            resultColor.y=color.y
-            resultColor.z=color.z
-
             outColorHandle = block.outputValue( ward.mOutColor )
             outColorHandle.setMFloatVector(resultColor)
             outColorHandle.setClean()

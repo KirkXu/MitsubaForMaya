@@ -27,11 +27,6 @@ class plastic(OpenMayaMPx.MPxNode):
         if plug == plastic.mOutColor:
             resultColor = OpenMaya.MFloatVector(0.0,0.0,0.0)
             
-            color = block.inputValue( plastic.mDiffuse ).asFloatVector()
-            resultColor.x=color.x
-            resultColor.y=color.y
-            resultColor.z=color.z
-
             outColorHandle = block.outputValue( plastic.mOutColor )
             outColorHandle.setMFloatVector(resultColor)
             outColorHandle.setClean()

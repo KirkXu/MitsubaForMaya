@@ -25,8 +25,6 @@ class dielectric(OpenMayaMPx.MPxNode):
         if plug == dielectric.mOutColor:
             resultColor = OpenMaya.MFloatVector(0.0,0.0,0.0)
             
-            color = block.inputValue( dielectric.mReflectance ).asFloatVector()
-
             outColorHandle = block.outputValue( dielectric.mOutColor )
             outColorHandle.setMFloatVector(resultColor)
             outColorHandle.setClean()

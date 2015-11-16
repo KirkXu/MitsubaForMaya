@@ -30,12 +30,6 @@ class sunsky(OpenMayaMPx.MPxNode):
         if plug == sunsky.mOutColor:
             resultColor = OpenMaya.MFloatVector(0.0,0.0,0.0)
             
-            time = block.inputValue( sunsky.mTime ).asFloatVector()
-
-            resultColor.x = time.x
-            resultColor.y = time.y
-            resultColor.z = time.z
-
             outColorHandle = block.outputValue( sunsky.mOutColor )
             outColorHandle.setMFloatVector(resultColor)
             outColorHandle.setClean()

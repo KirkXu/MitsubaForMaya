@@ -25,7 +25,6 @@ class coating(OpenMayaMPx.MPxNode):
 
     def compute(self, plug, block):
         if plug == coating.mOutColor:
-            #resultColor = block.inputValue( coating.mBSDF ).asFloatVector()
             resultColor = OpenMaya.MFloatVector(0.0,0.0,0.0)
 
             outColorHandle = block.outputValue( coating.mOutColor )

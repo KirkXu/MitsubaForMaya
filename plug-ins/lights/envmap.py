@@ -26,12 +26,6 @@ class envmap(OpenMayaMPx.MPxNode):
         if plug == envmap.mOutColor:
             resultColor = OpenMaya.MFloatVector(0.0,0.0,0.0)
             
-            rotate = block.inputValue( envmap.mRotate ).asFloatVector()
-
-            resultColor.x = rotate.x
-            resultColor.y = rotate.y
-            resultColor.z = rotate.z
-
             outColorHandle = block.outputValue( envmap.mOutColor )
             outColorHandle.setMFloatVector(resultColor)
             block.setClean( plug )

@@ -25,8 +25,6 @@ class thindielectric(OpenMayaMPx.MPxNode):
         if plug == thindielectric.mOutColor:
             resultColor = OpenMaya.MFloatVector(0.0,0.0,0.0)
             
-            color = block.inputValue( thindielectric.mReflectance ).asFloatVector()
-
             outColorHandle = block.outputValue( thindielectric.mOutColor )
             outColorHandle.setMFloatVector(resultColor)
             outColorHandle.setClean()

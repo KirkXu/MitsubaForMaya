@@ -29,8 +29,6 @@ class roughdielectric(OpenMayaMPx.MPxNode):
         if plug == roughdielectric.mOutColor:
             resultColor = OpenMaya.MFloatVector(0.0,0.0,0.0)
             
-            color = block.inputValue( roughdielectric.mReflectance ).asFloatVector()
-
             outColorHandle = block.outputValue( roughdielectric.mOutColor )
             outColorHandle.setMFloatVector(resultColor)
             outColorHandle.setClean()

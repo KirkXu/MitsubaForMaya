@@ -2586,39 +2586,45 @@ def isVisible(object):
     return visible
 
 def writeLights():
+    # Gather visible lights
     lights = cmds.ls(type="light", long=True)
+    lights = [x for x in lights if isVisible(x)]
+
     sunskyLights = cmds.ls(type="MitsubaSunsky", long=True)
+    sunskyLights = [x for x in sunskyLights if isVisible(x)]
+
     envLights = cmds.ls(type="MitsubaEnvironmentLight", long=True)
+    envLights = [x for x in envLights if isVisible(x)]
 
+    # Warn if multiple environment lights are active
     if sunskyLights and envLights or sunskyLights and len(sunskyLights)>1 or envLights and len(envLights)>1:
-        print "Cannot specify more than one environment light (MitsubaSunsky and MitsubaEnvironmentLight)"
-        # print "Defaulting to constant environment emitter"
-        # outFile.write(" <emitter type=\"constant\"/>\n")
+        print( "\n" )
+        print( "Cannot specify more than one environment light (MitsubaSunsky and MitsubaEnvironmentLight)" )
+        print( "Using first environment or sunsky light")
+        print( "\n" )
 
+    # Create light elements
     lightElements = []
 
     # Gather element definitions for standard lights
     for light in lights:
-        if isVisible(light):
-            lightType = cmds.nodeType(light)
-            if lightType == "directionalLight":
-                lightElements.append( writeLightDirectional(light) )
-            elif lightType == "pointLight":
-                lightElements.append( writeLightPoint(light) )
-            elif lightType == "spotLight":
-                lightElements.append( writeLightSpot(light) )
-
-    # Gather element definitions for Sun and Sky lights
-    if sunskyLights:
-        sunsky = sunskyLights[0]
-        if isVisible(sunsky):
-            lightElements.append( writeLightSunSky(sunsky) )
+        lightType = cmds.nodeType(light)
+        if lightType == "directionalLight":
+            lightElements.append( writeLightDirectional(light) )
+        elif lightType == "pointLight":
+            lightElements.append( writeLightPoint(light) )
+        elif lightType == "spotLight":
+            lightElements.append( writeLightSpot(light) )
 
     # Gather element definitions for Environment lights
     if envLights:
         envmap = envLights[0]
-        if isVisible(envmap):
-            lightElements.append( writeLightEnvMap(envmap) )
+        lightElements.append( writeLightEnvMap(envmap) )
+
+    # Gather element definitions for Sun and Sky lights
+    if envLights == [] and sunskyLights:
+        sunsky = sunskyLights[0]
+        lightElements.append( writeLightSunSky(sunsky) )
 
     return lightElements
 

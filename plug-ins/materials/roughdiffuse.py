@@ -19,12 +19,6 @@ class roughdiffuse(OpenMayaMPx.MPxNode):
         if plug == roughdiffuse.mOutColor:
             resultColor = OpenMaya.MFloatVector(0.0,0.0,0.0)
             
-            color = block.inputValue( roughdiffuse.mReflectance ).asFloatVector()
-
-            resultColor.x = color.x
-            resultColor.y = color.y
-            resultColor.z = color.z
-
             outColorHandle = block.outputValue( roughdiffuse.mOutColor )
             outColorHandle.setMFloatVector(resultColor)
             outColorHandle.setClean()

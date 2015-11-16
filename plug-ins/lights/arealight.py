@@ -17,12 +17,6 @@ class arealight(OpenMayaMPx.MPxNode):
         if plug == arealight.mOutColor:
             resultColor = OpenMaya.MFloatVector(0.0,0.0,0.0)
             
-            radiance = block.inputValue( arealight.mRadiance ).asFloat()
-
-            resultColor.x = radiance
-            resultColor.y = radiance
-            resultColor.z = radiance
-
             outColorHandle = block.outputValue( arealight.mOutColor )
             outColorHandle.setMFloatVector(resultColor)
             outColorHandle.setClean()
