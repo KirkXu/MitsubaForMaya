@@ -160,18 +160,18 @@ class mitsubaForMaya(OpenMayaMPx.MPxCommand):
         keepTempFiles = cmds.getAttr("%s.%s" % (renderSettings, "keepTempFiles"))
         verbose = cmds.getAttr("%s.%s" % (renderSettings, "verbose"))
 
-        print( "Render Settings - Mitsuba Path    : %s" % mitsubaPath )
-        print( "Render Settings - Integrator      : %s" % integrator )
-        print( "Render Settings - Sampler         : %s" % sampler )
-        print( "Render Settings - Sample Count    : %s" % sampleCount )
-        print( "Render Settings - Reconstruction  : %s" % reconstructionFilter )
-        print( "Render Settings - Keep Temp Files : %s" % keepTempFiles )
-        print( "Render Settings - Verbose         : %s" % verbose )
-        print( "Render Settings - Render Dir      : %s" % renderDir )
-        print( "Render Settings - oiiotool Path   : %s" % mitsubaPath )
+        print( "Render Settings - Mitsuba Path     : %s" % mitsubaPath )
+        print( "Render Settings - Integrator       : %s" % integrator )
+        print( "Render Settings - Sampler          : %s" % sampler )
+        print( "Render Settings - Sample Count     : %s" % sampleCount )
+        print( "Render Settings - Reconstruction   : %s" % reconstructionFilter )
+        print( "Render Settings - Keep Temp Files  : %s" % keepTempFiles )
+        print( "Render Settings - Verbose          : %s" % verbose )
+        print( "Render Settings - Render Dir       : %s" % renderDir )
+        print( "Render Settings - oiiotool Path    : %s" % mitsubaPath )
 
         animation = self.isAnimation()
-        print( "Render Settings - Animation       : %s" % animation )
+        print( "Render Settings - Animation        : %s" % animation )
 
         # Animation
         if animation:
@@ -280,8 +280,23 @@ class mitsubaForMaya(OpenMayaMPx.MPxCommand):
         if imagePrefix is None:
             imagePrefix = "mitsubaTempRender"
 
+        writePartialResults = False
+        writePartialResultsInterval = -1
+        blockSize = 32
+        threads = 0
         if renderSettings:
             extension = getImageExtension(renderSettings)
+
+            writePartialResults = cmds.getAttr("%s.%s" % (renderSettings, "writePartialResults"))
+            writePartialResultsInterval = cmds.getAttr("%s.%s" % (renderSettings, "writePartialResultsInterval"))
+            blockSize = cmds.getAttr("%s.%s" % (renderSettings, "blockSize"))
+            threads = cmds.getAttr("%s.%s" % (renderSettings, "threads"))
+
+            print( "Render Settings - Partial Results  : %s" % writePartialResults )
+            print( "Render Settings - Results Interval : %s" % writePartialResultsInterval )
+            print( "Render Settings - Block Size       : %s" % blockSize )
+            if threads:
+                print( "Render Settings - Threads          : %s" % threads )
 
         if animation:
             extensionPadding = cmds.getAttr("defaultRenderGlobals.extensionPadding")
@@ -294,18 +309,37 @@ class mitsubaForMaya(OpenMayaMPx.MPxCommand):
         args = []
         if verbose:
             args.append('-v')
+        if writePartialResults:
+            args.extend(['-r', str(writePartialResultsInterval)])
+        if threads:
+            args.extend(['-p', str(threads)])
         args.extend([
+            '-b', str(blockSize), 
             '-o',
             imageName,
             outFileName])
+
         if ' ' in mtsDir:
             env = {"LD_LIBRARY_PATH":str("\"%s\"" % mtsDir)}
         else:
             env = {"LD_LIBRARY_PATH":str(mtsDir)}
+
         mitsubaRender = Process(description='render an image',
             cmd=mitsubaPath,
             args=args,
             env=env)
+
+        def renderLogCallback(line):
+            if "Writing image" in line:
+                imageName = line.split("\"")[-2]
+
+                # Display the render
+                if not cmds.about(batch=True):
+                    MitsubaRendererUI.showRender(imageName)
+
+        mitsubaRender.log_callback = renderLogCallback
+        #mitsubaRender.echo = False
+
         mitsubaRender.execute()
         #mitsubaRender.write_log_to_disk(logName, format='txt')
 

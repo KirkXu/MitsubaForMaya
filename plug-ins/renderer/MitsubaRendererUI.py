@@ -1315,6 +1315,26 @@ def createRenderSettingsUI():
     cmds.checkBox(verbose, edit=1,
         changeCommand=lambda (x): getCheckBox(verbose, "verbose", x))
 
+    existingWritePartialResults = cmds.getAttr( "%s.%s" % (renderSettings, "writePartialResults"))
+    writePartialResults = cmds.checkBox(label="Write partial results", value=existingWritePartialResults)
+    cmds.checkBox(writePartialResults, edit=1,
+        changeCommand=lambda (x): getCheckBox(writePartialResults, "writePartialResults", x))
+
+    existingWritePartialResultsInterval = cmds.getAttr( "%s.%s" % (renderSettings, "writePartialResultsInterval"))
+    changeWritePartialResultsInterval = lambda (x): getIntFieldGroup(None, "writePartialResultsInterval", x)
+    writePartialResultsIntervalGroup = cmds.intFieldGrp(numberOfFields=1, label="Partial results interval", value1=existingWritePartialResultsInterval)
+    cmds.intFieldGrp(writePartialResultsIntervalGroup, edit=1, changeCommand=changeWritePartialResultsInterval)    
+
+    existingThreads = cmds.getAttr( "%s.%s" % (renderSettings, "threads"))
+    changeThreads = lambda (x): getIntFieldGroup(None, "threads", x)
+    threadsGroup = cmds.intFieldGrp(numberOfFields=1, label="Threads", value1=existingThreads)
+    cmds.intFieldGrp(threadsGroup, edit=1, changeCommand=changeThreads)    
+
+    existingBlockSize = cmds.getAttr( "%s.%s" % (renderSettings, "blockSize"))
+    changeBlockSize = lambda (x): getIntFieldGroup(None, "blockSize", x)
+    blockSizeGroup = cmds.intFieldGrp(numberOfFields=1, label="Block size", value1=existingBlockSize)
+    cmds.intFieldGrp(blockSizeGroup, edit=1, changeCommand=changeBlockSize)    
+
     cmds.setParent('..')
     cmds.setParent('..')
 

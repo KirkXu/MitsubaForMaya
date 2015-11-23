@@ -75,6 +75,55 @@ def write_text(text, text_file):
 
     return text
 
+#
+# Class definition and use based on post
+# http://eyalarubas.com/python-subproc-nonblock.html
+#
+from threading import Thread
+from Queue import Queue, Empty
+
+class NonBlockingStreamReader:
+
+    def __init__(self, stream):
+        '''
+        stream: the stream to read from.
+                Usually a process' stdout or stderr.
+        '''
+
+        self._s = stream
+        self._q = Queue()
+
+        def _populateQueue(stream, queue):
+            '''
+            Collect lines from 'stream' and put them in 'quque'.
+            '''
+
+            #for line in stream:
+            #    queue.put(line)
+            
+            while True:
+                line = stream.readline()
+                if line:
+                    queue.put(line)
+                else:
+                    break
+                    #raise UnexpectedEndOfStream
+
+        self._t = Thread(target = _populateQueue,
+                args = (self._s, self._q))
+        self._t.daemon = True
+        self._t.start() #start collecting lines from the stream
+
+    def readline(self, timeout = None):
+        try:
+            return self._q.get(block = timeout is not None,
+                    timeout = timeout)
+        except Empty:
+            return None
+
+class UnexpectedEndOfStream(Exception): pass
+
+
 
 class Process:
     """
@@ -120,6 +169,7 @@ class Process:
         self.env = env
         self.batch_wrapper = batch_wrapper
         self.process_keys = []
+        self.log_callback = None
 
     def get_elapsed_seconds(self):
         """
@@ -349,11 +399,14 @@ class Process:
              Return value description.
         """
 
-        line = line.rstrip()
-        if line != "":
-            self.log.append(line.rstrip())
-            if self.echo:
-                print('%s' % line.rstrip())
+        if line:
+            line = line.rstrip()
+            if line != "":
+                self.log.append(line.rstrip())
+                if self.echo:
+                    print( '%s' % line.rstrip())
+                if self.log_callback:
+                    self.log_callback(line.rstrip())
 
     def execute(self):
         """
@@ -410,6 +463,7 @@ class Process:
                                        stderr=sp.STDOUT,
                                        cwd=self.cwd, env=self.env)
                 else:
+                    #print( "\nUsing standard Popen\n" )
                     process = sp.Popen(cmdargs, stdout=sp.PIPE,
                                        stderr=sp.STDOUT,
                                        cwd=self.cwd, env=self.env)
@@ -429,28 +483,62 @@ class Process:
         # Using *subprocess*
         if sp:
             if process is not None:
-                # pid = process.pid
-                # log.logLine('process id %s\n' % pid)
+                #pid = process.pid
+                #log.log_line('process id %s\n' % pid)
 
                 try:
-                    # This is more proper python, and resolves some issues with
-                    # a process ending before all of its output has been
-                    # processed, but it also seems to stall when the read
-                    # buffer is near or over its limit. This happens
-                    # relatively frequently with processes that generate lots
-                    # of print statements.
-                    for line in process.stdout:
-                        self.log_line(line)
+                    #
+                    # Experimental
+                    #
+                    if True:
+                        nbsr = NonBlockingStreamReader(process.stdout)
+                        i = 0
+                        while process.poll() is None:
+                            try:
+                                line = nbsr.readline(30.0) # x secs to let the shell output the result
+                            except:
+                                print( "Exception in NonBlockingStreamReader readline")
+                                line = 'Exception'
+
+                            if not line:
+                                #self.log_line( '%d readline iteration - No more data' % i )
+                                i += 1
+                            else:
+                                #print( "%d - while loop log - %s" % (i, line) )
+                                self.log_line( line )
+                    else:
+                        # This is more proper python, and resolves some issues with
+                        # a process ending before all of its output has been
+                        # processed, but it also seems to stall when the read
+                        # buffer is near or over its limit. This happens
+                        # relatively frequently with processes that generate lots
+                        # of print statements.
+                        for line in process.stdout:
+                            #print( "%s - for loop log line" % str(datetime.datetime.now()) )
+                            self.log_line(line)
 
                     # So we go with the, um, uglier option below.
 
                     # This is now used to ensure that the process has finished.
                     line = ''
                     while line is not None and process.poll() is None:
-                        try:
-                            line = process.stdout.readline()
-                        except:
-                            break
+                        #print( "final while loop log" )
+                        if True:
+                            try:
+                                line = nbsr.readline(1.0)
+                            except:
+                                print( "Exception in NonBlockingStreamReader readline")
+                                line = 'Exception'
+                                break
+
+                            if not line:
+                                #self.log_line( 'No more data' )
+                                break
+                        else:
+                            try:
+                                line = process.stdout.readline()
+                            except:
+                                break
                         # 3.1
                         try:
                             # TODO: Investigate previous eroneous statement.
@@ -459,6 +547,7 @@ class Process:
                         # 2.6
                         except:
                             self.log_line(line)
+                            #print( "while loop log line" )
                 except:
                     self.log_line('Logging error - info : %s' % sys.exc_info()[0])
                     #self.log_line('Logging error - line : %s' % line)

@@ -992,50 +992,7 @@ def writeShaderObjectAreaLight(material, materialName):
     return elementDict
 
 def writeShaderDipoleSSS(material, materialName):
-    # roughplastic bsdf
-    bsdfElement = createSceneElement('roughplastic')
-
-    bsdfElement['children'].append( createTexturedColorAttributeElement(material, "specularReflectance") )
-
-    distributionUI = cmds.getAttr(material+".surfaceDistribution", asString=True)
-    if distributionUI in distributionUIToPreset:
-        distributionPreset = distributionUIToPreset[distributionUI]
-    else:
-        distributionPreset = "beckmann"
-
-    bsdfElement['children'].append( createStringElement('distribution', distributionPreset) )
-
-    bsdfElement['children'].append( createTexturedFloatAttributeElement(material, "surfaceAlpha", mitsubaParameter="alpha") )
-
-    # Get interior IOR preset or value
-    interiorMaterialName = cmds.getAttr(material + ".interiorMaterial", asString=True)
-    interiorMaterialName = interiorMaterialName.split('-')[0].strip()
-    if interiorMaterialName in iorMaterialUIToPreset:
-        interiorMaterialPreset = iorMaterialUIToPreset[interiorMaterialName]
-
-        bsdfElement['children'].append( createStringElement('intIOR', interiorMaterialPreset)  )
-    else:
-        intIOR = cmds.getAttr(material+".intior")
-        bsdfElement['children'].append( createFloatElement('intIOR', intIOR)  )
-
-    # Get exterior IOR preset or value
-    exteriorMaterialName = cmds.getAttr(material + ".exteriorMaterial", asString=True)
-    exteriorMaterialName = exteriorMaterialName.split('-')[0].strip()
-    if exteriorMaterialName in iorMaterialUIToPreset:
-        exteriorMaterialPreset = iorMaterialUIToPreset[exteriorMaterialName]
-
-        bsdfElement['children'].append( createStringElement('extIOR', exteriorMaterialPreset)  )
-    else:
-        extIOR = cmds.getAttr(material+".extior")
-        bsdfElement['children'].append( createFloatElement('extIOR', extIOR)  )
-
-    nonlinear = cmds.getAttr(material+".nonlinear")
-    bsdfElement['children'].append( createBooleanElement('nonlinear', nonlinear) )
-
-    useSingleScatteringModel = cmds.getAttr(material+".useSingleScatteringModel")
-
-    # dipole sss
-    sssElement = createSceneElement('dipole', elementType='subsurface')
+    sssElement = createSceneElement('dipole', materialName, elementType='subsurface')
 
     useSigmaSA = cmds.getAttr(material+".useSigmaSA")
     useSigmaTAlbedo = cmds.getAttr(material+".useSigmaTAlbedo")
@@ -1083,11 +1040,16 @@ def writeShaderDipoleSSS(material, materialName):
         extIOR = cmds.getAttr(material+".extior")
         sssElement['children'].append( createFloatElement('extIOR', extIOR)  )
 
-    if not useSingleScatteringModel:
-        bsdfElement = None
+    return sssElement
 
-    return sssElement, bsdfElement
+def addTwoSided(material, materialElement):
+    # Create a structure to be written
+    elementDict = createSceneElement('twosided', material)
 
+    materialElement['attributes']['id'] = material + "InnerMaterial"
+    elementDict['children'].append(materialElement)
+    
+    return elementDict
 
 '''
 Write a surface material (material) to a Mitsuba scene file (outFile)
@@ -1120,6 +1082,7 @@ def writeShader(material, materialName):
         "MitsubaHKShader" : writeShaderHK,
         "MitsubaHomogeneousParticipatingMedium" : writeMediumHomogeneous,
         "MitsubaHeterogeneousParticipatingMedium" : writeMediumHeterogeneous,
+        "MitsubaSSSDipoleShader" : writeShaderDipoleSSS,
     }
 
     if matType in mayaMaterialTypeToShaderFunction:
@@ -1131,6 +1094,9 @@ def writeShader(material, materialName):
     shaderElement = None
     if writeShaderFunction:
         shaderElement = writeShaderFunction(material, materialName)
+
+        if "twosided" in cmds.listAttr(material) and cmds.getAttr(material + ".twosided"):
+            shaderElement = addTwoSided(material, shaderElement)
 
     return shaderElement
 
@@ -2187,7 +2153,7 @@ def getRenderableCamera():
     for cam in cams:
         isRenderable = cmds.getAttr(cam+".renderable")
         if isRenderable:
-            print( "Render Settings - Camera          : %s" % cam )
+            print( "Render Settings - Camera           : %s" % cam )
             rCamShape = cam
             break
 
@@ -2646,16 +2612,6 @@ def getRenderableGeometry():
 
     return geoms
 
-def addTwoSided(material, materialElement):
-    # Create a structure to be written
-    elementDict = createSceneElement('twosided', material)
-
-    materialElement['attributes']['id'] = material + "InnerMaterial"
-    elementDict['children'].append(materialElement)
-    
-    return elementDict
-
-
 def writeMaterials(geoms):
     writtenMaterials = []
     materialElements = []
@@ -2669,11 +2625,8 @@ def writeMaterials(geoms):
 
             materialType = cmds.nodeType(material)
             if materialType in materialNodeTypes:
-                if materialType not in ["MitsubaObjectAreaLightShader", "MitsubaSSSDipoleShader"]:
+                if materialType not in ["MitsubaObjectAreaLightShader"]:
                     materialElement = writeShader(material, material)
-
-                    if "twosided" in cmds.listAttr(material) and cmds.getAttr(material+".twosided"):
-                        materialElement = addTwoSided(material, materialElement)
 
                     materialElements.append(materialElement)
                     writtenMaterials.append(material)
@@ -2707,26 +2660,23 @@ def writeShape(geomFilename, surfaceShader, mediumShader, renderDir):
     # Add reference to exported geometry
     shapeDict['children'].append( createStringElement('filename', geomFilename) )
 
-    # Write medium shader
+    # Write medium shader reference
     if mediumShader and cmds.nodeType(mediumShader) in materialNodeTypes:
-        refDict = createSceneElement(elementType='ref')
-        refDict['attributes'] = {'name':'interior', 'id':mediumShader}
+        if cmds.nodeType(mediumShader) == "MitsubaSSSDipoleShader":
+            refDict = createSceneElement(elementType='ref')
+            refDict['attributes'] = {'id':mediumShader}
+        else:
+            refDict = createSceneElement(elementType='ref')
+            refDict['attributes'] = {'name':'interior', 'id':mediumShader}
 
         shapeDict['children'].append(refDict)
 
-    # Write surface shader
+    # Write surface shader reference
     if surfaceShader and cmds.nodeType(surfaceShader) in materialNodeTypes:
         # Check for area lights
         if cmds.nodeType(surfaceShader) == "MitsubaObjectAreaLightShader":
             shaderElement = writeShaderObjectAreaLight(surfaceShader, surfaceShader)
             shapeDict['children'].append(shaderElement)
-
-        # Check for dipole sss
-        elif cmds.nodeType(surfaceShader) == "MitsubaSSSDipoleShader":
-            sssElement, bsdfElement = writeShaderDipoleSSS(surfaceShader, surfaceShader)
-            shapeDict['children'].append(sssElement)
-            if bsdfElement:
-                shapeDict['children'].append(bsdfElement)
 
         # Otherwise refer to the already written material
         else:
@@ -2772,21 +2722,21 @@ def writeScene(outFileName, renderDir, renderSettings):
     # Should make this query the binary...
     sceneElement['attributes'] = {'version':'0.5.0'}
 
-    #Get integrator
+    # Get integrator
     integratorElement = writeIntegrator(renderSettings)
     sceneElement['children'].append(integratorElement)
 
-    #Get sensor : camera, sampler, and film
+    # Get sensor : camera, sampler, and film
     frameNumber = int(cmds.currentTime(query=True))
     sensorElement = writeSensor(frameNumber, renderSettings)
     sceneElement['children'].append(sensorElement)
 
-    #Get lights
+    # Get lights
     lightElements = writeLights()
     if lightElements:
         sceneElement['children'].extend(lightElements)
 
-    #Get geom and material assignments
+    # Get geom and material assignments
     (exportedGeometryFiles, shapeElements, materialElements) = writeGeometryAndMaterials(renderDir)
     if materialElements:
         sceneElement['children'].extend(materialElements)

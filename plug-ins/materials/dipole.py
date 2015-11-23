@@ -3,7 +3,7 @@ import maya.OpenMaya as OpenMaya
 import maya.OpenMayaMPx as OpenMayaMPx
 
 kPluginNodeName = "MitsubaSSSDipoleShader"
-kPluginNodeClassify = "shader/surface"
+kPluginNodeClassify = "shader/volume"
 kPluginNodeId = OpenMaya.MTypeId(0x87016)
 
 class dipole(OpenMayaMPx.MPxNode):
@@ -23,12 +23,6 @@ class dipole(OpenMayaMPx.MPxNode):
         mExteriorMaterial = OpenMaya.MObject()
         mExtIOR = OpenMaya.MObject()
         mIrrSamples = OpenMaya.MObject()
-
-        mUseSingleScatteringModel = OpenMaya.MObject()
-        mSpecular = OpenMaya.MObject()
-        mAlpha = OpenMaya.MObject()
-        mDistribution = OpenMaya.MObject()
-        mNonLinear = OpenMaya.MObject()
 
         mOutColor = OpenMaya.MObject()
 
@@ -240,41 +234,6 @@ def nodeInitializer():
         nAttr.setReadable(1)
         nAttr.setWritable(1)
 
-        dipole.mUseSingleScatteringModel = nAttr.create("useSingleScatteringModel","ussm", OpenMaya.MFnNumericData.kBoolean, True)
-        nAttr.setKeyable(1) 
-        nAttr.setStorable(1)
-        nAttr.setReadable(1)
-        nAttr.setWritable(1)
-
-        dipole.mDistribution = eAttr.create("surfaceDistribution", "sdist")
-        eAttr.setKeyable(1) 
-        eAttr.setStorable(1)
-        eAttr.setReadable(1)
-        eAttr.setWritable(1)
-
-        eAttr.addField("Beckmann", 0)
-        eAttr.addField("GGX", 1)
-        eAttr.addField("Phong", 2)
-        eAttr.addField("Ashikhmin Shirley", 3)
-
-        dipole.mAlpha = nAttr.create("surfaceAlpha","surfacea", OpenMaya.MFnNumericData.kFloat, 0.1)
-        nAttr.setKeyable(1) 
-        nAttr.setStorable(1)
-        nAttr.setReadable(1)
-        nAttr.setWritable(1)
-
-        dipole.mSpecular = nAttr.createColor("specularReflectance", "surfacer")
-        nAttr.setKeyable(1) 
-        nAttr.setStorable(1)
-        nAttr.setReadable(1)
-        nAttr.setWritable(1)
-        nAttr.setDefault(1.0,1.0,1.0)
-
-        dipole.mNonLinear = nAttr.create("nonlinear", "nl", OpenMaya.MFnNumericData.kBoolean, False)
-        nAttr.setKeyable(1) 
-        nAttr.setStorable(1)
-        nAttr.setReadable(1)
-        nAttr.setWritable(1)
 
         dipole.mOutColor = nAttr.createColor("outColor", "oc")
         nAttr.setStorable(0)
@@ -299,12 +258,6 @@ def nodeInitializer():
         dipole.addAttribute(dipole.mExteriorMaterial)
         dipole.addAttribute(dipole.mExtIOR)
         dipole.addAttribute(dipole.mIrrSamples)
-
-        dipole.addAttribute(dipole.mUseSingleScatteringModel)
-        dipole.addAttribute(dipole.mSpecular)
-        dipole.addAttribute(dipole.mAlpha)
-        dipole.addAttribute(dipole.mDistribution)
-        dipole.addAttribute(dipole.mNonLinear)
 
         dipole.addAttribute(dipole.mOutColor)
     except:

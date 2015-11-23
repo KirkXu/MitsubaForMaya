@@ -28,6 +28,10 @@ class MitsubaRenderSetting(OpenMayaMPx.MPxNode):
     # Overall controls
     mKeepTempFiles = OpenMaya.MObject()
     mVerbose = OpenMaya.MObject()
+    mWritePartialResults = OpenMaya.MObject()
+    mWritePartialResultsInterval = OpenMaya.MObject()
+    mBlockSize = OpenMaya.MObject()
+    mThreads = OpenMaya.MObject()
 
     # Integrator - Path Tracer variables
     mPathTracerUseInfiniteDepth = OpenMaya.MObject()
@@ -302,6 +306,10 @@ def nodeInitializer():
         # Overall controls
         MitsubaRenderSetting.addBooleanAttribute(nAttr, "mKeepTempFiles", "keepTempFiles", "kt", False)
         MitsubaRenderSetting.addBooleanAttribute(nAttr, "mVerbose", "verbose", "vb", False)
+        MitsubaRenderSetting.addBooleanAttribute(nAttr, "mWritePartialResults", "writePartialResults", "wpr", True)
+        MitsubaRenderSetting.addIntegerAttribute(nAttr, "mWritePartialResultsInterval", "writePartialResultsInterval", "wpri", 15)
+        MitsubaRenderSetting.addIntegerAttribute(nAttr, "mBlockSize", "blockSize", "bs", 32)
+        MitsubaRenderSetting.addIntegerAttribute(nAttr, "mThreads", "threads", "th", 0)
 
         # Integrator - Path Tracer variables
         MitsubaRenderSetting.addBooleanAttribute(nAttr, "mPathTracerUseInfiniteDepth", "iPathTracerUseInfiniteDepth", "iptuid", True)
@@ -524,6 +532,10 @@ def nodeInitializer():
         # Overall controls
         MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mKeepTempFiles)
         MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mVerbose)
+        MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mWritePartialResults)
+        MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mWritePartialResultsInterval)
+        MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mBlockSize)
+        MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mThreads)
 
         # Integrator - Path Tracer variables
         MitsubaRenderSetting.addAttribute(MitsubaRenderSetting.mPathTracerUseInfiniteDepth)
