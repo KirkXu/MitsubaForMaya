@@ -96,7 +96,7 @@ def booleanToMisubaText(b):
         return "false"
 
 def createSceneElement(typeName=None, id=None, elementType='bsdf'):
-    elementDict = {'type':elementType}
+    elementDict = {'type':elementType }
     if typeName:
         elementDict['attributes'] = { 'type':typeName }
     if id:
@@ -1046,7 +1046,9 @@ def addTwoSided(material, materialElement):
     # Create a structure to be written
     elementDict = createSceneElement('twosided', material)
 
-    materialElement['attributes']['id'] = material + "InnerMaterial"
+    #materialElement['attributes']['id'] = material + "InnerMaterial"
+    if 'id' in materialElement['attributes']:
+        del( materialElement['attributes']['id'] )
     elementDict['children'].append(materialElement)
     
     return elementDict
@@ -2426,9 +2428,7 @@ def writeLightSunSky(sunsky):
         'attributes':{ 'name':'stretch', 'value':str(stretch) } } )
 
     elementDict['children'].append( { 'type':'integer', 
-        'attributes':{ 'name':'resolutionX', 'value':str(resolution[0][0]) } } )
-    elementDict['children'].append( { 'type':'integer', 
-        'attributes':{ 'name':'resolutionY', 'value':str(resolution[0][1]) } } )
+        'attributes':{ 'name':'resolution', 'value':str(resolution) } } )
 
     elementDict['children'].append( { 'type':'float', 
         'attributes':{ 'name':'sunScale', 'value':str(sunScale) } } )
