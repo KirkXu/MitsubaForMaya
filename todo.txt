@@ -113,6 +113,8 @@ x use pre-generated mip-maps if they exist
 
 x make sure render logs are printed as render happens, i.e. don't block
 
+x simplify IO code with wrapper functions and classes
+
 add support for ensureEnergyConservation boolean on BSDFs
 	http://www.mitsuba-renderer.org/api/classmitsuba_1_1_b_s_d_f.html
 

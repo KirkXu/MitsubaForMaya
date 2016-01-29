@@ -95,34 +95,133 @@ def booleanToMisubaText(b):
     else:
         return "false"
 
-def createSceneElement(typeName=None, id=None, elementType='bsdf'):
-    elementDict = {'type':elementType }
-    if typeName:
-        elementDict['attributes'] = { 'type':typeName }
+#
+# Scene Element representation
+#
+class SceneElement(dict):
+    def __init__(self, elementType, attributes=None, *args):
+        dict.__init__(self, args)
+        self.children = []
+        self.attributes = {}
+        dict.__setitem__(self, 'children', self.children )
+        dict.__setitem__(self, 'attributes', self.attributes )
+        dict.__setitem__(self, 'type', elementType )
+        if attributes:
+            for key, value in attributes.iteritems():
+                self.attributes[key] = value
+      
+    def addChild(self, child):
+        self.children.append( child )
+         
+    def addChildren(self, children):
+        self.children.extend( children )
+
+    def getChild(self, index):
+        return self.children[index]
+        
+    def addAttribute(self, key, value):
+        self.attributes[key] = value
+
+    def removeAttribute(self, key):
+        if key in self.attributes:
+            del( self.attributes[key] )         
+
+    def getAttribute(self, key):
+        if key in self.attributes:
+            return self.attributes[key]
+        else:
+            return None
+
+def BooleanParameter(name, value):
+    return SceneElement('boolean', {'name':name, 'value':booleanToMisubaText(value)} )
+
+def IntegerParameter(name, value):
+    return SceneElement('integer', {'name':name, 'value':str(value)} )
+
+def FloatParameter(name, value):
+    return SceneElement('float', {'name':name, 'value':str(value)} )
+
+def VectorParameter(name, x, y, z):
+    return SceneElement('vector', {'name':name, 'x':str(x), 'y':str(y), 'z':str(z)} )
+
+def PointParameter(name, x, y, z):
+    return SceneElement('point', {'name':name, 'x':str(x), 'y':str(y), 'z':str(z)} )
+
+def StringParameter(name, value):
+    return SceneElement('string', {'name':name, 'value':str(value)} )
+
+def ColorParameter(name, value, colorspace='srgb'):
+    return SceneElement(colorspace, {'name':name, 'value':listToMitsubaText(value)} )
+
+def SpectrumParameter(name, value):
+    return SceneElement('spectrum', {'name':name, 'value':str(value)} )
+
+def RotateElement(axis, angle):
+    return SceneElement('rotate', { axis:str(1), 'angle':str(angle) } )
+
+def TranslateElement(x, y, z):
+    return SceneElement('translate', { axis:str(1), 'angle':str(angle) } )
+
+def Scale2Element(x, y):
+    return SceneElement('scale', { 'x':x, 'y':y } )
+
+def LookAtElement(aim, origin, up):
+    return SceneElement('lookat', { 'target':listToMitsubaText(aim), 
+        'origin':listToMitsubaText(origin), 'up':listToMitsubaText(up) } )
+
+def createSceneElement(typeAttribute=None, id=None, elementType='scene'):
+    element = SceneElement(elementType)
+    if typeAttribute:
+        element.addAttribute('type', typeAttribute)
     if id:
-        elementDict['attributes']['id'] = id
-    elementDict['children'] = []
-    return elementDict
+        element.addAttribute('id', id) 
+    return element
 
-def createBooleanElement(name, value):
-    return { 'type':'boolean', 'attributes':{ 'name':name, 'value':booleanToMisubaText(value) } }
+def BSDFElement(typeAttribute=None, id=None):
+    return createSceneElement(typeAttribute, id, 'bsdf')
 
-def createIntegerElement(name, value):
-    return { 'type':'integer', 'attributes':{ 'name':name, 'value':str(value) } }
+def PhaseElement(typeAttribute=None, id=None):
+    return createSceneElement(typeAttribute, id, 'phase')
 
-def createFloatElement(name, value):
-    return { 'type':'float', 'attributes':{ 'name':name, 'value':str(value) } }
+def MediumElement(typeAttribute=None, id=None):
+    return createSceneElement(typeAttribute, id, 'medium')
 
-def createStringElement(name, value):
-    return { 'type':'string', 'attributes':{ 'name':name, 'value':str(value) } }
+def ShapeElement(typeAttribute=None, id=None):
+    return createSceneElement(typeAttribute, id, 'shape')
 
-def createColorElement(name, value, colorspace='srgb'):
-    return { 'type':colorspace, 'attributes':{ 'name':name, 'value':listToMitsubaText(value) } }
+def EmitterElement(typeAttribute=None, id=None):
+    return createSceneElement(typeAttribute, id, 'emitter')
 
-def createSpectrumElement(name, value):
-    return { 'type':'spectrum', 'attributes':{ 'name':name, 'value':str(value) } }
+def SubsurfaceElement(typeAttribute=None, id=None):
+    return createSceneElement(typeAttribute, id, 'subsurface')
 
-def createNestedBSDFElement(material, connectedAttribute="bsdf", useDefault=True):
+def IntegratorElement(typeAttribute=None, id=None):
+    return createSceneElement(typeAttribute, id, 'integrator')
+
+def FilmElement(typeAttribute=None, id=None):
+    return createSceneElement(typeAttribute, id, 'film')
+
+def SensorElement(typeAttribute=None, id=None):
+    return createSceneElement(typeAttribute, id, 'sensor')
+
+def SamplerElement(typeAttribute=None, id=None):
+    return createSceneElement(typeAttribute, id, 'sampler')
+
+def TransformElement(typeAttribute=None, id=None):
+    return createSceneElement(typeAttribute, id, 'transform')
+
+def RefElement(typeAttribute=None, id=None):
+    return createSceneElement(typeAttribute, id, 'ref')
+
+def VolumeElement(name, volumePath=None, typeAttribute='gridvolume'):
+    element = createSceneElement(typeAttribute, elementType='volume')
+    element.addAttribute('name', name)
+    if volumePath:
+        element.addChild( StringParameter('filename', volumePath) )
+
+    return element
+
+def NestedBSDFElement(material, connectedAttribute="bsdf", useDefault=True):
     hasNestedBSDF = False
     shaderElement = None
 
@@ -137,17 +236,16 @@ def createNestedBSDFElement(material, connectedAttribute="bsdf", useDefault=True
                 shaderElement = writeShader(connection, connection)
 
                 # Remove the id so there's no chance of this embedded definition conflicting with another
-                # definition of the same BSDF
-                if 'id' in shaderElement['attributes']:
-                    del( shaderElement['attributes']['id'] )
+                # definition of the same BSDF                
+                shaderElement.removeAttribute('id')
 
                 hasNestedBSDF = True
 
     if useDefault and not hasNestedBSDF:
         bsdf = cmds.getAttr(material + "." + connectedAttribute)
 
-        shaderElement = createSceneElement('diffuse')
-        shaderElement['children'].append( createColorElement('reflectance', bsdf[0], colorspace='srgb') )
+        shaderElement = BSDFElement('diffuse')
+        shaderElement.addChild( ColorParameter('reflectance', bsdf[0], colorspace='srgb') )
 
     return shaderElement
 
@@ -175,63 +273,55 @@ def getTextureFile(material, connectionAttr):
 
     return fileTexture
 
-def createTextureElement(name, texturePath, scale=None):
+def TextureElement(name, texturePath, scale=None):
     textureElementDict = createSceneElement('bitmap', elementType='texture')
-    textureElementDict['children'].append( createStringElement('filename', texturePath) )
+    textureElementDict.addChild( StringParameter('filename', texturePath) )
 
     if scale:
         scaleElementDict = createSceneElement('scale', elementType='texture')
-        scaleElementDict['children'].append( createFloatElement('scale', scale) )
-        scaleElementDict['children'].append( textureElementDict )
+        scaleElementDict.addChild( FloatParameter('scale', scale) )
+        scaleElementDict.addChild( textureElementDict )
         textureElementDict = scaleElementDict
 
-    textureElementDict['attributes']['name'] = name
+    textureElementDict.addAttribute('name', name)
     return textureElementDict
 
-def createVolumeElement(name, volumePath):
-    volumeElementDict = createSceneElement('gridvolume', elementType='volume')
-    volumeElementDict['attributes']['name'] = name
-    volumeElementDict['children'].append( createStringElement('filename', volumePath) )
-
-    return volumeElementDict
-
-def createTexturedColorAttributeElement(material, attribute, mitsubaParameter=None, colorspace='srgb', scale=None):
+def TexturedColorAttributeElement(material, attribute, mitsubaParameter=None, colorspace='srgb', scale=None):
     if not mitsubaParameter:
         mitsubaParameter = attribute
     fileTexture = getTextureFile(material, attribute)
     if fileTexture:
-        element = createTextureElement(mitsubaParameter, fileTexture, scale)
+        element = TextureElement(mitsubaParameter, fileTexture, scale)
     else:
         value = cmds.getAttr(material + "." + attribute)
-        element = createColorElement(mitsubaParameter, value[0], colorspace )
+        element = ColorParameter(mitsubaParameter, value[0], colorspace )
 
     return element
 
-def createTexturedFloatAttributeElement(material, attribute, mitsubaParameter=None, scale=None):
+def TexturedFloatAttributeElement(material, attribute, mitsubaParameter=None, scale=None):
     if not mitsubaParameter:
         mitsubaParameter = attribute
     fileTexture = getTextureFile(material, attribute)
     if fileTexture:
-        element = createTextureElement(mitsubaParameter, fileTexture, scale)
+        element = TextureElement(mitsubaParameter, fileTexture, scale)
     else:
         value = cmds.getAttr(material + "." + attribute)
-        element = createFloatElement(mitsubaParameter, value )
+        element = FloatParameter(mitsubaParameter, value )
 
     return element
 
-def createTexturedVolumeAttributeElement(material, attribute, mitsubaParameter=None):
+def TexturedVolumeAttributeElement(material, attribute, mitsubaParameter=None):
     if not mitsubaParameter:
         mitsubaParameter = attribute
     fileTexture = getTextureFile(material, attribute)
     if fileTexture:
-        element = createVolumeElement(mitsubaParameter, fileTexture)
+        element = VolumeElement(mitsubaParameter, fileTexture)
     else:
         value = cmds.getAttr(material + "." + attribute)
-        element = createSpectrumElement('value', value)
+        element = SpectrumParameter('value', value)
 
-        volumeWrapperElement = createSceneElement('constvolume', elementType='volume')
-        volumeWrapperElement['attributes']['name'] = mitsubaParameter
-        volumeWrapperElement['children'].append( element )
+        volumeWrapperElement = VolumeElement(mitsubaParameter, typeAttribute='constvolume')
+        volumeWrapperElement.addChild( element )
         element = volumeWrapperElement
 
     return element
@@ -392,71 +482,71 @@ def writeMediumHomogeneous(medium, mediumName):
     scale = cmds.getAttr(medium+".scale")    
 
     # Create a structure to be written
-    mediumElement = createSceneElement('homogeneous', mediumName, elementType='medium')
+    mediumElement = MediumElement('homogeneous', mediumName)
 
     if useSigmaAS:
-        mediumElement['children'].append( createColorElement('sigmaA', sigmaA[0], colorspace='rgb') )
-        mediumElement['children'].append( createColorElement('sigmaS', sigmaS[0], colorspace='rgb') )
+        mediumElement.addChild( ColorParameter('sigmaA', sigmaA[0], colorspace='rgb') )
+        mediumElement.addChild( ColorParameter('sigmaS', sigmaS[0], colorspace='rgb') )
 
     elif useSigmaTAlbedo:
-        mediumElement['children'].append( createColorElement('sigmaT', sigmaT[0], colorspace='rgb') )
-        mediumElement['children'].append( createColorElement('albedo', albedo[0], colorspace='rgb') )
+        mediumElement.addChild( ColorParameter('sigmaT', sigmaT[0], colorspace='rgb') )
+        mediumElement.addChild( ColorParameter('albedo', albedo[0], colorspace='rgb') )
 
     else:
         materialString = cmds.getAttr(medium+".material", asString=True)
-        mediumElement['children'].append( createStringElement('material', materialString) )
+        mediumElement.addChild( StringParameter('material', materialString) )
 
-    mediumElement['children'].append( createFloatElement('scale', scale) )
+    mediumElement.addChild( FloatParameter('scale', scale) )
 
     phaseFunctionUIName = cmds.getAttr(medium+".phaseFunction", asString=True)
     if phaseFunctionUIName in phaseFunctionUIToPreset:
         phaseFunctionName = phaseFunctionUIToPreset[phaseFunctionUIName]
 
-        phaseFunctionElement = createSceneElement(phaseFunctionName, elementType='phase')
+        phaseFunctionElement = PhaseElement(phaseFunctionName)
         if phaseFunctionName == 'hg':
             g = cmds.getAttr(medium+".phaseFunctionHGG")
-            phaseFunctionElement['children'].append( createFloatElement('g', g) )
+            phaseFunctionElement.addChild( FloatParameter('g', g) )
         elif phaseFunctionName == 'microflake':
             s = cmds.getAttr(medium+".phaseFunctionMFSD")
-            phaseFunctionElement['children'].append( createFloatElement('stddev', s) )
+            phaseFunctionElement.addChild( FloatParameter('stddev', s) )
 
-        mediumElement['children'].append( phaseFunctionElement  )
+        mediumElement.addChild( phaseFunctionElement  )
 
     return mediumElement
 
 # A heterogeneous medium
 def writeMediumHeterogeneous(medium, mediumName):
     # Create a structure to be written
-    mediumElement = createSceneElement('heterogeneous', mediumName, elementType='medium')
+    mediumElement = MediumElement('heterogeneous', mediumName)
 
     samplingMethodUIName = cmds.getAttr(medium+".samplingMethod", asString=True)
     if samplingMethodUIName in samplingMethodUIToPreset:
         samplingMethodName = samplingMethodUIToPreset[samplingMethodUIName]
-    mediumElement['children'].append( createStringElement('method', samplingMethodName) )
+    mediumElement.addChild( StringParameter('method', samplingMethodName) )
 
-    mediumElement['children'].append( createTexturedVolumeAttributeElement(medium, 'density') )
-    mediumElement['children'].append( createTexturedVolumeAttributeElement(medium, 'albedo') )
+    mediumElement.addChild( TexturedVolumeAttributeElement(medium, 'density') )
+    mediumElement.addChild( TexturedVolumeAttributeElement(medium, 'albedo') )
 
     fileTexture = getTextureFile(medium, 'orientation')
     if fileTexture:
-        mediumElement['children'].append( createVolumeElement('orientation', fileTexture) )
+        mediumElement.addChild( VolumeElement('orientation', fileTexture) )
 
     scale = cmds.getAttr(medium+".scale")
-    mediumElement['children'].append( createFloatElement('scale', scale) )
+    mediumElement.addChild( FloatParameter('scale', scale) )
 
     phaseFunctionUIName = cmds.getAttr(medium+".phaseFunction", asString=True)
     if phaseFunctionUIName in phaseFunctionUIToPreset:
         phaseFunctionName = phaseFunctionUIToPreset[phaseFunctionUIName]
 
-        phaseFunctionElement = createSceneElement(phaseFunctionName, elementType='phase')
+        phaseFunctionElement = PhaseElement(phaseFunctionName)
         if phaseFunctionName == 'hg':
             g = cmds.getAttr(medium+".phaseFunctionHGG")
-            phaseFunctionElement['children'].append( createFloatElement('g', g) )
+            phaseFunctionElement.addChild( FloatParameter('g', g) )
         elif phaseFunctionName == 'microflake':
             s = cmds.getAttr(medium+".phaseFunctionMFSD")
-            phaseFunctionElement['children'].append( createFloatElement('stddev', s) )
+            phaseFunctionElement.addChild( FloatParameter('stddev', s) )
 
-        mediumElement['children'].append( phaseFunctionElement  )
+        mediumElement.addChild( phaseFunctionElement  )
 
     return mediumElement
 
@@ -465,13 +555,13 @@ def writeMediumHeterogeneous(medium, mediumName):
 # Surface Scattering Models
 #
 def writeShaderSmoothCoating(material, materialName):
-    bsdfElement = createSceneElement('coating', materialName)
+    bsdfElement = BSDFElement('coating', materialName)
 
     thickness = cmds.getAttr(material+".thickness")
-    bsdfElement['children'].append( createFloatElement('thickness', thickness) )
+    bsdfElement.addChild( FloatParameter('thickness', thickness) )
 
-    bsdfElement['children'].append( createTexturedColorAttributeElement(material, "sigmaA") )
-    bsdfElement['children'].append( createTexturedColorAttributeElement(material, "specularReflectance") )
+    bsdfElement.addChild( TexturedColorAttributeElement(material, "sigmaA") )
+    bsdfElement.addChild( TexturedColorAttributeElement(material, "specularReflectance") )
 
     # Get interior IOR preset or value
     interiorMaterialName = cmds.getAttr(material + ".interiorMaterial", asString=True)
@@ -479,10 +569,10 @@ def writeShaderSmoothCoating(material, materialName):
     if interiorMaterialName in iorMaterialUIToPreset:
         interiorMaterialPreset = iorMaterialUIToPreset[interiorMaterialName]
 
-        bsdfElement['children'].append( createStringElement('intIOR', interiorMaterialPreset)  )
+        bsdfElement.addChild( StringParameter('intIOR', interiorMaterialPreset)  )
     else:
         intIOR = cmds.getAttr(material+".intior")
-        bsdfElement['children'].append( createFloatElement('intIOR', intIOR)  )
+        bsdfElement.addChild( FloatParameter('intIOR', intIOR)  )
 
     # Get exterior IOR preset or value
     exteriorMaterialName = cmds.getAttr(material + ".exteriorMaterial", asString=True)
@@ -490,15 +580,15 @@ def writeShaderSmoothCoating(material, materialName):
     if exteriorMaterialName in iorMaterialUIToPreset:
         exteriorMaterialPreset = iorMaterialUIToPreset[exteriorMaterialName]
 
-        bsdfElement['children'].append( createStringElement('extIOR', exteriorMaterialPreset)  )
+        bsdfElement.addChild( StringParameter('extIOR', exteriorMaterialPreset)  )
     else:
         extIOR = cmds.getAttr(material+".extior")
-        bsdfElement['children'].append( createFloatElement('extIOR', extIOR)  )
+        bsdfElement.addChild( FloatParameter('extIOR', extIOR)  )
 
     # Get connected BSDF
-    nestedBSDFElement = createNestedBSDFElement(material, "bsdf")
+    nestedBSDFElement = NestedBSDFElement(material, "bsdf")
     if nestedBSDFElement:
-        bsdfElement['children'].append( nestedBSDFElement )
+        bsdfElement.addChild( nestedBSDFElement )
 
     return bsdfElement
 
@@ -513,16 +603,16 @@ def writeShaderConductor(material, materialName):
         conductorMaterialPreset = "none"
 
     # Create a structure to be written
-    bsdfElement = createSceneElement('conductor', materialName)
+    bsdfElement = BSDFElement('conductor', materialName)
 
-    bsdfElement['children'].append( createStringElement('material', conductorMaterialPreset) )
-    bsdfElement['children'].append( createFloatElement('extEta', extEta) )
-    bsdfElement['children'].append( createTexturedColorAttributeElement(material, "specularReflectance") )
+    bsdfElement.addChild( StringParameter('material', conductorMaterialPreset) )
+    bsdfElement.addChild( FloatParameter('extEta', extEta) )
+    bsdfElement.addChild( TexturedColorAttributeElement(material, "specularReflectance") )
 
     return bsdfElement
 
 def writeShaderDielectric(material, materialName):
-    bsdfElement = createSceneElement('dielectric', materialName)
+    bsdfElement = BSDFElement('dielectric', materialName)
 
     # Get interior IOR preset or value
     interiorMaterialName = cmds.getAttr(material + ".interiorMaterial", asString=True)
@@ -530,10 +620,10 @@ def writeShaderDielectric(material, materialName):
     if interiorMaterialName in iorMaterialUIToPreset:
         interiorMaterialPreset = iorMaterialUIToPreset[interiorMaterialName]
 
-        bsdfElement['children'].append( createStringElement('intIOR', interiorMaterialPreset)  )
+        bsdfElement.addChild( StringParameter('intIOR', interiorMaterialPreset)  )
     else:
         intIOR = cmds.getAttr(material+".intior")
-        bsdfElement['children'].append( createFloatElement('intIOR', intIOR)  )
+        bsdfElement.addChild( FloatParameter('intIOR', intIOR)  )
 
     # Get exterior IOR preset or value
     exteriorMaterialName = cmds.getAttr(material + ".exteriorMaterial", asString=True)
@@ -541,25 +631,25 @@ def writeShaderDielectric(material, materialName):
     if exteriorMaterialName in iorMaterialUIToPreset:
         exteriorMaterialPreset = iorMaterialUIToPreset[exteriorMaterialName]
 
-        bsdfElement['children'].append( createStringElement('extIOR', exteriorMaterialPreset)  )
+        bsdfElement.addChild( StringParameter('extIOR', exteriorMaterialPreset)  )
     else:
         extIOR = cmds.getAttr(material+".extior")
-        bsdfElement['children'].append( createFloatElement('extIOR', extIOR)  )
+        bsdfElement.addChild( FloatParameter('extIOR', extIOR)  )
 
-    bsdfElement['children'].append( createTexturedColorAttributeElement(material, "specularReflectance") )
-    bsdfElement['children'].append( createTexturedColorAttributeElement(material, "specularTransmittance") )
+    bsdfElement.addChild( TexturedColorAttributeElement(material, "specularReflectance") )
+    bsdfElement.addChild( TexturedColorAttributeElement(material, "specularTransmittance") )
 
     return bsdfElement
 
 def writeShaderDiffuseTransmitter(material, materialName):
-    bsdfElement = createSceneElement('difftrans', materialName)
-    bsdfElement['children'].append( createTexturedColorAttributeElement(material, "transmittance") )
+    bsdfElement = BSDFElement('difftrans', materialName)
+    bsdfElement.addChild( TexturedColorAttributeElement(material, "transmittance") )
 
     return bsdfElement
 
 def writeShaderDiffuse(material, materialName):
-    bsdfElement = createSceneElement('diffuse', materialName)
-    bsdfElement['children'].append( createTexturedColorAttributeElement(material, "reflectance") )
+    bsdfElement = BSDFElement('diffuse', materialName)
+    bsdfElement.addChild( TexturedColorAttributeElement(material, "reflectance") )
 
     return bsdfElement
 
@@ -569,16 +659,16 @@ def writeShaderPhong(material, materialName):
     diffuseReflectance = cmds.getAttr(material+".diffuseReflectance")
 
     # Create a structure to be written
-    bsdfElement = createSceneElement('phong', materialName)
+    bsdfElement = BSDFElement('phong', materialName)
 
-    bsdfElement['children'].append( createTexturedFloatAttributeElement(material, "exponent")  )
-    bsdfElement['children'].append( createTexturedColorAttributeElement(material, "diffuseReflectance") )
-    bsdfElement['children'].append( createTexturedColorAttributeElement(material, "specularReflectance") )
+    bsdfElement.addChild( TexturedFloatAttributeElement(material, "exponent")  )
+    bsdfElement.addChild( TexturedColorAttributeElement(material, "diffuseReflectance") )
+    bsdfElement.addChild( TexturedColorAttributeElement(material, "specularReflectance") )
 
     return bsdfElement
 
 def writeShaderPlastic(material, materialName):
-    bsdfElement = createSceneElement('plastic', materialName)
+    bsdfElement = BSDFElement('plastic', materialName)
 
     # Get interior IOR preset or value
     interiorMaterialName = cmds.getAttr(material + ".interiorMaterial", asString=True)
@@ -586,10 +676,10 @@ def writeShaderPlastic(material, materialName):
     if interiorMaterialName in iorMaterialUIToPreset:
         interiorMaterialPreset = iorMaterialUIToPreset[interiorMaterialName]
 
-        bsdfElement['children'].append( createStringElement('intIOR', interiorMaterialPreset)  )
+        bsdfElement.addChild( StringParameter('intIOR', interiorMaterialPreset)  )
     else:
         intIOR = cmds.getAttr(material+".intior")
-        bsdfElement['children'].append( createFloatElement('intIOR', intIOR)  )
+        bsdfElement.addChild( FloatParameter('intIOR', intIOR)  )
 
     # Get exterior IOR preset or value
     exteriorMaterialName = cmds.getAttr(material + ".exteriorMaterial", asString=True)
@@ -597,27 +687,27 @@ def writeShaderPlastic(material, materialName):
     if exteriorMaterialName in iorMaterialUIToPreset:
         exteriorMaterialPreset = iorMaterialUIToPreset[exteriorMaterialName]
 
-        bsdfElement['children'].append( createStringElement('extIOR', exteriorMaterialPreset)  )
+        bsdfElement.addChild( StringParameter('extIOR', exteriorMaterialPreset)  )
     else:
         extIOR = cmds.getAttr(material+".extior")
-        bsdfElement['children'].append( createFloatElement('extIOR', extIOR)  )
+        bsdfElement.addChild( FloatParameter('extIOR', extIOR)  )
 
-    bsdfElement['children'].append( createTexturedColorAttributeElement(material, "diffuseReflectance") )
-    bsdfElement['children'].append( createTexturedColorAttributeElement(material, "specularReflectance") )
+    bsdfElement.addChild( TexturedColorAttributeElement(material, "diffuseReflectance") )
+    bsdfElement.addChild( TexturedColorAttributeElement(material, "specularReflectance") )
 
     nonlinear = cmds.getAttr(material+".nonlinear")
-    bsdfElement['children'].append( createBooleanElement('nonlinear', nonlinear)  )
+    bsdfElement.addChild( BooleanParameter('nonlinear', nonlinear)  )
 
     return bsdfElement
 
 def writeShaderRoughCoating(material, materialName):
-    bsdfElement = createSceneElement('roughcoating', materialName)
+    bsdfElement = BSDFElement('roughcoating', materialName)
 
     thickness = cmds.getAttr(material+".thickness")
-    bsdfElement['children'].append( createFloatElement('thickness', thickness) )
-    bsdfElement['children'].append( createTexturedFloatAttributeElement(material, "alpha") )
-    bsdfElement['children'].append( createTexturedColorAttributeElement(material, "sigmaA") )
-    bsdfElement['children'].append( createTexturedColorAttributeElement(material, "specularReflectance") )
+    bsdfElement.addChild( FloatParameter('thickness', thickness) )
+    bsdfElement.addChild( TexturedFloatAttributeElement(material, "alpha") )
+    bsdfElement.addChild( TexturedColorAttributeElement(material, "sigmaA") )
+    bsdfElement.addChild( TexturedColorAttributeElement(material, "specularReflectance") )
 
     distributionUI = cmds.getAttr(material+".distribution", asString=True)
 
@@ -626,7 +716,7 @@ def writeShaderRoughCoating(material, materialName):
     else:
         distributionPreset = "beckmann"
 
-    bsdfElement['children'].append( createStringElement('distribution', distributionPreset) )
+    bsdfElement.addChild( StringParameter('distribution', distributionPreset) )
 
     # Get interior IOR preset or value
     interiorMaterialName = cmds.getAttr(material + ".interiorMaterial", asString=True)
@@ -634,10 +724,10 @@ def writeShaderRoughCoating(material, materialName):
     if interiorMaterialName in iorMaterialUIToPreset:
         interiorMaterialPreset = iorMaterialUIToPreset[interiorMaterialName]
 
-        bsdfElement['children'].append( createStringElement('intIOR', interiorMaterialPreset)  )
+        bsdfElement.addChild( StringParameter('intIOR', interiorMaterialPreset)  )
     else:
         intIOR = cmds.getAttr(material+".intior")
-        bsdfElement['children'].append( createFloatElement('intIOR', intIOR)  )
+        bsdfElement.addChild( FloatParameter('intIOR', intIOR)  )
 
     # Get exterior IOR preset or value
     exteriorMaterialName = cmds.getAttr(material + ".exteriorMaterial", asString=True)
@@ -645,15 +735,15 @@ def writeShaderRoughCoating(material, materialName):
     if exteriorMaterialName in iorMaterialUIToPreset:
         exteriorMaterialPreset = iorMaterialUIToPreset[exteriorMaterialName]
 
-        bsdfElement['children'].append( createStringElement('extIOR', exteriorMaterialPreset)  )
+        bsdfElement.addChild( StringParameter('extIOR', exteriorMaterialPreset)  )
     else:
         extIOR = cmds.getAttr(material+".extior")
-        bsdfElement['children'].append( createFloatElement('extIOR', extIOR)  )
+        bsdfElement.addChild( FloatParameter('extIOR', extIOR)  )
 
     # Get connected BSDF
-    nestedBSDFElement = createNestedBSDFElement(material, "bsdf")
+    nestedBSDFElement = NestedBSDFElement(material, "bsdf")
     if nestedBSDFElement:
-        bsdfElement['children'].append( nestedBSDFElement )
+        bsdfElement.addChild( nestedBSDFElement )
 
     return bsdfElement
 
@@ -675,24 +765,24 @@ def writeShaderRoughConductor(material, materialName):
         conductorMaterialPreset = "Cu"
 
     # Create a structure to be written
-    bsdfElement = createSceneElement('roughconductor', materialName)
+    bsdfElement = BSDFElement('roughconductor', materialName)
 
-    bsdfElement['children'].append( createStringElement('distribution', distributionPreset) )
+    bsdfElement.addChild( StringParameter('distribution', distributionPreset) )
     if distributionPreset == "as":
-        bsdfElement['children'].append( createFloatElement('alphaU', alphaUV[0]) )
-        bsdfElement['children'].append( createFloatElement('alphaV', alphaUV[1]) )
+        bsdfElement.addChild( FloatParameter('alphaU', alphaUV[0]) )
+        bsdfElement.addChild( FloatParameter('alphaV', alphaUV[1]) )
     else:
-        bsdfElement['children'].append( createFloatElement('alpha', alpha) )
+        bsdfElement.addChild( FloatParameter('alpha', alpha) )
 
-    bsdfElement['children'].append( createStringElement('material', conductorMaterialPreset) )
-    bsdfElement['children'].append( createFloatElement('extEta', extEta) )
+    bsdfElement.addChild( StringParameter('material', conductorMaterialPreset) )
+    bsdfElement.addChild( FloatParameter('extEta', extEta) )
 
-    bsdfElement['children'].append( createTexturedColorAttributeElement(material, "specularReflectance") )
+    bsdfElement.addChild( TexturedColorAttributeElement(material, "specularReflectance") )
 
     return bsdfElement
 
 def writeShaderRoughDielectric(material, materialName):
-    bsdfElement = createSceneElement('roughdielectric', materialName)
+    bsdfElement = BSDFElement('roughdielectric', materialName)
 
     distributionUI = cmds.getAttr(material+".distribution", asString=True)
     if distributionUI in distributionUIToPreset:
@@ -700,14 +790,14 @@ def writeShaderRoughDielectric(material, materialName):
     else:
         distributionPreset = "beckmann"
 
-    bsdfElement['children'].append( createStringElement('distribution', distributionPreset) )
+    bsdfElement.addChild( StringParameter('distribution', distributionPreset) )
     if distributionPreset == "as":
         alphaUV = cmds.getAttr(material+".alphaUV")
-        bsdfElement['children'].append( createFloatElement('alphaU', alphaUV[0])  )
-        bsdfElement['children'].append( createFloatElement('alphaV', alphaUV[1])  )
+        bsdfElement.addChild( FloatParameter('alphaU', alphaUV[0])  )
+        bsdfElement.addChild( FloatParameter('alphaV', alphaUV[1])  )
     else:
         alpha = cmds.getAttr(material+".alpha")
-        bsdfElement['children'].append( createTexturedFloatAttributeElement(material, "alpha") )
+        bsdfElement.addChild( TexturedFloatAttributeElement(material, "alpha") )
 
     # Get interior IOR preset or value
     interiorMaterialName = cmds.getAttr(material + ".interiorMaterial", asString=True)
@@ -715,10 +805,10 @@ def writeShaderRoughDielectric(material, materialName):
     if interiorMaterialName in iorMaterialUIToPreset:
         interiorMaterialPreset = iorMaterialUIToPreset[interiorMaterialName]
 
-        bsdfElement['children'].append( createStringElement('intIOR', interiorMaterialPreset)  )
+        bsdfElement.addChild( StringParameter('intIOR', interiorMaterialPreset)  )
     else:
         intIOR = cmds.getAttr(material+".intior")
-        bsdfElement['children'].append( createFloatElement('intIOR', intIOR)  )
+        bsdfElement.addChild( FloatParameter('intIOR', intIOR)  )
 
     # Get exterior IOR preset or value
     exteriorMaterialName = cmds.getAttr(material + ".exteriorMaterial", asString=True)
@@ -726,13 +816,13 @@ def writeShaderRoughDielectric(material, materialName):
     if exteriorMaterialName in iorMaterialUIToPreset:
         exteriorMaterialPreset = iorMaterialUIToPreset[exteriorMaterialName]
 
-        bsdfElement['children'].append( createStringElement('extIOR', exteriorMaterialPreset)  )
+        bsdfElement.addChild( StringParameter('extIOR', exteriorMaterialPreset)  )
     else:
         extIOR = cmds.getAttr(material+".extior")
-        bsdfElement['children'].append( createFloatElement('extIOR', extIOR)  )
+        bsdfElement.addChild( FloatParameter('extIOR', extIOR)  )
 
-    bsdfElement['children'].append( createTexturedColorAttributeElement(material, "specularReflectance") )
-    bsdfElement['children'].append( createTexturedColorAttributeElement(material, "specularTransmittance") )
+    bsdfElement.addChild( TexturedColorAttributeElement(material, "specularReflectance") )
+    bsdfElement.addChild( TexturedColorAttributeElement(material, "specularTransmittance") )
 
     return bsdfElement
 
@@ -741,19 +831,19 @@ def writeShaderRoughDiffuse(material, materialName):
     useFastApprox = cmds.getAttr(material+".useFastApprox")
 
     # Create a structure to be written
-    bsdfElement = createSceneElement('roughdiffuse', materialName)
+    bsdfElement = BSDFElement('roughdiffuse', materialName)
 
-    bsdfElement['children'].append( createTexturedColorAttributeElement(material, "reflectance") )
-    bsdfElement['children'].append( createFloatElement('alpha', alpha)  )
-    bsdfElement['children'].append( createBooleanElement('useFastApprox', useFastApprox)  )
+    bsdfElement.addChild( TexturedColorAttributeElement(material, "reflectance") )
+    bsdfElement.addChild( FloatParameter('alpha', alpha)  )
+    bsdfElement.addChild( BooleanParameter('useFastApprox', useFastApprox)  )
 
     return bsdfElement
 
 def writeShaderRoughPlastic(material, materialName):
-    bsdfElement = createSceneElement('roughplastic', materialName)
+    bsdfElement = BSDFElement('roughplastic', materialName)
 
-    bsdfElement['children'].append( createTexturedColorAttributeElement(material, "specularReflectance") )
-    bsdfElement['children'].append( createTexturedColorAttributeElement(material, "diffuseReflectance") )
+    bsdfElement.addChild( TexturedColorAttributeElement(material, "specularReflectance") )
+    bsdfElement.addChild( TexturedColorAttributeElement(material, "diffuseReflectance") )
 
     distributionUI = cmds.getAttr(material+".distribution", asString=True)
     if distributionUI in distributionUIToPreset:
@@ -761,10 +851,10 @@ def writeShaderRoughPlastic(material, materialName):
     else:
         distributionPreset = "beckmann"
 
-    bsdfElement['children'].append( createStringElement('distribution', distributionPreset) )
+    bsdfElement.addChild( StringParameter('distribution', distributionPreset) )
 
     alpha = cmds.getAttr(material+".alpha")
-    bsdfElement['children'].append( createTexturedFloatAttributeElement(material, "alpha") )
+    bsdfElement.addChild( TexturedFloatAttributeElement(material, "alpha") )
 
     # Get interior IOR preset or value
     interiorMaterialName = cmds.getAttr(material + ".interiorMaterial", asString=True)
@@ -772,10 +862,10 @@ def writeShaderRoughPlastic(material, materialName):
     if interiorMaterialName in iorMaterialUIToPreset:
         interiorMaterialPreset = iorMaterialUIToPreset[interiorMaterialName]
 
-        bsdfElement['children'].append( createStringElement('intIOR', interiorMaterialPreset)  )
+        bsdfElement.addChild( StringParameter('intIOR', interiorMaterialPreset)  )
     else:
         intIOR = cmds.getAttr(material+".intior")
-        bsdfElement['children'].append( createFloatElement('intIOR', intIOR)  )
+        bsdfElement.addChild( FloatParameter('intIOR', intIOR)  )
 
     # Get exterior IOR preset or value
     exteriorMaterialName = cmds.getAttr(material + ".exteriorMaterial", asString=True)
@@ -783,18 +873,18 @@ def writeShaderRoughPlastic(material, materialName):
     if exteriorMaterialName in iorMaterialUIToPreset:
         exteriorMaterialPreset = iorMaterialUIToPreset[exteriorMaterialName]
 
-        bsdfElement['children'].append( createStringElement('extIOR', exteriorMaterialPreset)  )
+        bsdfElement.addChild( StringParameter('extIOR', exteriorMaterialPreset)  )
     else:
         extIOR = cmds.getAttr(material+".extior")
-        bsdfElement['children'].append( createFloatElement('extIOR', extIOR)  )
+        bsdfElement.addChild( FloatParameter('extIOR', extIOR)  )
 
     nonlinear = cmds.getAttr(material+".nonlinear")
-    bsdfElement['children'].append( createBooleanElement('nonlinear', nonlinear) )
+    bsdfElement.addChild( BooleanParameter('nonlinear', nonlinear) )
 
     return bsdfElement
 
 def writeShaderThinDielectric(material, materialName):
-    bsdfElement = createSceneElement('thindielectric', materialName)
+    bsdfElement = BSDFElement('thindielectric', materialName)
 
     # Get interior IOR preset or value
     interiorMaterialName = cmds.getAttr(material + ".interiorMaterial", asString=True)
@@ -802,10 +892,10 @@ def writeShaderThinDielectric(material, materialName):
     if interiorMaterialName in iorMaterialUIToPreset:
         interiorMaterialPreset = iorMaterialUIToPreset[interiorMaterialName]
 
-        bsdfElement['children'].append( createStringElement('intIOR', interiorMaterialPreset)  )
+        bsdfElement.addChild( StringParameter('intIOR', interiorMaterialPreset)  )
     else:
         intIOR = cmds.getAttr(material+".intior")
-        bsdfElement['children'].append( createFloatElement('intIOR', intIOR)  )
+        bsdfElement.addChild( FloatParameter('intIOR', intIOR)  )
 
     # Get exterior IOR preset or value
     exteriorMaterialName = cmds.getAttr(material + ".exteriorMaterial", asString=True)
@@ -813,19 +903,19 @@ def writeShaderThinDielectric(material, materialName):
     if exteriorMaterialName in iorMaterialUIToPreset:
         exteriorMaterialPreset = iorMaterialUIToPreset[exteriorMaterialName]
 
-        bsdfElement['children'].append( createStringElement('extIOR', exteriorMaterialPreset)  )
+        bsdfElement.addChild( StringParameter('extIOR', exteriorMaterialPreset)  )
     else:
         extIOR = cmds.getAttr(material+".extior")
-        bsdfElement['children'].append( createFloatElement('extIOR', extIOR)  )
+        bsdfElement.addChild( FloatParameter('extIOR', extIOR)  )
 
-    bsdfElement['children'].append( createTexturedColorAttributeElement(material, "specularReflectance") )
-    bsdfElement['children'].append( createTexturedColorAttributeElement(material, "specularTransmittance") )
+    bsdfElement.addChild( TexturedColorAttributeElement(material, "specularReflectance") )
+    bsdfElement.addChild( TexturedColorAttributeElement(material, "specularTransmittance") )
 
     return bsdfElement
 
 
 def writeShaderWard(material, materialName):
-    bsdfElement = createSceneElement('ward', materialName)
+    bsdfElement = BSDFElement('ward', materialName)
 
     variant = cmds.getAttr(material+".variant", asString=True)
     if variant in wardVariantUIToPreset:
@@ -833,13 +923,13 @@ def writeShaderWard(material, materialName):
     else:
         variantPreset = "balanced"
 
-    bsdfElement['children'].append( createStringElement('variant', variantPreset)  )
+    bsdfElement.addChild( StringParameter('variant', variantPreset)  )
 
-    bsdfElement['children'].append( createTexturedFloatAttributeElement(material, "alphaU") )
-    bsdfElement['children'].append( createTexturedFloatAttributeElement(material, "alphaV") )
+    bsdfElement.addChild( TexturedFloatAttributeElement(material, "alphaU") )
+    bsdfElement.addChild( TexturedFloatAttributeElement(material, "alphaV") )
 
-    bsdfElement['children'].append( createTexturedColorAttributeElement(material, "diffuseReflectance") )
-    bsdfElement['children'].append( createTexturedColorAttributeElement(material, "specularReflectance") )
+    bsdfElement.addChild( TexturedColorAttributeElement(material, "diffuseReflectance") )
+    bsdfElement.addChild( TexturedColorAttributeElement(material, "specularReflectance") )
 
     return bsdfElement
 
@@ -852,34 +942,34 @@ def writeShaderIrawan(material, materialName):
     weftkd = cmds.getAttr(material+".weftkd")
     weftks = cmds.getAttr(material+".weftks")
 
-    bsdfElement = createSceneElement('irawan', materialName)
+    bsdfElement = BSDFElement('irawan', materialName)
 
-    bsdfElement['children'].append( createStringElement('filename', filename) )
-    bsdfElement['children'].append( createFloatElement('repeatU', repeatu) )
-    bsdfElement['children'].append( createFloatElement('repeatV', repeatv) )
+    bsdfElement.addChild( StringParameter('filename', filename) )
+    bsdfElement.addChild( FloatParameter('repeatU', repeatu) )
+    bsdfElement.addChild( FloatParameter('repeatV', repeatv) )
 
-    bsdfElement['children'].append( createColorElement('warp_kd', warpkd[0], colorspace='rgb') )
-    bsdfElement['children'].append( createColorElement('warp_ks', warpks[0], colorspace='rgb') )
+    bsdfElement.addChild( ColorParameter('warp_kd', warpkd[0], colorspace='rgb') )
+    bsdfElement.addChild( ColorParameter('warp_ks', warpks[0], colorspace='rgb') )
 
-    bsdfElement['children'].append( createColorElement('weft_kd', weftkd[0], colorspace='rgb') )
-    bsdfElement['children'].append( createColorElement('weft_ks', weftks[0], colorspace='rgb') )
+    bsdfElement.addChild( ColorParameter('weft_kd', weftkd[0], colorspace='rgb') )
+    bsdfElement.addChild( ColorParameter('weft_ks', weftks[0], colorspace='rgb') )
 
     return bsdfElement
 
 def writeShaderTwoSided(material, materialName):
-    bsdfElement = createSceneElement('twosided', materialName)
+    bsdfElement = BSDFElement('twosided', materialName)
 
-    frontBSDFElement = createNestedBSDFElement(material, "frontBSDF")
-    bsdfElement['children'].append( frontBSDFElement )
+    frontBSDFElement = NestedBSDFElement(material, "frontBSDF")
+    bsdfElement.addChild( frontBSDFElement )
 
-    backBSDFElement = createNestedBSDFElement(material, "backBSDF", useDefault=False)
+    backBSDFElement = NestedBSDFElement(material, "backBSDF", useDefault=False)
     if backBSDFElement:
-        bsdfElement['children'].append( backBSDFElement )
+        bsdfElement.addChild( backBSDFElement )
 
     return bsdfElement
 
 def writeShaderMixture(material, materialName):
-    bsdfElement = createSceneElement('mixturebsdf', materialName)
+    bsdfElement = BSDFElement('mixturebsdf', materialName)
 
     weight1 = cmds.getAttr(material+".weight1")
     weight2 = cmds.getAttr(material+".weight2")
@@ -891,132 +981,132 @@ def writeShaderMixture(material, materialName):
     weightString = ", ".join(map(str, weights))
 
     if weight1 > 0.0:
-        bsdf1Element = createNestedBSDFElement(material, "bsdf1")
-        bsdfElement['children'].append( bsdf1Element )
+        bsdf1Element = NestedBSDFElement(material, "bsdf1")
+        bsdfElement.addChild( bsdf1Element )
 
     if weight2 > 0.0:
-        bsdf2Element = createNestedBSDFElement(material, "bsdf2")
-        bsdfElement['children'].append( bsdf2Element )
+        bsdf2Element = NestedBSDFElement(material, "bsdf2")
+        bsdfElement.addChild( bsdf2Element )
 
     if weight3 > 0.0:
-        bsdf3Element = createNestedBSDFElement(material, "bsdf3")
-        bsdfElement['children'].append( bsdf3Element )
+        bsdf3Element = NestedBSDFElement(material, "bsdf3")
+        bsdfElement.addChild( bsdf3Element )
 
     if weight4 > 0.0:
-        bsdf4Element = createNestedBSDFElement(material, "bsdf4")
-        bsdfElement['children'].append( bsdf4Element )
+        bsdf4Element = NestedBSDFElement(material, "bsdf4")
+        bsdfElement.addChild( bsdf4Element )
 
-    bsdfElement['children'].append( createStringElement('weights', weightString) )
+    bsdfElement.addChild( StringParameter('weights', weightString) )
 
     return bsdfElement
 
 def writeShaderBlend(material, materialName):
-    bsdfElement = createSceneElement('blendbsdf', materialName)
+    bsdfElement = BSDFElement('blendbsdf', materialName)
 
-    bsdfElement['children'].append( createTexturedFloatAttributeElement(material, "weight") )
+    bsdfElement.addChild( TexturedFloatAttributeElement(material, "weight") )
 
-    bsdf1Element = createNestedBSDFElement(material, "bsdf1")
-    bsdfElement['children'].append( bsdf1Element )
+    bsdf1Element = NestedBSDFElement(material, "bsdf1")
+    bsdfElement.addChild( bsdf1Element )
 
-    bsdf2Element = createNestedBSDFElement(material, "bsdf2")
-    bsdfElement['children'].append( bsdf2Element )
+    bsdf2Element = NestedBSDFElement(material, "bsdf2")
+    bsdfElement.addChild( bsdf2Element )
 
     return bsdfElement
 
 def writeShaderMask(material, materialName):
-    bsdfElement = createSceneElement('mask', materialName)
+    bsdfElement = BSDFElement('mask', materialName)
 
-    bsdfElement['children'].append( createTexturedColorAttributeElement(material, "opacity") )
+    bsdfElement.addChild( TexturedColorAttributeElement(material, "opacity") )
 
-    bsdf1Element = createNestedBSDFElement(material, "bsdf")
-    bsdfElement['children'].append( bsdf1Element )
+    bsdf1Element = NestedBSDFElement(material, "bsdf")
+    bsdfElement.addChild( bsdf1Element )
 
     return bsdfElement
 
 def writeShaderBump(material, materialName):
-    bsdfElement = createSceneElement('bumpmap', materialName)
+    bsdfElement = BSDFElement('bumpmap', materialName)
 
     bumpScale = cmds.getAttr(material+".bumpScale")
-    bsdfElement['children'].append( createTexturedColorAttributeElement(material, "texture", scale=bumpScale) )
+    bsdfElement.addChild( TexturedColorAttributeElement(material, "texture", scale=bumpScale) )
 
-    bsdf1Element = createNestedBSDFElement(material, "bsdf")
-    bsdfElement['children'].append( bsdf1Element )
+    bsdf1Element = NestedBSDFElement(material, "bsdf")
+    bsdfElement.addChild( bsdf1Element )
 
     return bsdfElement
 
 def writeShaderHK(material, materialName):
-    bsdfElement = createSceneElement('hk', materialName)
+    bsdfElement = BSDFElement('hk', materialName)
 
     useSigmaSA = cmds.getAttr(material+".useSigmaSA")
     useSigmaTAlbedo = cmds.getAttr(material+".useSigmaTAlbedo")
     if useSigmaSA:
-        bsdfElement['children'].append( createTexturedColorAttributeElement(material, "sigmaS") )
-        bsdfElement['children'].append( createTexturedColorAttributeElement(material, "sigmaA") )
+        bsdfElement.addChild( TexturedColorAttributeElement(material, "sigmaS") )
+        bsdfElement.addChild( TexturedColorAttributeElement(material, "sigmaA") )
 
     elif useSigmaTAlbedo:
-        bsdfElement['children'].append( createTexturedColorAttributeElement(material, "sigmaT") )
-        bsdfElement['children'].append( createTexturedColorAttributeElement(material, "albedo") )
+        bsdfElement.addChild( TexturedColorAttributeElement(material, "sigmaT") )
+        bsdfElement.addChild( TexturedColorAttributeElement(material, "albedo") )
 
     else:
         materialString = cmds.getAttr(material+".material", asString=True)
-        bsdfElement['children'].append( createStringElement('material', materialString) )
+        bsdfElement.addChild( StringParameter('material', materialString) )
 
     thickness = cmds.getAttr(material+".thickness")
-    bsdfElement['children'].append( createFloatElement('thickness', thickness) )
+    bsdfElement.addChild( FloatParameter('thickness', thickness) )
 
     phaseFunctionUIName = cmds.getAttr(material+".phaseFunction", asString=True)
     if phaseFunctionUIName in phaseFunctionUIToPreset:
         phaseFunctionName = phaseFunctionUIToPreset[phaseFunctionUIName]
 
-        phaseFunctionElement = createSceneElement(phaseFunctionName, elementType='phase')
+        phaseFunctionElement = PhaseElement(phaseFunctionName)
         if phaseFunctionName == 'hg':
             g = cmds.getAttr(material+".phaseFunctionHGG")
-            phaseFunctionElement['children'].append( createFloatElement('g', g) )
+            phaseFunctionElement.addChild( FloatParameter('g', g) )
         elif phaseFunctionName == 'microflake':
             s = cmds.getAttr(material+".phaseFunctionMFSD")
-            phaseFunctionElement['children'].append( createFloatElement('stddev', s) )
+            phaseFunctionElement.addChild( FloatParameter('stddev', s) )
 
-        bsdfElement['children'].append( phaseFunctionElement  )
+        bsdfElement.addChild( phaseFunctionElement  )
 
     return bsdfElement
 
 def writeShaderObjectAreaLight(material, materialName):
-    elementDict = createSceneElement('area', materialName, 'emitter')
+    elementDict = EmitterElement('area', materialName)
 
     color = cmds.getAttr(material+".radiance")
     samplingWeight = cmds.getAttr(material+".samplingWeight")
 
-    elementDict['children'].append( createColorElement('radiance', color[0], colorspace='rgb') )
-    elementDict['children'].append( createFloatElement('samplingWeight', samplingWeight) )
+    elementDict.addChild( ColorParameter('radiance', color[0], colorspace='rgb') )
+    elementDict.addChild( FloatParameter('samplingWeight', samplingWeight) )
 
     return elementDict
 
 def writeShaderDipoleSSS(material, materialName):
-    sssElement = createSceneElement('dipole', materialName, elementType='subsurface')
+    sssElement = SubsurfaceElement('dipole', materialName)
 
     useSigmaSA = cmds.getAttr(material+".useSigmaSA")
     useSigmaTAlbedo = cmds.getAttr(material+".useSigmaTAlbedo")
     if useSigmaSA:
         sigmaS = cmds.getAttr(material+".sigmaS")
         sigmaA = cmds.getAttr(material+".sigmaA")
-        sssElement['children'].append( createColorElement("sigmaS", sigmaS[0]) )
-        sssElement['children'].append( createColorElement("sigmaA", sigmaA[0]) )
+        sssElement.addChild( ColorParameter("sigmaS", sigmaS[0]) )
+        sssElement.addChild( ColorParameter("sigmaA", sigmaA[0]) )
 
     elif useSigmaTAlbedo:
         sigmaT = cmds.getAttr(material+".sigmaT")
         albedo = cmds.getAttr(material+".albedo")
-        sssElement['children'].append( createColorElement("sigmaT", sigmaT[0]) )
-        sssElement['children'].append( createColorElement("albedo", albedo[0]) )
+        sssElement.addChild( ColorParameter("sigmaT", sigmaT[0]) )
+        sssElement.addChild( ColorParameter("albedo", albedo[0]) )
 
     else:
         materialString = cmds.getAttr(material+".material", asString=True)
-        sssElement['children'].append( createStringElement('material', materialString) )
+        sssElement.addChild( StringParameter('material', materialString) )
 
     scale = cmds.getAttr(material+".scale")
-    sssElement['children'].append( createFloatElement("scale", scale) )
+    sssElement.addChild( FloatParameter("scale", scale) )
 
     irrSamples = cmds.getAttr(material+".irrSamples")
-    sssElement['children'].append( createIntegerElement("irrSamples", irrSamples) )
+    sssElement.addChild( IntegerParameter("irrSamples", irrSamples) )
 
     # Get interior IOR preset or value
     interiorMaterialName = cmds.getAttr(material + ".interiorMaterial", asString=True)
@@ -1024,10 +1114,10 @@ def writeShaderDipoleSSS(material, materialName):
     if interiorMaterialName in iorMaterialUIToPreset:
         interiorMaterialPreset = iorMaterialUIToPreset[interiorMaterialName]
 
-        sssElement['children'].append( createStringElement('intIOR', interiorMaterialPreset)  )
+        sssElement.addChild( StringParameter('intIOR', interiorMaterialPreset)  )
     else:
         intIOR = cmds.getAttr(material+".intior")
-        sssElement['children'].append( createFloatElement('intIOR', intIOR)  )
+        sssElement.addChild( FloatParameter('intIOR', intIOR)  )
 
     # Get exterior IOR preset or value
     exteriorMaterialName = cmds.getAttr(material + ".exteriorMaterial", asString=True)
@@ -1035,27 +1125,28 @@ def writeShaderDipoleSSS(material, materialName):
     if exteriorMaterialName in iorMaterialUIToPreset:
         exteriorMaterialPreset = iorMaterialUIToPreset[exteriorMaterialName]
 
-        sssElement['children'].append( createStringElement('extIOR', exteriorMaterialPreset)  )
+        sssElement.addChild( StringParameter('extIOR', exteriorMaterialPreset)  )
     else:
         extIOR = cmds.getAttr(material+".extior")
-        sssElement['children'].append( createFloatElement('extIOR', extIOR)  )
+        sssElement.addChild( FloatParameter('extIOR', extIOR)  )
 
     return sssElement
 
 def addTwoSided(material, materialElement):
     # Create a structure to be written
-    elementDict = createSceneElement('twosided', material)
+    elementDict = BSDFElement('twosided', material)
 
-    #materialElement['attributes']['id'] = material + "InnerMaterial"
-    if 'id' in materialElement['attributes']:
-        del( materialElement['attributes']['id'] )
-    elementDict['children'].append(materialElement)
+    # Remove the id so there's no chance of this embedded definition conflicting with another
+    # definition of the same BSDF                
+    materialElement.removeAttribute('id')
+
+    elementDict.addChild( materialElement)
     
     return elementDict
 
-'''
-Write a surface material (material) to a Mitsuba scene file (outFile)
-'''
+#
+#Write a surface material (material) to a Mitsuba scene file (outFile)
+#
 def writeShader(material, materialName):
     matType = cmds.nodeType(material)
     
@@ -1102,9 +1193,9 @@ def writeShader(material, materialName):
 
     return shaderElement
 
-'''
-Write the appropriate integrator
-'''
+#
+#Write the appropriate integrator
+#
 def writeIntegratorPathTracer(renderSettings, integratorMitsuba):
     attrPrefixes = { 
         "path" : "", 
@@ -1121,24 +1212,16 @@ def writeIntegratorPathTracer(renderSettings, integratorMitsuba):
     iPathTracerHideEmitters = cmds.getAttr("%s.%s" % (renderSettings, "i%sPathTracerHideEmitters" % attrPrefix))
 
     iPathTracerMaxDepth = -1 if iPathTracerUseInfiniteDepth else iPathTracerMaxDepth
-    iPathTracerStrictNormalsText = 'true' if iPathTracerStrictNormals else 'false'
-    iPathTracerHideEmittersText = 'true' if iPathTracerHideEmitters else 'false'
 
     # Create a structure to be written
-    elementDict = {'type':'integrator'}
-    elementDict['attributes'] = {'type':integratorMitsuba}
+    element = IntegratorElement(integratorMitsuba)
 
-    elementDict['children'] = []
-    elementDict['children'].append( { 'type':'integer', 
-        'attributes':{ 'name':'maxDepth', 'value':str(iPathTracerMaxDepth) } } )
-    elementDict['children'].append( { 'type':'integer', 
-        'attributes':{ 'name':'rrDepth', 'value':str(iPathTracerRRDepth) } } )
-    elementDict['children'].append( { 'type':'boolean', 
-        'attributes':{ 'name':'strictNormals', 'value':iPathTracerStrictNormalsText } } )
-    elementDict['children'].append( { 'type':'boolean', 
-        'attributes':{ 'name':'hideEmitters', 'value':iPathTracerHideEmittersText } } )
+    element.addChild( IntegerParameter('maxDepth', iPathTracerMaxDepth)  )
+    element.addChild( IntegerParameter('rrDepth', iPathTracerRRDepth)  )
+    element.addChild( BooleanParameter('strictNormals', iPathTracerStrictNormals)  )
+    element.addChild( BooleanParameter('hideEmitters', iPathTracerHideEmitters)  )
 
-    return elementDict
+    return element
 
 def writeIntegratorBidirectionalPathTracer(renderSettings, integratorMitsuba):
     # Get values from the scene
@@ -1149,22 +1232,14 @@ def writeIntegratorBidirectionalPathTracer(renderSettings, integratorMitsuba):
     iBidrectionalPathTracerSampleDirect = cmds.getAttr("%s.%s" % (renderSettings, "iBidrectionalPathTracerSampleDirect"))
 
     iBidrectionalPathTracerMaxDepth = -1 if iBidrectionalPathTracerUseInfiniteDepth else iBidrectionalPathTracerMaxDepth
-    iBidrectionalPathTracerLightImageText = 'true' if iBidrectionalPathTracerLightImage else 'false'
-    iBidrectionalPathTracerSampleDirectText = 'true' if iBidrectionalPathTracerSampleDirect else 'false'
 
     # Create a structure to be written
-    elementDict = {'type':'integrator'}
-    elementDict['attributes'] = {'type':integratorMitsuba}
+    elementDict = IntegratorElement(integratorMitsuba)
 
-    elementDict['children'] = []
-    elementDict['children'].append( { 'type':'integer', 
-        'attributes':{ 'name':'maxDepth', 'value':str(iBidrectionalPathTracerMaxDepth) } } )
-    elementDict['children'].append( { 'type':'integer', 
-        'attributes':{ 'name':'rrDepth', 'value':str(iBidrectionalPathTracerRRDepth) } } )
-    elementDict['children'].append( { 'type':'boolean', 
-        'attributes':{ 'name':'lightImage', 'value':iBidrectionalPathTracerLightImageText } } )
-    elementDict['children'].append( { 'type':'boolean', 
-        'attributes':{ 'name':'sampleDirect', 'value':iBidrectionalPathTracerSampleDirectText } } )
+    elementDict.addChild( IntegerParameter('maxDepth', iBidrectionalPathTracerMaxDepth) )
+    elementDict.addChild( IntegerParameter('rrDepth', iBidrectionalPathTracerRRDepth) )
+    elementDict.addChild( BooleanParameter('lightImage', iBidrectionalPathTracerLightImage) )
+    elementDict.addChild( BooleanParameter('sampleDirect', iBidrectionalPathTracerSampleDirect) )
 
     return elementDict
 
@@ -1178,14 +1253,10 @@ def writeIntegratorAmbientOcclusion(renderSettings, integratorMitsuba):
     iAmbientOcclusionRayLength = -1 if iAmbientOcclusionUseAutomaticRayLength else iAmbientOcclusionRayLength
 
     # Create a structure to be written
-    elementDict = {'type':'integrator'}
-    elementDict['attributes'] = {'type':integratorMitsuba}
+    elementDict = IntegratorElement(integratorMitsuba)
 
-    elementDict['children'] = []
-    elementDict['children'].append( { 'type':'integer', 
-        'attributes':{ 'name':'shadingSamples', 'value':str(iAmbientOcclusionShadingSamples) } } )
-    elementDict['children'].append( { 'type':'float', 
-        'attributes':{ 'name':'rayLength', 'value':str(iAmbientOcclusionRayLength) } } )
+    elementDict.addChild( IntegerParameter('shadingSamples', iAmbientOcclusionShadingSamples) )
+    elementDict.addChild( FloatParameter('rayLength', iAmbientOcclusionRayLength) )
 
     return elementDict
 
@@ -1199,27 +1270,17 @@ def writeIntegratorDirectIllumination(renderSettings, integratorMitsuba):
     iDirectIlluminationStrictNormals = cmds.getAttr("%s.%s" % (renderSettings, "iDirectIlluminationStrictNormals"))
     iDirectIlluminationHideEmitters = cmds.getAttr("%s.%s" % (renderSettings, "iDirectIlluminationHideEmitters"))
 
-    iDirectIlluminationStrictNormalsText = 'true' if iDirectIlluminationStrictNormals else 'false'
-    iDirectIlluminationHideEmittersText = 'true' if iDirectIlluminationHideEmitters else 'false'
-
     # Create a structure to be written
-    elementDict = {'type':'integrator'}
-    elementDict['attributes'] = {'type':integratorMitsuba}
+    elementDict = IntegratorElement(integratorMitsuba)
 
-    elementDict['children'] = []
     if iDirectIlluminationUseEmitterAndBSDFSamples:
-        elementDict['children'].append( { 'type':'integer', 
-            'attributes':{ 'name':'emitterSamples', 'value':str(iDirectIlluminationEmitterSamples) } } )
-        elementDict['children'].append( { 'type':'integer', 
-            'attributes':{ 'name':'bsdfSamples', 'value':str(iDirectIlluminationBSDFSamples) } } )
+        elementDict.addChild( IntegerParameter('emitterSamples', iDirectIlluminationEmitterSamples) )
+        elementDict.addChild( IntegerParameter('bsdfSamples', iDirectIlluminationBSDFSamples) )
     else:
-        elementDict['children'].append( { 'type':'integer', 
-            'attributes':{ 'name':'shadingSamples', 'value':str(iDirectIlluminationShadingSamples) } } )
+        elementDict.addChild( IntegerParameter('shadingSamples', iDirectIlluminationShadingSamples) )
 
-    elementDict['children'].append( { 'type':'boolean', 
-        'attributes':{ 'name':'strictNormals', 'value':str(iDirectIlluminationStrictNormalsText) } } )
-    elementDict['children'].append( { 'type':'boolean', 
-        'attributes':{ 'name':'hideEmitters', 'value':str(iDirectIlluminationHideEmittersText) } } )
+    elementDict.addChild( BooleanParameter('strictNormals', iDirectIlluminationStrictNormals) )
+    elementDict.addChild( BooleanParameter('hideEmitters', iDirectIlluminationHideEmitters) )
 
     return elementDict
 
@@ -1241,43 +1302,27 @@ def writeIntegratorPhotonMap(renderSettings, integratorMitsuba):
     iPhotonMapRRDepth = cmds.getAttr("%s.%s" % (renderSettings, "iPhotonMapRRDepth"))
 
     iPhotonMapMaxDepth = -1 if iPhotonMapUseInfiniteDepth else iPhotonMapMaxDepth
-    iPhotonMapHideEmittersText = "true" if iPhotonMapHideEmitters else "false"
 
     # Create a structure to be written
-    elementDict = {'type':'integrator'}
-    elementDict['attributes'] = {'type':integratorMitsuba}
+    elementDict = IntegratorElement(integratorMitsuba)
 
-    elementDict['children'] = []
+    elementDict.addChild( IntegerParameter('directSamples', iPhotonMapDirectSamples) )
+    elementDict.addChild( IntegerParameter('glossySamples', iPhotonMapGlossySamples) )
 
-    elementDict['children'].append( { 'type':'integer', 
-        'attributes':{ 'name':'directSamples', 'value':str(iPhotonMapDirectSamples) } } )
-    elementDict['children'].append( { 'type':'integer', 
-        'attributes':{ 'name':'glossySamples', 'value':str(iPhotonMapGlossySamples) } } )
+    elementDict.addChild( IntegerParameter('maxDepth', iPhotonMapMaxDepth) )
 
-    elementDict['children'].append( { 'type':'integer', 
-        'attributes':{ 'name':'maxDepth', 'value':str(iPhotonMapMaxDepth) } } )
+    elementDict.addChild( IntegerParameter('globalPhotons', iPhotonMapGlobalPhotons) )
+    elementDict.addChild( IntegerParameter('causticPhotons', iPhotonMapCausticPhotons) )
+    elementDict.addChild( IntegerParameter('volumePhotons', iPhotonMapVolumePhotons) )
 
-    elementDict['children'].append( { 'type':'integer', 
-        'attributes':{ 'name':'globalPhotons', 'value':str(iPhotonMapGlobalPhotons) } } )
-    elementDict['children'].append( { 'type':'integer', 
-        'attributes':{ 'name':'causticPhotons', 'value':str(iPhotonMapCausticPhotons) } } )
-    elementDict['children'].append( { 'type':'integer', 
-        'attributes':{ 'name':'volumePhotons', 'value':str(iPhotonMapVolumePhotons) } } )
+    elementDict.addChild( FloatParameter('globalLookupRadius', iPhotonMapGlobalLookupRadius) )
+    elementDict.addChild( FloatParameter('causticLookupRadius', iPhotonMapCausticLookupRadius) )
 
-    elementDict['children'].append( { 'type':'float', 
-        'attributes':{ 'name':'globalLookupRadius', 'value':str(iPhotonMapGlobalLookupRadius) } } )
-    elementDict['children'].append( { 'type':'float', 
-        'attributes':{ 'name':'causticLookupRadius', 'value':str(iPhotonMapCausticLookupRadius) } } )
+    elementDict.addChild( IntegerParameter('lookupSize', iPhotonMapLookupSize) )
+    elementDict.addChild( IntegerParameter('granularity', iPhotonMapGranularity) )
 
-    elementDict['children'].append( { 'type':'integer', 
-        'attributes':{ 'name':'lookupSize', 'value':str(iPhotonMapLookupSize) } } )
-    elementDict['children'].append( { 'type':'integer', 
-        'attributes':{ 'name':'granularity', 'value':str(iPhotonMapGranularity) } } )
-
-    elementDict['children'].append( { 'type':'boolean', 
-        'attributes':{ 'name':'hideEmitters', 'value':str(iPhotonMapHideEmittersText) } } )
-    elementDict['children'].append( { 'type':'integer', 
-        'attributes':{ 'name':'rrDepth', 'value':str(iPhotonMapRRDepth) } } )
+    elementDict.addChild( BooleanParameter('hideEmitters', iPhotonMapHideEmitters) )
+    elementDict.addChild( IntegerParameter('rrDepth', iPhotonMapRRDepth) )
 
     return elementDict
 
@@ -1302,27 +1347,17 @@ def writeIntegratorProgressivePhotonMap(renderSettings, integratorMitsuba):
     iProgressivePhotonMapMaxDepth = -1 if iProgressivePhotonMapUseInfiniteDepth else iProgressivePhotonMapMaxDepth
 
     # Create a structure to be written
-    elementDict = {'type':'integrator'}
-    elementDict['attributes'] = {'type':integratorMitsuba}
+    elementDict = IntegratorElement(integratorMitsuba)
 
-    elementDict['children'] = []
+    elementDict.addChild( IntegerParameter('maxDepth', iProgressivePhotonMapMaxDepth) )
+    elementDict.addChild( IntegerParameter('photonCount', iProgressivePhotonMapPhotonCount) )
 
-    elementDict['children'].append( { 'type':'integer', 
-        'attributes':{ 'name':'maxDepth', 'value':str(iProgressivePhotonMapMaxDepth) } } )
-    elementDict['children'].append( { 'type':'integer', 
-        'attributes':{ 'name':'photonCount', 'value':str(iProgressivePhotonMapPhotonCount) } } )
+    elementDict.addChild( FloatParameter('initialRadius', iProgressivePhotonMapInitialRadius) )
+    elementDict.addChild( FloatParameter('alpha', iProgressivePhotonMapAlpha) )
 
-    elementDict['children'].append( { 'type':'float', 
-        'attributes':{ 'name':'initialRadius', 'value':str(iProgressivePhotonMapInitialRadius) } } )
-    elementDict['children'].append( { 'type':'float', 
-        'attributes':{ 'name':'alpha', 'value':str(iProgressivePhotonMapAlpha) } } )
-
-    elementDict['children'].append( { 'type':'integer', 
-        'attributes':{ 'name':'granularity', 'value':str(iProgressivePhotonMapGranularity) } } )
-    elementDict['children'].append( { 'type':'integer', 
-        'attributes':{ 'name':'rrDepth', 'value':str(iProgressivePhotonMapRRDepth) } } )
-    elementDict['children'].append( { 'type':'integer', 
-        'attributes':{ 'name':'maxPasses', 'value':str(iProgressivePhotonMapMaxPasses) } } )
+    elementDict.addChild( IntegerParameter('granularity', iProgressivePhotonMapGranularity) )
+    elementDict.addChild( IntegerParameter('rrDepth', iProgressivePhotonMapRRDepth) )
+    elementDict.addChild( IntegerParameter('maxPasses', iProgressivePhotonMapMaxPasses) )
 
     return elementDict
 
@@ -1339,29 +1374,17 @@ def writeIntegratorPrimarySampleSpaceMetropolisLightTransport(renderSettings, in
     iPrimarySampleSpaceMetropolisLightTransportPLarge = cmds.getAttr("%s.%s" % (renderSettings, "iPrimarySampleSpaceMetropolisLightTransportPLarge"))
 
     iPrimarySampleSpaceMetropolisLightTransportMaxDepth = -1 if iPrimarySampleSpaceMetropolisLightTransportUseInfiniteDepth else iPrimarySampleSpaceMetropolisLightTransportMaxDepth
-    iPrimarySampleSpaceMetropolisLightTransportBidirectionalText = 'true' if iPrimarySampleSpaceMetropolisLightTransportBidirectional else 'false'
-    iPrimarySampleSpaceMetropolisLightTransportTwoStageText = 'true' if iPrimarySampleSpaceMetropolisLightTransportTwoStage else 'false'
 
     # Create a structure to be written
-    elementDict = {'type':'integrator'}
-    elementDict['attributes'] = {'type':integratorMitsuba}
+    elementDict = IntegratorElement(integratorMitsuba)
 
-    elementDict['children'] = []
-
-    elementDict['children'].append( { 'type':'boolean', 
-        'attributes':{ 'name':'bidirectional', 'value':str(iPrimarySampleSpaceMetropolisLightTransportBidirectionalText) } } )
-    elementDict['children'].append( { 'type':'integer', 
-        'attributes':{ 'name':'maxDepth', 'value':str(iPrimarySampleSpaceMetropolisLightTransportMaxDepth) } } )
-    elementDict['children'].append( { 'type':'integer', 
-        'attributes':{ 'name':'directSamples', 'value':str(iPrimarySampleSpaceMetropolisLightTransportDirectSamples) } } )
-    elementDict['children'].append( { 'type':'integer', 
-        'attributes':{ 'name':'rrDepth', 'value':str(iPrimarySampleSpaceMetropolisLightTransportRRDepth) } } )
-    elementDict['children'].append( { 'type':'integer', 
-        'attributes':{ 'name':'luminanceSamples', 'value':str(iPrimarySampleSpaceMetropolisLightTransportLuminanceSamples) } } )
-    elementDict['children'].append( { 'type':'boolean', 
-        'attributes':{ 'name':'twoStage', 'value':str(iPrimarySampleSpaceMetropolisLightTransportTwoStageText) } } )
-    elementDict['children'].append( { 'type':'float', 
-        'attributes':{ 'name':'pLarge', 'value':str(iPrimarySampleSpaceMetropolisLightTransportPLarge) } } )
+    elementDict.addChild( BooleanParameter('bidirectional', iPrimarySampleSpaceMetropolisLightTransportBidirectional) )
+    elementDict.addChild( IntegerParameter('maxDepth', iPrimarySampleSpaceMetropolisLightTransportMaxDepth) )
+    elementDict.addChild( IntegerParameter('directSamples', iPrimarySampleSpaceMetropolisLightTransportDirectSamples) )
+    elementDict.addChild( IntegerParameter('rrDepth', iPrimarySampleSpaceMetropolisLightTransportRRDepth) )
+    elementDict.addChild( IntegerParameter('luminanceSamples', iPrimarySampleSpaceMetropolisLightTransportLuminanceSamples) )
+    elementDict.addChild( BooleanParameter('twoStage', iPrimarySampleSpaceMetropolisLightTransportTwoStage) )
+    elementDict.addChild( FloatParameter('pLarge', iPrimarySampleSpaceMetropolisLightTransportPLarge) )
 
     return elementDict
 
@@ -1382,39 +1405,19 @@ def writeIntegratorPathSpaceMetropolisLightTransport(renderSettings, integratorM
 
     iPathSpaceMetropolisLightTransportMaxDepth = -1 if iPathSpaceMetropolisLightTransportUseInfiniteDepth else iPathSpaceMetropolisLightTransportMaxDepth
 
-    iPathSpaceMetropolisLightTransportTwoStageText = 'true' if iPathSpaceMetropolisLightTransportTwoStage else 'false'
-    iPathSpaceMetropolisLightTransportBidirectionalMutationText = 'true' if iPathSpaceMetropolisLightTransportBidirectionalMutation else 'false'
-    iPathSpaceMetropolisLightTransportLensPurturbationText = 'true' if iPathSpaceMetropolisLightTransportLensPurturbation else 'false'
-    iPathSpaceMetropolisLightTransportMultiChainPurturbationText = 'true' if iPathSpaceMetropolisLightTransportMultiChainPurturbation else 'false'
-    iPathSpaceMetropolisLightTransportCausticPurturbationText = 'true' if iPathSpaceMetropolisLightTransportCausticPurturbation else 'false'
-    iPathSpaceMetropolisLightTransportManifoldPurturbationText = 'true' if iPathSpaceMetropolisLightTransportManifoldPurturbation else 'false'
-
     # Create a structure to be written
-    elementDict = {'type':'integrator'}
-    elementDict['attributes'] = {'type':integratorMitsuba}
+    elementDict = IntegratorElement(integratorMitsuba)
 
-    elementDict['children'] = []
-
-    elementDict['children'].append( { 'type':'integer', 
-        'attributes':{ 'name':'maxDepth', 'value':str(iPathSpaceMetropolisLightTransportMaxDepth) } } )
-    elementDict['children'].append( { 'type':'integer', 
-        'attributes':{ 'name':'directSamples', 'value':str(iPathSpaceMetropolisLightTransportDirectSamples) } } )
-    elementDict['children'].append( { 'type':'integer', 
-        'attributes':{ 'name':'luminanceSamples', 'value':str(iPathSpaceMetropolisLightTransportLuminanceSamples) } } )
-    elementDict['children'].append( { 'type':'boolean', 
-        'attributes':{ 'name':'twoStage', 'value':str(iPathSpaceMetropolisLightTransportTwoStageText) } } )
-    elementDict['children'].append( { 'type':'boolean', 
-        'attributes':{ 'name':'bidirectionalMutation', 'value':str(iPathSpaceMetropolisLightTransportBidirectionalMutationText) } } )
-    elementDict['children'].append( { 'type':'boolean', 
-        'attributes':{ 'name':'lensPerturbation', 'value':str(iPathSpaceMetropolisLightTransportLensPurturbationText) } } )
-    elementDict['children'].append( { 'type':'boolean', 
-        'attributes':{ 'name':'multiChainPerturbation', 'value':str(iPathSpaceMetropolisLightTransportMultiChainPurturbationText) } } )
-    elementDict['children'].append( { 'type':'boolean', 
-        'attributes':{ 'name':'causticPerturbation', 'value':str(iPathSpaceMetropolisLightTransportCausticPurturbationText) } } )
-    elementDict['children'].append( { 'type':'boolean', 
-        'attributes':{ 'name':'manifoldPerturbation', 'value':str(iPathSpaceMetropolisLightTransportManifoldPurturbationText) } } )
-    elementDict['children'].append( { 'type':'float', 
-        'attributes':{ 'name':'lambda', 'value':str(iPathSpaceMetropolisLightTransportLambda) } } )
+    elementDict.addChild( IntegerParameter('maxDepth', iPathSpaceMetropolisLightTransportMaxDepth) )
+    elementDict.addChild( IntegerParameter('directSamples', iPathSpaceMetropolisLightTransportDirectSamples) )
+    elementDict.addChild( IntegerParameter('luminanceSamples', iPathSpaceMetropolisLightTransportLuminanceSamples) )
+    elementDict.addChild( BooleanParameter('twoStage', iPathSpaceMetropolisLightTransportTwoStage) )
+    elementDict.addChild( BooleanParameter('bidirectionalMutation', iPathSpaceMetropolisLightTransportBidirectionalMutation) )
+    elementDict.addChild( BooleanParameter('lensPerturbation', iPathSpaceMetropolisLightTransportLensPurturbation) )
+    elementDict.addChild( BooleanParameter('multiChainPerturbation', iPathSpaceMetropolisLightTransportMultiChainPurturbation) )
+    elementDict.addChild( BooleanParameter('causticPerturbation', iPathSpaceMetropolisLightTransportCausticPurturbation) )
+    elementDict.addChild( BooleanParameter('manifoldPerturbation', iPathSpaceMetropolisLightTransportManifoldPurturbation) )
+    elementDict.addChild( FloatParameter('lambda', iPathSpaceMetropolisLightTransportLambda) )
 
     return elementDict
 
@@ -1435,37 +1438,19 @@ def writeIntegratorEnergyRedistributionPathTracing(renderSettings, integratorMit
 
     iEnergyRedistributionPathTracingMaxDepth = -1 if iEnergyRedistributionPathTracingUseInfiniteDepth else iEnergyRedistributionPathTracingMaxDepth
 
-    iEnergyRedistributionPathTracingLensPerturbationText = 'true' if iEnergyRedistributionPathTracingLensPerturbation else 'false'
-    iEnergyRedistributionPathTracingMultiChainPerturbationText = 'true' if iEnergyRedistributionPathTracingMultiChainPerturbation else 'false'
-    iEnergyRedistributionPathTracingCausticPerturbationText = 'true' if iEnergyRedistributionPathTracingCausticPerturbation else 'false'
-    iEnergyRedistributionPathTracingManifoldPerturbationText = 'true' if iEnergyRedistributionPathTracingManifoldPerturbation else 'false'
-
     # Create a structure to be written
-    elementDict = {'type':'integrator'}
-    elementDict['attributes'] = {'type':integratorMitsuba}
+    elementDict = IntegratorElement(integratorMitsuba)
 
-    elementDict['children'] = []
-
-    elementDict['children'].append( { 'type':'integer', 
-        'attributes':{ 'name':'maxDepth', 'value':str(iEnergyRedistributionPathTracingMaxDepth) } } )
-    elementDict['children'].append( { 'type':'float', 
-        'attributes':{ 'name':'numChains', 'value':str(iEnergyRedistributionPathTracingNumChains) } } )
-    elementDict['children'].append( { 'type':'integer', 
-        'attributes':{ 'name':'maxChains', 'value':str(iEnergyRedistributionPathTracingMaxChains) } } )
-    elementDict['children'].append( { 'type':'integer', 
-        'attributes':{ 'name':'directSamples', 'value':str(iEnergyRedistributionPathTracingDirectSamples) } } )
-    elementDict['children'].append( { 'type':'integer', 
-        'attributes':{ 'name':'chainLength', 'value':str(iEnergyRedistributionPathTracingChainLength) } } )
-    elementDict['children'].append( { 'type':'boolean', 
-        'attributes':{ 'name':'lensPerturbation', 'value':str(iEnergyRedistributionPathTracingLensPerturbationText) } } )
-    elementDict['children'].append( { 'type':'boolean', 
-        'attributes':{ 'name':'multiChainPerturbation', 'value':str(iEnergyRedistributionPathTracingMultiChainPerturbationText) } } )
-    elementDict['children'].append( { 'type':'boolean', 
-        'attributes':{ 'name':'causticPerturbation', 'value':str(iEnergyRedistributionPathTracingCausticPerturbationText) } } )
-    elementDict['children'].append( { 'type':'boolean', 
-        'attributes':{ 'name':'manifoldPerturbation', 'value':str(iEnergyRedistributionPathTracingManifoldPerturbationText) } } )
-    elementDict['children'].append( { 'type':'float', 
-        'attributes':{ 'name':'lambda', 'value':str(iEnergyRedistributionPathTracingLambda) } } )
+    elementDict.addChild( IntegerParameter('maxDepth', iEnergyRedistributionPathTracingMaxDepth) )
+    elementDict.addChild( FloatParameter('numChains', iEnergyRedistributionPathTracingNumChains) )
+    elementDict.addChild( IntegerParameter('maxChains', iEnergyRedistributionPathTracingMaxChains) )
+    elementDict.addChild( IntegerParameter('directSamples', iEnergyRedistributionPathTracingDirectSamples) )
+    elementDict.addChild( IntegerParameter('chainLength', iEnergyRedistributionPathTracingChainLength) )
+    elementDict.addChild( BooleanParameter('lensPerturbation', iEnergyRedistributionPathTracingLensPerturbation) )
+    elementDict.addChild( BooleanParameter('multiChainPerturbation', iEnergyRedistributionPathTracingMultiChainPerturbation) )
+    elementDict.addChild( BooleanParameter('causticPerturbation', iEnergyRedistributionPathTracingCausticPerturbation) )
+    elementDict.addChild( BooleanParameter('manifoldPerturbation', iEnergyRedistributionPathTracingManifoldPerturbationText) )
+    elementDict.addChild( FloatParameter('lambda', iEnergyRedistributionPathTracingLambda) )
 
     return elementDict
 
@@ -1478,22 +1463,14 @@ def writeIntegratorAdjointParticleTracer(renderSettings, integratorMitsuba):
     iAdjointParticleTracerBruteForce = cmds.getAttr("%s.%s" % (renderSettings, "iAdjointParticleTracerBruteForce"))
 
     iAdjointParticleTracerMaxDepth = -1 if iAdjointParticleTracerUseInfiniteDepth else iAdjointParticleTracerMaxDepth
-    iAdjointParticleTracerBruteForceText = 'true' if iAdjointParticleTracerBruteForce else 'false'
 
     # Create a structure to be written
-    elementDict = {'type':'integrator'}
-    elementDict['attributes'] = {'type':integratorMitsuba}
+    elementDict = IntegratorElement(integratorMitsuba)
 
-    elementDict['children'] = []
-
-    elementDict['children'].append( { 'type':'integer', 
-        'attributes':{ 'name':'maxDepth', 'value':str(iAdjointParticleTracerMaxDepth) } } )
-    elementDict['children'].append( { 'type':'integer', 
-        'attributes':{ 'name':'rrDepth', 'value':str(iAdjointParticleTracerRRDepth) } } )
-    elementDict['children'].append( { 'type':'integer', 
-        'attributes':{ 'name':'granularity', 'value':str(iAdjointParticleTracerGranularity) } } )
-    elementDict['children'].append( { 'type':'boolean', 
-        'attributes':{ 'name':'bruteForce', 'value':str(iAdjointParticleTracerBruteForceText) } } )
+    elementDict.addChild( IntegerParameter('maxDepth', iAdjointParticleTracerMaxDepth) )
+    elementDict.addChild( IntegerParameter('rrDepth', iAdjointParticleTracerRRDepth) )
+    elementDict.addChild( IntegerParameter('granularity', iAdjointParticleTracerGranularity) )
+    elementDict.addChild( BooleanParameter('bruteForce', iAdjointParticleTracerBruteForce) )
 
     return elementDict
 
@@ -1507,17 +1484,11 @@ def writeIntegratorVirtualPointLight(renderSettings, integratorMitsuba):
     iVirtualPointLightMaxDepth = -1 if iVirtualPointLightUseInfiniteDepth else iVirtualPointLightMaxDepth
 
     # Create a structure to be written
-    elementDict = {'type':'integrator'}
-    elementDict['attributes'] = {'type':integratorMitsuba}
+    elementDict = IntegratorElement(integratorMitsuba)
 
-    elementDict['children'] = []
-
-    elementDict['children'].append( { 'type':'integer', 
-        'attributes':{ 'name':'maxDepth', 'value':str(iVirtualPointLightMaxDepth) } } )
-    elementDict['children'].append( { 'type':'integer', 
-        'attributes':{ 'name':'shadowMapResolution', 'value':str(iVirtualPointLightShadowMapResolution) } } )
-    elementDict['children'].append( { 'type':'float', 
-        'attributes':{ 'name':'clamping', 'value':str(iVirtualPointLightClamping) } } )
+    elementDict.addChild( IntegerParameter('maxDepth', iVirtualPointLightMaxDepth) )
+    elementDict.addChild( IntegerParameter('shadowMapResolution', iVirtualPointLightShadowMapResolution) )
+    elementDict.addChild( FloatParameter('clamping', iVirtualPointLightClamping) )
 
     return elementDict
 
@@ -1528,19 +1499,13 @@ def writeIntegratorAdaptive(renderSettings, integratorMitsuba, subIntegrator):
     miAdaptiveMaxSampleFactor = cmds.getAttr("%s.%s" % (renderSettings, "miAdaptiveMaxSampleFactor"))
 
     # Create a structure to be written
-    elementDict = {'type':'integrator'}
-    elementDict['attributes'] = {'type':integratorMitsuba}
+    elementDict = IntegratorElement(integratorMitsuba)
 
-    elementDict['children'] = []
+    elementDict.addChild( FloatParameter('maxError', miAdaptiveMaxError/100.0) )
+    elementDict.addChild( FloatParameter('pValue', miAdaptivePValue/100.0) )
+    elementDict.addChild( IntegerParameter('maxSampleFactor', miAdaptiveMaxSampleFactor) )
 
-    elementDict['children'].append( { 'type':'float', 
-        'attributes':{ 'name':'maxError', 'value':str(miAdaptiveMaxError/100.0) } } )
-    elementDict['children'].append( { 'type':'float', 
-        'attributes':{ 'name':'pValue', 'value':str(miAdaptivePValue/100.0) } } )
-    elementDict['children'].append( { 'type':'integer', 
-        'attributes':{ 'name':'maxSampleFactor', 'value':str(miAdaptiveMaxSampleFactor) } } )
-
-    elementDict['children'].append( subIntegrator )
+    elementDict.addChild( subIntegrator )
 
     return elementDict
 
@@ -1555,39 +1520,20 @@ def writeIntegratorIrradianceCache(renderSettings, integratorMitsuba, subIntegra
     miIrradianceCacheIndirectOnly = cmds.getAttr("%s.%s" % (renderSettings, "miIrradianceCacheIndirectOnly"))
     miIrradianceCacheDebug = cmds.getAttr("%s.%s" % (renderSettings, "miIrradianceCacheDebug"))
 
-    miIrradianceCacheGradientsText = "true" if miIrradianceCacheGradients else "false"
-    miIrradianceCacheClampNeighborText = "true" if miIrradianceCacheClampNeighbor else "false"
-    miIrradianceCacheClampScreenText = "true" if miIrradianceCacheClampScreen else "false"
-    miIrradianceCacheOvertureText = "true" if miIrradianceCacheOverture else "false"
-    miIrradianceCacheIndirectOnlyText = "true" if miIrradianceCacheIndirectOnly else "false"
-    miIrradianceCacheDebug = "true" if miIrradianceCacheDebug else "false"
-
     # Create a structure to be written
-    elementDict = {'type':'integrator'}
-    elementDict['attributes'] = {'type':integratorMitsuba}
+    elementDict = IntegratorElement(integratorMitsuba)
 
-    elementDict['children'] = []
+    elementDict.addChild( IntegerParameter('resolution', miIrradianceCacheResolution) )
+    elementDict.addChild( FloatParameter('quality', miIrradianceCacheQuality) )
+    elementDict.addChild( BooleanParameter('gradients', miIrradianceCacheGradients) )
+    elementDict.addChild( BooleanParameter('clampNeighbor', miIrradianceCacheClampNeighbor) )
+    elementDict.addChild( BooleanParameter('clampScreen', miIrradianceCacheClampScreen) )
+    elementDict.addChild( BooleanParameter('overture', miIrradianceCacheOvertureText) )
+    elementDict.addChild( FloatParameter('qualityAdjustment', miIrradianceCacheQualityAdjustment) )
+    elementDict.addChild( BooleanParameter('indirectOnly', miIrradianceCacheIndirectOnly) )
+    elementDict.addChild( BooleanParameter('debug', miIrradianceCacheDebug) )
 
-    elementDict['children'].append( { 'type':'integer', 
-        'attributes':{ 'name':'resolution', 'value':str(miIrradianceCacheResolution) } } )
-    elementDict['children'].append( { 'type':'float', 
-        'attributes':{ 'name':'quality', 'value':str(miIrradianceCacheQuality) } } )
-    elementDict['children'].append( { 'type':'boolean', 
-        'attributes':{ 'name':'gradients', 'value':miIrradianceCacheGradientsText } } )
-    elementDict['children'].append( { 'type':'boolean', 
-        'attributes':{ 'name':'clampNeighbor', 'value':miIrradianceCacheClampNeighborText } } )
-    elementDict['children'].append( { 'type':'boolean', 
-        'attributes':{ 'name':'clampScreen', 'value':miIrradianceCacheClampScreenText } } )
-    elementDict['children'].append( { 'type':'boolean', 
-        'attributes':{ 'name':'overture', 'value':miIrradianceCacheOvertureText } } )
-    elementDict['children'].append( { 'type':'float', 
-        'attributes':{ 'name':'qualityAdjustment', 'value':str(miIrradianceCacheQualityAdjustment) } } )
-    elementDict['children'].append( { 'type':'boolean', 
-        'attributes':{ 'name':'indirectOnly', 'value':miIrradianceCacheIndirectOnlyText } } )
-    elementDict['children'].append( { 'type':'boolean', 
-        'attributes':{ 'name':'debug', 'value':miIrradianceCacheDebug } } )
-
-    elementDict['children'].append( subIntegrator )
+    elementDict.addChild( subIntegrator )
 
     return elementDict
 
@@ -1616,13 +1562,8 @@ def writeMetaIntegrator(renderSettings, metaIntegratorMaya, subIntegrator):
     return integratorElement
 
 def writeIntegratorField(value):
-    elementDict = {'type':'integrator'}
-    elementDict['attributes'] = {'type':'field'}
-
-    elementDict['children'] = []
-    elementDict['children'].append( { 'type':'string', 
-        'attributes':{ 'name':'field', 'value':value } } )
-
+    elementDict = IntegratorElement('field')
+    elementDict.addChild( StringParameter('field', value) )
     return elementDict
 
 def writeIntegratorMultichannel(renderSettings, subIntegrator):
@@ -1637,20 +1578,18 @@ def writeIntegratorMultichannel(renderSettings, subIntegrator):
     multichannelPrimIndex = cmds.getAttr("%s.%s" % (renderSettings, "multichannelPrimIndex"))
 
     # Create a structure to be written
-    elementDict = {'type':'integrator'}
-    elementDict['attributes'] = {'type':'multichannel'}
+    elementDict = IntegratorElement('multichannel')
 
-    elementDict['children'] = []
-    elementDict['children'].append( subIntegrator )
-    if multichannelPosition: elementDict['children'].append( writeIntegratorField("position") )
-    if multichannelRelPosition: elementDict['children'].append( writeIntegratorField("relPosition") )
-    if multichannelDistance: elementDict['children'].append( writeIntegratorField("distance") )
-    if multichannelGeoNormal: elementDict['children'].append( writeIntegratorField("geoNormal") )
-    if multichannelShadingNormal: elementDict['children'].append( writeIntegratorField("shNormal") )
-    if multichannelUV: elementDict['children'].append( writeIntegratorField("uv") )
-    if multichannelAlbedo: elementDict['children'].append( writeIntegratorField("albedo") )
-    if multichannelShapeIndex: elementDict['children'].append( writeIntegratorField("shapeIndex") )
-    if multichannelPrimIndex: elementDict['children'].append( writeIntegratorField("primIndex") )
+    elementDict.addChild( subIntegrator )
+    if multichannelPosition: elementDict.addChild( writeIntegratorField("position") )
+    if multichannelRelPosition: elementDict.addChild( writeIntegratorField("relPosition") )
+    if multichannelDistance: elementDict.addChild( writeIntegratorField("distance") )
+    if multichannelGeoNormal: elementDict.addChild( writeIntegratorField("geoNormal") )
+    if multichannelShadingNormal: elementDict.addChild( writeIntegratorField("shNormal") )
+    if multichannelUV: elementDict.addChild( writeIntegratorField("uv") )
+    if multichannelAlbedo: elementDict.addChild( writeIntegratorField("albedo") )
+    if multichannelShapeIndex: elementDict.addChild( writeIntegratorField("shapeIndex") )
+    if multichannelPrimIndex: elementDict.addChild( writeIntegratorField("primIndex") )
 
     return elementDict
 
@@ -1718,9 +1657,9 @@ def writeIntegrator(renderSettings):
 
     return integratorElement
 
-'''
-Write image sample generator
-'''
+#
+#Write image sample generator
+#
 def writeSampler(frameNumber, renderSettings):
     samplerMaya = cmds.getAttr("%s.%s" % (renderSettings, "sampler")).replace('_', ' ')
     sampleCount = cmds.getAttr("%s.%s" % (renderSettings, "sampleCount"))
@@ -1743,20 +1682,18 @@ def writeSampler(frameNumber, renderSettings):
     else:
         samplerMitsuba = "independent"
 
-    elementDict = {'type':'sampler'}
-    elementDict['attributes'] = {'type':samplerMitsuba}
+    elementDict = SamplerElement(samplerMitsuba)
 
-    elementDict['children'] = []
-    elementDict['children'].append( { 'type':'integer', 'attributes':{ 'name':'sampleCount', 'value':str(sampleCount) } } )
+    elementDict.addChild( IntegerParameter('sampleCount', sampleCount) )
 
     if( samplerMaya == "Stratified Sampler" or
         samplerMaya == "Low Discrepancy Sampler" ):
-        elementDict['children'].append( { 'type':'integer', 'attributes':{ 'name':'dimension', 'value':str(samplerDimension) } } )
+        elementDict.addChild( IntegerParameter('dimension', samplerDimension) )
 
     elif( samplerMaya == "Halton QMC Sampler" or
         samplerMaya == "Hammersley QMC Sampler" or
         samplerMaya == "Sobol QMC Sampler" ):
-        elementDict['children'].append( { 'type':'integer', 'attributes':{ 'name':'scramble', 'value':str(samplerScramble) } } )
+        elementDict.addChild( IntegerParameter('scramble', samplerScramble) )
 
     return elementDict
 
@@ -1812,8 +1749,8 @@ def filmAddMultichannelAttributes(renderSettings, elementDict):
     if pixelFormatChild:
         elementDict['children'].remove( pixelFormatChild )
 
-    elementDict['children'].append( { 'type':'string', 'attributes':{ 'name':'pixelFormat', 'value':pixelFormat } } )
-    elementDict['children'].append( { 'type':'string', 'attributes':{ 'name':'channelNames', 'value':channelNames } } )
+    elementDict.addChild( StringParameter('pixelFormat', pixelFormat) )
+    elementDict.addChild( StringParameter('channelNames', channelNames) )
 
     return elementDict
 
@@ -1834,7 +1771,7 @@ def writeReconstructionFilter(renderSettings):
     else:
         reconstructionFilterMitsuba = "box"
 
-    rfilterElement = { 'type':'rfilter', 'attributes':{ 'type':reconstructionFilterMitsuba } }
+    rfilterElement = createSceneElement(typeAttribute=reconstructionFilterMitsuba, elementType='rfilter')
 
     return rfilterElement
 
@@ -1887,23 +1824,15 @@ def writeFilmHDR(renderSettings, filmMitsuba):
         print( "Unsupported component format : %s. Using Float 16" % fHDRFilmComponentFormat)
         fHDRFilmComponentFormatMitsuba = "float16"
 
-    elementDict = {'type':'film'}
-    elementDict['attributes'] = {'type':filmMitsuba}
+    elementDict = FilmElement(filmMitsuba)
 
-    elementDict['children'] = []
-    elementDict['children'].append( { 'type':'string', 
-        'attributes':{ 'name':'fileFormat', 'value':fHDRFilmFileFormatMitsuba } } )
+    elementDict.addChild( StringParameter('fileFormat', fHDRFilmFileFormatMitsuba) )
     if fHDRFilmFileFormatMitsuba == "openexr":
-        elementDict['children'].append( { 'type':'string', 
-            'attributes':{ 'name':'pixelFormat', 'value':fHDRFilmPixelFormatMitsuba } } )
-    elementDict['children'].append( { 'type':'string', 
-        'attributes':{ 'name':'componentFormat', 'value':fHDRFilmComponentFormatMitsuba } } )
-    elementDict['children'].append( { 'type':'boolean', 
-        'attributes':{ 'name':'attachLog', 'value':booleanToMisubaText(fHDRFilmAttachLog) } } )
-    elementDict['children'].append( { 'type':'boolean', 
-        'attributes':{ 'name':'banner', 'value':booleanToMisubaText(fHDRFilmBanner) } } )
-    elementDict['children'].append( { 'type':'boolean', 
-        'attributes':{ 'name':'highQualityEdges', 'value':booleanToMisubaText(fHDRFilmHighQualityEdges) } } )
+        elementDict.addChild( StringParameter('pixelFormat', fHDRFilmPixelFormatMitsuba) )
+    elementDict.addChild( StringParameter('componentFormat', fHDRFilmComponentFormatMitsuba ) )
+    elementDict.addChild( BooleanParameter('attachLog', fHDRFilmAttachLog) )
+    elementDict.addChild( BooleanParameter('banner', fHDRFilmBanner) )
+    elementDict.addChild( BooleanParameter('highQualityEdges', fHDRFilmHighQualityEdges) )
 
     return elementDict
 
@@ -1940,14 +1869,10 @@ def writeFilmHDRTiled(renderSettings, filmMitsuba):
         print( "Unsupported component format : %s. Using Float 16" % fTiledHDRFilmComponentFormat)
         fTiledHDRFilmComponentFormatMitsuba = "float16"
 
-    elementDict = {'type':'film'}
-    elementDict['attributes'] = {'type':filmMitsuba}
+    elementDict = FilmElement(filmMitsuba)
 
-    elementDict['children'] = []
-    elementDict['children'].append( { 'type':'string', 
-        'attributes':{ 'name':'pixelFormat', 'value':fTiledHDRFilmPixelFormatMitsuba } } )
-    elementDict['children'].append( { 'type':'string', 
-        'attributes':{ 'name':'componentFormat', 'value':fTiledHDRFilmComponentFormatMitsuba } } )
+    elementDict.addChild( StringParameter('pixelFormat', fTiledHDRFilmPixelFormatMitsuba) )
+    elementDict.addChild( StringParameter('componentFormat', fTiledHDRFilmComponentFormatMitsuba) )
 
     return elementDict
 
@@ -1997,28 +1922,17 @@ def writeFilmLDR(renderSettings, filmMitsuba):
         print( "Unsupported tonemap method : %s. Using Gamma" % fLDRFilmTonemapMethod)
         fLDRFilmTonemapMethodMitsuba = "gamma"
 
-    elementDict = {'type':'film'}
-    elementDict['attributes'] = {'type':filmMitsuba}
+    elementDict = FilmElement(filmMitsuba)
 
-    elementDict['children'] = []
-    elementDict['children'].append( { 'type':'string', 
-        'attributes':{ 'name':'fileFormat', 'value':fLDRFilmFileFormatMitsuba } } )
-    elementDict['children'].append( { 'type':'string', 
-        'attributes':{ 'name':'pixelFormat', 'value':fLDRFilmPixelFormatMitsuba } } )
-    elementDict['children'].append( { 'type':'string', 
-        'attributes':{ 'name':'tonemapMethod', 'value':fLDRFilmTonemapMethodMitsuba } } )
-    elementDict['children'].append( { 'type':'float', 
-        'attributes':{ 'name':'gamma', 'value':str(fLDRFilmGamma) } } )
-    elementDict['children'].append( { 'type':'float', 
-        'attributes':{ 'name':'exposure', 'value':str(fLDRFilmExposure) } } )
-    elementDict['children'].append( { 'type':'float', 
-        'attributes':{ 'name':'key', 'value':str(fLDRFilmKey) } } )
-    elementDict['children'].append( { 'type':'float', 
-        'attributes':{ 'name':'burn', 'value':str(fLDRFilmBurn) } } )
-    elementDict['children'].append( { 'type':'boolean', 
-        'attributes':{ 'name':'banner', 'value':booleanToMisubaText(fLDRFilmBanner) } } )
-    elementDict['children'].append( { 'type':'boolean', 
-        'attributes':{ 'name':'highQualityEdges', 'value':booleanToMisubaText(fLDRFilmHighQualityEdges) } } )
+    elementDict.addChild( StringParameter('fileFormat', fLDRFilmFileFormatMitsuba) )
+    elementDict.addChild( StringParameter('pixelFormat', fLDRFilmPixelFormatMitsuba) )
+    elementDict.addChild( StringParameter('tonemapMethod', fLDRFilmTonemapMethodMitsuba) )
+    elementDict.addChild( FloatParameter('gamma', fLDRFilmGamma) )
+    elementDict.addChild( FloatParameter('exposure', fLDRFilmExposure) )
+    elementDict.addChild( FloatParameter('key', fLDRFilmKey) )
+    elementDict.addChild( FloatParameter('burn', fLDRFilmBurn) )
+    elementDict.addChild( BooleanParameter('banner', fLDRFilmBanner) )
+    elementDict.addChild( BooleanParameter('highQualityEdges', fLDRFilmHighQualityEdges) )
 
     return elementDict
 
@@ -2056,20 +1970,13 @@ def writeFilmMath(renderSettings, filmMitsuba):
         print( "Unsupported pixel format : %s. Using RGB" % fMathFilmPixelFormat)
         fMathFilmPixelFormatMitsuba = "rgb"
 
-    elementDict = {'type':'film'}
-    elementDict['attributes'] = {'type':filmMitsuba}
+    elementDict = FilmElement(filmMitsuba)
 
-    elementDict['children'] = []
-    elementDict['children'].append( { 'type':'string', 
-        'attributes':{ 'name':'fileFormat', 'value':fMathFilmFileFormatMitsuba } } )
-    elementDict['children'].append( { 'type':'string', 
-        'attributes':{ 'name':'pixelFormat', 'value':fMathFilmPixelFormatMitsuba } } )
-    elementDict['children'].append( { 'type':'integer', 
-        'attributes':{ 'name':'digits', 'value':str(fMathFilmDigits) } } )
-    elementDict['children'].append( { 'type':'string', 
-        'attributes':{ 'name':'variable', 'value':fMathFilmVariable } } )
-    elementDict['children'].append( { 'type':'boolean', 
-        'attributes':{ 'name':'highQualityEdges', 'value':booleanToMisubaText(fMathFilmHighQualityEdges) } } )
+    elementDict.addChild( StringParameter('fileFormat', fMathFilmFileFormatMitsuba) )
+    elementDict.addChild( StringParameter('pixelFormat', fMathFilmPixelFormatMitsuba) )
+    elementDict.addChild( IntegerParameter('digits', fMathFilmDigits) )
+    elementDict.addChild( StringParameter('variable', fMathFilmVariable) )
+    elementDict.addChild( BooleanParameter('highQualityEdges', fMathFilmHighQualityEdges) )
 
     return elementDict
 
@@ -2088,10 +1995,10 @@ def addRenderRegionCropCoordinates(filmElement):
             imageWidth = cmds.getAttr("defaultResolution.width")
             imageHeight = cmds.getAttr("defaultResolution.height")
 
-            filmElement['children'].append( createIntegerElement('cropOffsetX', left) )
-            filmElement['children'].append( createIntegerElement('cropOffsetY', imageHeight-top-1 ) )
-            filmElement['children'].append( createIntegerElement('cropWidth',   right-left+1 ) )
-            filmElement['children'].append( createIntegerElement('cropHeight',  top-bottom+1 ) )
+            filmElement.addChild( IntegerParameter('cropOffsetX', left) )
+            filmElement.addChild( IntegerParameter('cropOffsetY', imageHeight-top-1 ) )
+            filmElement.addChild( IntegerParameter('cropWidth',   right-left+1 ) )
+            filmElement.addChild( IntegerParameter('cropHeight',  top-bottom+1 ) )
 
     return filmElement
 
@@ -2128,14 +2035,13 @@ def writeFilm(frameNumber, renderSettings):
 
     filmElement = writeFilmFunction(renderSettings, filmMitsuba)
 
-
     rfilterElement = writeReconstructionFilter(renderSettings)
 
     # Set resolution
     imageWidth = cmds.getAttr("defaultResolution.width")
     imageHeight = cmds.getAttr("defaultResolution.height")
-    filmElement['children'].append( createIntegerElement('height', imageHeight) )
-    filmElement['children'].append( createIntegerElement('width', imageWidth) )
+    filmElement.addChild( IntegerParameter('height', imageHeight) )
+    filmElement.addChild( IntegerParameter('width', imageWidth) )
 
     # Set crop window
     filmElement = addRenderRegionCropCoordinates(filmElement)
@@ -2146,9 +2052,9 @@ def writeFilm(frameNumber, renderSettings):
 
     return filmElement
 
-'''
-Write sensor, which include camera, image sampler, and film
-'''
+#
+#Write sensor, which include camera, image sampler, and film
+#
 def getRenderableCamera():
     cams = cmds.ls(type="camera", long=True)
     rCamShape = ""
@@ -2218,52 +2124,40 @@ def writeSensor(frameNumber, renderSettings):
     perspectiveRdistKc4 = cmds.getAttr("%s.sPerspectiveRdistKc4" % renderSettings)
 
     # Write Camera
-    elementDict = {'type':'sensor'}
-    elementDict['attributes'] = {'type':camType}
-
-    elementDict['children'] = []
+    elementDict = SensorElement( camType ) 
 
     if camType in ["thinlens", "perspective"]:
-        elementDict['children'].append( { 'type':'float', 
-            'attributes':{ 'name':'fov', 'value':str(fov) } } )
-        elementDict['children'].append( { 'type':'string', 
-            'attributes':{ 'name':'fovAxis', 'value':'x' } } )
+        elementDict.addChild( FloatParameter('fov', fov) )
+        elementDict.addChild( StringParameter('fovAxis', 'x') )
 
     if camType in ["thinlens", "perspective", "orthographic", "telecentric"]:
-        elementDict['children'].append( { 'type':'float', 
-            'attributes':{ 'name':'nearClip', 'value':str(nearClip) } } )
+        elementDict.addChild( FloatParameter('nearClip', nearClip) )
 
     if camType in ["thinlens", "telecentric"]:
-        elementDict['children'].append( { 'type':'float', 
-            'attributes':{ 'name':'apertureRadius', 'value':str(apertureRadius) } } )
-        elementDict['children'].append( { 'type':'float', 
-            'attributes':{ 'name':'focusDistance', 'value':str(focusDistance) } } )
+        elementDict.addChild( FloatParameter('apertureRadius', apertureRadius) )
+        elementDict.addChild( FloatParameter('focusDistance', focusDistance) )
 
     if camType in ["perspective_rdist"]:
-        elementDict['children'].append( { 'type':'string', 
-            'attributes':{ 'name':'kc', 'value':str(perspectiveRdistKc2) + ", " + str(perspectiveRdistKc4)} } )
+        elementDict.addChild( StringParameter('kc', str(perspectiveRdistKc2) + ", " + str(perspectiveRdistKc4)) )
 
     # Generate transform
-    transformDict = {'type':'transform'}
-    transformDict['attributes'] = {'name':'toWorld'}
-    transformDict['children'] = []
-    if camType == "orthographic":
-        transformDict['children'].append( { 'type':'scale', 
-            'attributes':{ 'x':str(orthographicWidth), 'y':str(orthographicWidth) } } )
-    transformDict['children'].append( { 'type':'lookat', 
-        'attributes':{ 'target':listToMitsubaText(camAim), 
-            'origin':listToMitsubaText(camPos),
-             'up':listToMitsubaText(camUp) } } )
+    transformDict = TransformElement() 
+    transformDict.addAttribute('name', 'toWorld')
 
-    elementDict['children'].append(transformDict)
+    if camType == "orthographic":
+        transformDict.addChild( Scale2Element(orthographicWidth, orthographicWidth) )
+    
+    transformDict.addChild( LookAtElement(camAim, camPos, camUp) )
+
+    elementDict.addChild( transformDict )
 
     # Write Sampler
     samplerDict = writeSampler(frameNumber, renderSettings)
-    elementDict['children'].append(samplerDict)
+    elementDict.addChild( samplerDict )
 
     # Write Film
     filmDict = writeFilm(frameNumber, renderSettings)
-    elementDict['children'].append(filmDict)
+    elementDict.addChild( filmDict )
 
     return elementDict
 
@@ -2278,15 +2172,10 @@ def writeLightDirectional(light):
     lightDir = [-matrix[8],-matrix[9],-matrix[10]]
 
     # Create a structure to be written
-    elementDict = {'type':'emitter'}
-    elementDict['attributes'] = {'type':'directional'}
+    elementDict = EmitterElement('directional')
 
-    elementDict['children'] = []
-
-    elementDict['children'].append( { 'type':'rgb', 
-        'attributes':{ 'name':'irradiance', 'value':listToMitsubaText(irradiance) } } )
-    elementDict['children'].append( { 'type':'vector', 
-        'attributes':{ 'name':'direction', 'x':str(lightDir[0]), 'y':str(lightDir[1]), 'z':str(lightDir[2]) } } )
+    elementDict.addChild( ColorParameter('irradiance', irradiance, colorspace='rgb') )
+    elementDict.addChild( VectorParameter('direction', lightDir[0], lightDir[1], lightDir[2]) )
 
     return elementDict
 
@@ -2301,18 +2190,12 @@ def writeLightPoint(light):
     position = [matrix[12],matrix[13],matrix[14]]
 
     # Create a structure to be written
-    elementDict = {'type':'emitter'}
-    elementDict['attributes'] = {'type':'point'}
+    elementDict = EmitterElement('point')
 
-    elementDict['children'] = []
-
-    elementDict['children'].append( { 'type':'rgb', 
-        'attributes':{ 'name':'intensity', 'value':listToMitsubaText(irradiance) } } )
-    elementDict['children'].append( { 'type':'point', 
-        'attributes':{ 'name':'position', 'x':str(position[0]), 'y':str(position[1]), 'z':str(position[2]) } } )
+    elementDict.addChild( ColorParameter('intensity', irradiance, colorspace='rgb') )
+    elementDict.addChild( PointParameter('position', position[0], position[1], position[2]) )
 
     return elementDict
-
 
 def writeLightSpot(light):
     intensity = cmds.getAttr(light+".intensity")
@@ -2331,38 +2214,25 @@ def writeLightSpot(light):
     rotation = cmds.getAttr(transform+".rotate")[0]
 
     # Create a structure to be written
-    elementDict = {'type':'emitter'}
-    elementDict['attributes'] = {'type':'spot'}
+    elementDict = EmitterElement('spot')
 
-    elementDict['children'] = []
+    elementDict.addChild( ColorParameter('intensity', irradiance, colorspace='rgb') )
+    elementDict.addChild( FloatParameter('cutoffAngle', (coneAngle + penumbraAngle) ) )
+    elementDict.addChild( FloatParameter('beamWidth', coneAngle) )
 
-    elementDict['children'].append( { 'type':'rgb', 
-        'attributes':{ 'name':'intensity', 'value':listToMitsubaText(irradiance) } } )
-    elementDict['children'].append( { 'type':'float', 
-        'attributes':{ 'name':'cutoffAngle', 'value':str(coneAngle + penumbraAngle) } } )
-    elementDict['children'].append( { 'type':'float', 
-        'attributes':{ 'name':'beamWidth', 'value':str(coneAngle) } } )
+    transformDict = TransformElement()
+    transformDict.addAttribute('name', 'toWorld')
 
-    transformDict = {'type':'transform'}
-    transformDict['attributes'] = {'name':'toWorld'}
-
-    transformDict['children'] = []
-
-    transformDict['children'].append( { 'type':'rotate', 
-        'attributes':{ 'y':str(1), 'angle':str(180.0) } } )
+    transformDict.addChild( RotateElement('y', 180.0) )
     if rotation[0] != 0.0:
-        transformDict['children'].append( { 'type':'rotate', 
-            'attributes':{ 'x':str(1), 'angle':str(rotation[0]) } } )
+        transformDict.addChild( RotateElement('x', rotation[0]) )
     if rotation[1] != 0.0:
-        transformDict['children'].append( { 'type':'rotate', 
-            'attributes':{ 'y':str(1), 'angle':str(rotation[1]) } } )
+        transformDict.addChild( RotateElement('y', rotation[1]) )
     if rotation[2] != 0.0:
-        transformDict['children'].append( { 'type':'rotate', 
-            'attributes':{ 'z':str(1), 'angle':str(rotation[2]) } } )
-    transformDict['children'].append( { 'type':'translate', 
-        'attributes':{ 'x':str(position[0]), 'y':str(position[1]), 'z':str(position[2]) } } )
+        transformDict.addChild( RotateElement('z', rotation[2]) )
+    transformDict.addChild( TranslateElement(position[0], position[1], position[2]) )
 
-    elementDict['children'].append( transformDict )
+    elementDict.addChild( transformDict )
 
     return elementDict
 
@@ -2394,48 +2264,29 @@ def writeLightSunSky(sunsky):
     sunRadiusScale = cmds.getAttr(sunsky+".sunRadiusScale")
 
     # Create a structure to be written
-    elementDict = {'type':'emitter'}
-    elementDict['attributes'] = {'type':emitterType}
+    elementDict = EmitterElement( emitterType )
 
-    elementDict['children'] = []
+    elementDict.addChild( FloatParameter('turbidity', turbidity) )
+    elementDict.addChild( ColorParameter('albedo', albedo[0]) )
 
-    elementDict['children'].append( { 'type':'float', 
-        'attributes':{ 'name':'turbidity', 'value':str(turbidity) } } )
-    elementDict['children'].append( { 'type':'srgb', 
-        'attributes':{ 'name':'albedo', 'value':listToMitsubaText(albedo[0]) } } )
+    elementDict.addChild( IntegerParameter('year', date[0][0]) )
+    elementDict.addChild( IntegerParameter('month', date[0][1]) )
+    elementDict.addChild( IntegerParameter('day', date[0][2]) )
 
-    elementDict['children'].append( { 'type':'integer', 
-        'attributes':{ 'name':'year', 'value':str(date[0][0]) } } )
-    elementDict['children'].append( { 'type':'integer', 
-        'attributes':{ 'name':'month', 'value':str(date[0][1]) } } )
-    elementDict['children'].append( { 'type':'integer', 
-        'attributes':{ 'name':'day', 'value':str(date[0][2]) } } )
+    elementDict.addChild( FloatParameter('hour', time[0][0]) )
+    elementDict.addChild( FloatParameter('minute', time[0][1]) )
+    elementDict.addChild( FloatParameter('second', time[0][2]) )
 
-    elementDict['children'].append( { 'type':'float', 
-        'attributes':{ 'name':'hour', 'value':str(time[0][0]) } } )
-    elementDict['children'].append( { 'type':'float', 
-        'attributes':{ 'name':'minute', 'value':str(time[0][1]) } } )
-    elementDict['children'].append( { 'type':'float', 
-        'attributes':{ 'name':'second', 'value':str(time[0][2]) } } )
+    elementDict.addChild( FloatParameter('latitude', latitude) )
+    elementDict.addChild( FloatParameter('longitude', longitude) )
+    elementDict.addChild( FloatParameter('timezone', timezone) )
+    elementDict.addChild( FloatParameter('stretch', stretch) )
 
-    elementDict['children'].append( { 'type':'float', 
-        'attributes':{ 'name':'latitude', 'value':str(latitude) } } )
-    elementDict['children'].append( { 'type':'float', 
-        'attributes':{ 'name':'longitude', 'value':str(longitude) } } )
-    elementDict['children'].append( { 'type':'float', 
-        'attributes':{ 'name':'timezone', 'value':str(timezone) } } )
-    elementDict['children'].append( { 'type':'float', 
-        'attributes':{ 'name':'stretch', 'value':str(stretch) } } )
+    elementDict.addChild( IntegerParameter('resolution', resolution) )
 
-    elementDict['children'].append( { 'type':'integer', 
-        'attributes':{ 'name':'resolution', 'value':str(resolution) } } )
-
-    elementDict['children'].append( { 'type':'float', 
-        'attributes':{ 'name':'sunScale', 'value':str(sunScale) } } )
-    elementDict['children'].append( { 'type':'float', 
-        'attributes':{ 'name':'skyScale', 'value':str(skyScale) } } )
-    elementDict['children'].append( { 'type':'float', 
-        'attributes':{ 'name':'sunRadiusScale', 'value':str(sunRadiusScale) } } )
+    elementDict.addChild( FloatParameter('sunScale', sunScale) )
+    elementDict.addChild( FloatParameter('skyScale', skyScale) )
+    elementDict.addChild( FloatParameter('sunRadiusScale', sunRadiusScale) )
 
     return elementDict
 
@@ -2472,34 +2323,22 @@ def writeLightEnvMap(envmap):
             cacheText = 'true' if cache else 'false'
 
             # Create a structure to be written
-            elementDict = {'type':'emitter'}
-            elementDict['attributes'] = {'type':'envmap'}
+            elementDict = EmitterElement('envmap')
 
-            elementDict['children'] = []
+            elementDict.addChild( StringParameter('filename', fileName) )
+            elementDict.addChild( FloatParameter('scale', scale) )
+            elementDict.addChild( FloatParameter('gamma', gamma) )
+            elementDict.addChild( BooleanParameter('cache', cacheText) )
+            elementDict.addChild( FloatParameter('samplingWeight', samplingWeight) )
 
-            elementDict['children'].append( { 'type':'string', 
-                'attributes':{ 'name':'filename', 'value':fileName } } )
-            elementDict['children'].append( { 'type':'float', 
-                'attributes':{ 'name':'scale', 'value':str(scale) } } )
-            elementDict['children'].append( { 'type':'float', 
-                'attributes':{ 'name':'gamma', 'value':str(gamma) } } )
-            elementDict['children'].append( { 'type':'boolean', 
-                'attributes':{ 'name':'cache', 'value':cacheText } } )
-            elementDict['children'].append( { 'type':'float', 
-                'attributes':{ 'name':'samplingWeight', 'value':str(samplingWeight) } } )
+            transformDict = TransformElement()
 
-            transformDict = {'type':'transform'}
-            transformDict['attributes'] = {'name':'toWorld'}
+            transformDict.addAttribute('name', 'toWorld')
+            transformDict.addChild( RotateElement('x', rotate[0]) )
+            transformDict.addChild( RotateElement('y', rotate[1]) )
+            transformDict.addChild( RotateElement('z', rotate[2]) )
 
-            transformDict['children'] = []
-            transformDict['children'].append( { 'type':'rotate', 
-                'attributes':{ 'x':str(1), 'angle':str(rotate[0]) } } )
-            transformDict['children'].append( { 'type':'rotate', 
-                'attributes':{ 'y':str(1), 'angle':str(rotate[1]) } } )
-            transformDict['children'].append( { 'type':'rotate', 
-                'attributes':{ 'z':str(1), 'angle':str(rotate[2]) } } )
-
-            elementDict['children'].append( transformDict )
+            elementDict.addChild( transformDict )
 
             return elementDict
 
@@ -2508,22 +2347,17 @@ def writeLightEnvMap(envmap):
             samplingWeight = cmds.getAttr(envmap+".samplingWeight")
 
             # Create a structure to be written
-            elementDict = {'type':'emitter'}
-            elementDict['attributes'] = {'type':'constant'}
+            elementDict = EmitterElement('constant')
 
-            elementDict['children'] = []
-
-            elementDict['children'].append( { 'type':'rgb', 
-                'attributes':{ 'name':'radiance', 'value':listToMitsubaText(radiance[0]) } } )
-            elementDict['children'].append( { 'type':'float', 
-                'attributes':{ 'name':'samplingWeight', 'value':str(samplingWeight) } } )
+            elementDict.addChild( ColorParameter('radiance', radiance[0], colorspace='rgb') )
+            elementDict.addChild( FloatParameter('samplingWeight', samplingWeight) )
 
             return elementDict
 
 
-'''
-Write lights
-'''
+#
+#Write lights
+#
 def isVisible(object):
     #print( "Checking visibility : %s" % object )
     visible = True
@@ -2655,35 +2489,36 @@ def exportGeometry(geom, renderDir):
     return objFilenameFullPath
 
 def writeShape(geomFilename, surfaceShader, mediumShader, renderDir):
-    shapeDict = createSceneElement('obj', elementType='shape')
+    shapeDict = ShapeElement('obj')
 
     # Add reference to exported geometry
-    shapeDict['children'].append( createStringElement('filename', geomFilename) )
+    shapeDict.addChild( StringParameter('filename', geomFilename) )
 
     # Write medium shader reference
     if mediumShader and cmds.nodeType(mediumShader) in materialNodeTypes:
         if cmds.nodeType(mediumShader) == "MitsubaSSSDipoleShader":
-            refDict = createSceneElement(elementType='ref')
-            refDict['attributes'] = {'id':mediumShader}
+            refDict = RefElement()
+            refDict.addAttribute('id', mediumShader)
         else:
-            refDict = createSceneElement(elementType='ref')
-            refDict['attributes'] = {'name':'interior', 'id':mediumShader}
+            refDict = RefElement()
+            refDict.addAttribute('name', 'interior')
+            refDict.addAttribute('id', mediumShader)
 
-        shapeDict['children'].append(refDict)
+        shapeDict.addChild( refDict)
 
     # Write surface shader reference
     if surfaceShader and cmds.nodeType(surfaceShader) in materialNodeTypes:
         # Check for area lights
         if cmds.nodeType(surfaceShader) == "MitsubaObjectAreaLightShader":
             shaderElement = writeShaderObjectAreaLight(surfaceShader, surfaceShader)
-            shapeDict['children'].append(shaderElement)
+            shapeDict.addChild( shaderElement )
 
         # Otherwise refer to the already written material
         else:
-            refDict = createSceneElement(elementType='ref')
-            refDict['attributes'] = {'id':surfaceShader}
+            refDict = RefElement()
+            refDict.addAttribute('id', surfaceShader)
 
-            shapeDict['children'].append(refDict)
+            shapeDict.addChild( refDict)
     
     return shapeDict
 
@@ -2717,32 +2552,32 @@ def writeScene(outFileName, renderDir, renderSettings):
     #
     # Generate scene element hierarchy
     #
-    sceneElement = createSceneElement(elementType='scene')
+    sceneElement = createSceneElement()
 
     # Should make this query the binary...
-    sceneElement['attributes'] = {'version':'0.5.0'}
+    sceneElement.addAttribute('version', '0.5.0')
 
     # Get integrator
     integratorElement = writeIntegrator(renderSettings)
-    sceneElement['children'].append(integratorElement)
+    sceneElement.addChild( integratorElement)
 
     # Get sensor : camera, sampler, and film
     frameNumber = int(cmds.currentTime(query=True))
     sensorElement = writeSensor(frameNumber, renderSettings)
-    sceneElement['children'].append(sensorElement)
+    sceneElement.addChild( sensorElement)
 
     # Get lights
     lightElements = writeLights()
     if lightElements:
-        sceneElement['children'].extend(lightElements)
+        sceneElement.addChildren( lightElements )
 
     # Get geom and material assignments
     (exportedGeometryFiles, shapeElements, materialElements) = writeGeometryAndMaterials(renderDir)
     if materialElements:
-        sceneElement['children'].extend(materialElements)
+        sceneElement.addChildren( materialElements )
 
     if shapeElements:
-        sceneElement['children'].extend(shapeElements)
+        sceneElement.addChildren( shapeElements )
 
     #
     # Write the structure to disk
@@ -2752,3 +2587,4 @@ def writeScene(outFileName, renderDir, renderSettings):
         writeElement(outFile, sceneElement)
 
     return exportedGeometryFiles
+
