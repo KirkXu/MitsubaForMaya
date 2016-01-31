@@ -261,6 +261,9 @@ class mitsubaForMaya(OpenMayaMPx.MPxCommand):
                 if oiiotoolResult in [0, None]:
                     os.rename(imageNameCropped, imageName)
 
+    def getScenePrefix(self):
+        return str('.'.join(os.path.split(cmds.file(q=True, sn=True))[-1].split('.')[:-1]))
+
     def renderScene(self,
                     outFileName, 
                     renderDir, 
@@ -276,9 +279,11 @@ class mitsubaForMaya(OpenMayaMPx.MPxCommand):
         imageDir = os.path.join(os.path.split(renderDir)[0], 'images')
         os.chdir(imageDir)
 
+        sceneName = self.getScenePrefix()
+
         imagePrefix = cmds.getAttr("defaultRenderGlobals.imageFilePrefix")
         if imagePrefix is None:
-            imagePrefix = "mitsubaTempRender"
+            imagePrefix = sceneName
 
         writePartialResults = False
         writePartialResultsInterval = -1
@@ -341,7 +346,7 @@ class mitsubaForMaya(OpenMayaMPx.MPxCommand):
         #mitsubaRender.echo = False
 
         mitsubaRender.execute()
-        #mitsubaRender.write_log_to_disk(logName, format='txt')
+        mitsubaRender.write_log_to_disk(logName, format='txt')
 
         print( "Render execution returned : %s" % mitsubaRender.status )
 
@@ -383,7 +388,13 @@ class mitsubaForMaya(OpenMayaMPx.MPxCommand):
         else:
             frame = 1
 
-        outFileName = os.path.join(renderDir, "temporary.xml")
+        sceneName = self.getScenePrefix()
+
+        scenePrefix = cmds.getAttr("defaultRenderGlobals.imageFilePrefix")
+        if scenePrefix is None:
+            scenePrefix = sceneName
+
+        outFileName = os.path.join(renderDir, "%s.xml" % scenePrefix)
 
         # Export scene and geometry
         geometryFiles = MitsubaRendererIO.writeScene(outFileName, renderDir, renderSettings)

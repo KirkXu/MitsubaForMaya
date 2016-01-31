@@ -751,7 +751,7 @@ def writeShaderRoughConductor(material, materialName):
     distributionUI = cmds.getAttr(material+".distribution", asString=True)
     alphaUV = cmds.getAttr(material+".alphaUV")
     alpha = cmds.getAttr(material+".alpha")
-    conductorMaterialUI = cmds.getAttr(material+".material")
+    conductorMaterialUI = cmds.getAttr(material+".material", asString=True)
     extEta = cmds.getAttr(material+".extEta")
 
     if distributionUI in distributionUIToPreset:

@@ -115,6 +115,25 @@ x make sure render logs are printed as render happens, i.e. don't block
 
 x simplify IO code with wrapper functions and classes
 
+example scenes for materials
+ x diffuse, roughdiffuse, 
+ x dielectric, / thindielectric, roughdielectric
+ x conductor, roughconductor, 
+ x plastic, roughplastic
+ x phong, ward
+ x diffuse transmitter
+ / irawan
+ x twosided
+ x coating, roughcoating
+ x mixturebsdf
+ x blendbsdf
+ mask
+ bump
+ x hk - uses phase functions
+ x dipole
+ x homogeneous
+ heterogeneous
+
 add support for ensureEnergyConservation boolean on BSDFs
 	http://www.mitsuba-renderer.org/api/classmitsuba_1_1_b_s_d_f.html
 

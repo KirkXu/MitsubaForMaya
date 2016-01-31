@@ -146,7 +146,7 @@ def nodeInitializer():
         nAttr.setStorable(1)
         nAttr.setReadable(1)
         nAttr.setWritable(1)
-        nAttr.setDefault(0.5,0.5,0.5)
+        nAttr.setDefault(0.0,0.0,0.0)
 
         coating.mOutColor = nAttr.createColor("outColor", "oc")
         nAttr.setStorable(0)
@@ -162,11 +162,11 @@ def nodeInitializer():
         coating.addAttribute(coating.mThickness)
         coating.addAttribute(coating.mSigmaA)
         coating.addAttribute(coating.mReflectance)
-        coating.addAttribute(coating.mBSDF)
         coating.addAttribute(coating.mInteriorMaterial)
         coating.addAttribute(coating.mIntIOR)
         coating.addAttribute(coating.mExteriorMaterial)
         coating.addAttribute(coating.mExtIOR)
+        coating.addAttribute(coating.mBSDF)
         coating.addAttribute(coating.mOutColor)
     except:
         sys.stderr.write("Failed to add attributes\n")

@@ -59,7 +59,6 @@ def nodeInitializer():
         eAttr.addField("Beckmann", 0)
         eAttr.addField("GGX", 1)
         eAttr.addField("Phong", 2)
-        eAttr.addField("Ashikhmin Shirley", 3)
 
         roughplastic.mAlpha = nAttr.create("alpha","a", OpenMaya.MFnNumericData.kFloat, 0.1)
         nAttr.setKeyable(1) 
