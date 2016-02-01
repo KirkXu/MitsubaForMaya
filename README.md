@@ -151,6 +151,11 @@ References
 
 - [Irawan Cloth Data Sets](http://www.mitsuba-renderer.org/scenes/irawan.zip)
 
+- [Source of test mesh geometry](http://graphics.cs.williams.edu/data/meshes.xml)
+
+	- Material preview scene by Jonas Pilo
+
+
 Testing
 -
 
