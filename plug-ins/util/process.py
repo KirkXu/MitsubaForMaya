@@ -8,9 +8,18 @@ a process or a list of other process wrappers which carry such data.
 
 from __future__ import division
 
+import datetime
+import math
 import os
+import optparse
+import platform
 import sys
 import traceback
+
+try:
+    import subprocess as sp
+except:
+    sp = None
 
 __author__ = 'Haarm-Pieter Duiker'
 __copyright__ = 'Copyright (C) 2015 - Duiker Research Corp'
@@ -84,7 +93,7 @@ from Queue import Queue, Empty
 
 class NonBlockingStreamReader:
 
-    def __init__(self, stream):
+    def __init__(self, stream, streamEndCallback=None):
         '''
         stream: the stream to read from.
                 Usually a process' stdout or stderr.
@@ -92,8 +101,9 @@ class NonBlockingStreamReader:
 
         self._s = stream
         self._q = Queue()
+        self._streamEndCallback = streamEndCallback
 
-        def _populateQueue(stream, queue):
+        def _populateQueue(stream, queue, streamEndCallback):
             '''
             Collect lines from 'stream' and put them in 'quque'.
             '''
@@ -106,24 +116,27 @@ class NonBlockingStreamReader:
                 if line:
                     queue.put(line)
                 else:
-                    break
                     #raise UnexpectedEndOfStream
+                    if streamEndCallback:
+                        streamEndCallback(stream, self)
+                    break
 
         self._t = Thread(target = _populateQueue,
-                args = (self._s, self._q))
+                args = (self._s, self._q, self._streamEndCallback))
         self._t.daemon = True
         self._t.start() #start collecting lines from the stream
 
-    def readline(self, timeout = None):
+    def readline(self, timeout=None):
         try:
-            return self._q.get(block = timeout is not None,
+            line = self._q.get(block = timeout is not None,
                     timeout = timeout)
+            return line
         except Empty:
+            #print( "NonBlockingStreamReader - stream empty" )
+            #traceback.print_exc()
             return None
 
 class UnexpectedEndOfStream(Exception): pass
-
-
 
 class Process:
     """
@@ -136,7 +149,8 @@ class Process:
                  args=None,
                  cwd=None,
                  env=None,
-                 batch_wrapper=False):
+                 batch_wrapper=False,
+                 non_blocking=False):
         """
         Initialize the standard class variables.
 
@@ -168,8 +182,12 @@ class Process:
         self.cwd = cwd
         self.env = env
         self.batch_wrapper = batch_wrapper
+        self.use_non_blocking_stream_reader = True
         self.process_keys = []
         self.log_callback = None
+
+        self.non_blocking = non_blocking
+        self.finish_callback = None
 
     def get_elapsed_seconds(self):
         """
@@ -185,8 +203,6 @@ class Process:
         type
              Return value description.
         """
-
-        import math
 
         if self.end and self.start:
             delta = (self.end - self.start)
@@ -239,8 +255,6 @@ class Process:
         type
              Return value description.
         """
-
-        import platform
 
         try:
             user = os.getlogin()
@@ -423,15 +437,8 @@ class Process:
              Return value description.
         """
 
-        import datetime
-        import traceback
-
-        try:
-            import subprocess as sp
-        except:
-            sp = None
-
         self.start = datetime.datetime.now()
+        self.log = []
 
         cmdargs = [self.cmd]
         cmdargs.extend(self.args)
@@ -450,26 +457,38 @@ class Process:
         parentenv = os.environ
         parentcwd = os.getcwd()
 
+        #
+        # Create process
+        #
         try:
             # Using *subprocess*.
             if sp:
                 if self.batch_wrapper:
+                    #print( "\nUsing subprocess with a batch wrapper\n" )
                     cmd = ' '.join(cmdargs)
-                    tmp_wrapper = os.path.join(self.cwd, 'process.bat')
-                    write_text(cmd, tmp_wrapper)
+                    self._tmp_wrapper = os.path.join(self.cwd, 'process.bat')
+                    write_text(cmd, self._tmp_wrapper)
                     print('%s : Running process through wrapper %s\n' % (
-                        self.__class__, tmp_wrapper))
-                    process = sp.Popen([tmp_wrapper], stdout=sp.PIPE,
+                        self.__class__, self._tmp_wrapper))
+                    process = sp.Popen([self._tmp_wrapper], stdout=sp.PIPE,
                                        stderr=sp.STDOUT,
                                        cwd=self.cwd, env=self.env)
                 else:
-                    #print( "\nUsing standard Popen\n" )
+                    #print( "\nUsing standard subprocess Popen\n" )
                     process = sp.Popen(cmdargs, stdout=sp.PIPE,
                                        stderr=sp.STDOUT,
                                        cwd=self.cwd, env=self.env)
 
+                stdout = process.stdout
+                stdin = process.stdin
+
+                #pid = process.pid
+                #self.log_line('process id %s\n' % pid)
+
             # using *os.popen4*.
             else:
+                #self.non_blocking = False
+
                 if self.env:
                     os.environ = self.env
                 if self.cwd:
@@ -480,119 +499,176 @@ class Process:
             print('Couldn\'t execute command : %s' % cmdargs[0])
             traceback.print_exc()
 
+        # 
+        # Collect process output
+        #
+        if not self.non_blocking:
+            self._collectOutput(stdout, stdin, process)
+        else:
+            nbsr = NonBlockingStreamReader(stdout, self._processFinish)
+
+    def _processFinish(self, process_stdout, nbsr=None):
+        self.end = datetime.datetime.now()
+        self._cleanupWrapper()
+
+        if self.non_blocking and nbsr:
+            self._collectOuputNBSRFinish(nbsr, process_stdout)
+
+        if self.finish_callback:
+            self.finish_callback()
+
+    def _cleanupWrapper(self):
+        if self.batch_wrapper and tmp_wrapper:
+            try:
+                os.remove(tmp_wrapper)
+            except:
+                print(
+                    'Couldn\'t remove temp wrapper : %s' % tmp_wrapper)
+                traceback.print_exc()
+
+    def _collectOuputNBSRFinish(self, nbsr, process_stdout):
+        # This is now used to ensure that the process has finished.
+        line = ''
+        while True:
+            try:
+                line = nbsr.readline(1)
+            except:
+                #print( "Exception in NonBlockingStreamReader readline")
+                #traceback.print_exc()
+                line = 'Exception'
+                break
+
+            if not line:
+                #self.log_line( 'No more data' )
+                break
+            # 3.1
+            try:
+                # TODO: Investigate previous eroneous statement.
+                # self.log_line(str(line, encoding='utf-8'))
+                self.log_line(str(line))
+            # 2.6
+            except:
+                self.log_line(line)
+                #print( "while loop log line" )
+
+    def _collectOuputNBSR(self, nbsr, process_stdout, process):
+        try:
+            nbsr = NonBlockingStreamReader(process_stdout)
+            i = 0
+            while process.poll() is None:
+                try:
+                    line = nbsr.readline(30.0) # x secs to let the shell output the result
+                except:
+                    #print( "Exception in NonBlockingStreamReader readline")
+                    line = 'Exception'
+
+                if not line:
+                    self.log_line( '%d readline iteration - No more data' % i )
+                    i += 1
+                else:
+                    self.log_line( line )
+
+            self._collectOuputNBSRFinish(nbsr, process_stdout)
+
+        except:
+            self.log_line('Logging error - info : %s' % sys.exc_info()[0])
+            #self.log_line('Logging error - line : %s' % line)
+
+        self.status = process.returncode
+
+        if not self.non_blocking:
+            self._processFinish(process_stdout)
+
+    def _collectOuputBlocking(self, process_stdout, process):
+        try:
+            # This is more proper python, and resolves some issues with
+            # a process ending before all of its output has been
+            # processed, but it also seems to stall when the read
+            # buffer is near or over its limit. This happens
+            # relatively frequently with processes that generate lots
+            # of print statements.
+            for line in process_stdout:
+                #print( "%s - for loop log line" % str(datetime.datetime.now()) )
+                self.log_line(line)
+
+            # So we go with the, um, uglier option below.
+
+            # This is now used to ensure that the process has finished.
+            #line = ''
+            while line is not None: # and process.poll() is None:
+                #print( "final while loop log" )
+                try:
+                    line = process_stdout.readline()
+                except:
+                    break
+
+                # 3.1
+                try:
+                    # TODO: Investigate previous eroneous statement.
+                    # self.log_line(str(line, encoding='utf-8'))
+                    self.log_line(str(line))
+                # 2.6
+                except:
+                    self.log_line(line)
+                    #print( "while loop log line" )
+        except:
+            self.log_line('Logging error - info : %s' % sys.exc_info()[0])
+            #self.log_line('Logging error - line : %s' % line)
+
+        self.status = process.returncode
+
+        if self.batch_wrapper and tmp_wrapper:
+            try:
+                os.remove(tmp_wrapper)
+            except:
+                print(
+                    'Couldn\'t remove temp wrapper : %s' % tmp_wrapper)
+                traceback.print_exc()
+
+        self._processFinish(process_stdout)
+
+    def _collectOuputPopen4(self, process_stdout, process_stdin):
+        exit_code = -1
+        try:
+            stdout_lines = process_stdout.readlines()
+            # TODO: Investigate if this is the good behavior, close() does
+            # not return anything / None.
+            exit_code = process_stdout.close()
+
+            process_stdout.close()
+            process_stdout.close()
+
+            if self.env:
+                os.environ = parentenv
+            if self.cwd:
+                os.chdir(parentcwd)
+
+            if len(stdout_lines) > 0:
+                for line in stdout_lines:
+                    self.log_line(line)
+
+            if not exit_code:
+                exit_code = 0
+        except:
+            self.log_line('Logging error - info : %s' % sys.exc_info()[0])
+            #self.log_line('Logging error - line : %s' % line)
+
+        self.status = exit_code
+
+        self.__processFinish(process_stdout)
+
+    def _collectOutput(self, process_stdout, process_stdin, process=None, nbsr=None):
         # Using *subprocess*
         if sp:
-            if process is not None:
-                #pid = process.pid
-                #log.log_line('process id %s\n' % pid)
-
-                try:
-                    #
-                    # Experimental
-                    #
-                    if True:
-                        nbsr = NonBlockingStreamReader(process.stdout)
-                        i = 0
-                        while process.poll() is None:
-                            try:
-                                line = nbsr.readline(30.0) # x secs to let the shell output the result
-                            except:
-                                print( "Exception in NonBlockingStreamReader readline")
-                                line = 'Exception'
-
-                            if not line:
-                                #self.log_line( '%d readline iteration - No more data' % i )
-                                i += 1
-                            else:
-                                #print( "%d - while loop log - %s" % (i, line) )
-                                self.log_line( line )
-                    else:
-                        # This is more proper python, and resolves some issues with
-                        # a process ending before all of its output has been
-                        # processed, but it also seems to stall when the read
-                        # buffer is near or over its limit. This happens
-                        # relatively frequently with processes that generate lots
-                        # of print statements.
-                        for line in process.stdout:
-                            #print( "%s - for loop log line" % str(datetime.datetime.now()) )
-                            self.log_line(line)
-
-                    # So we go with the, um, uglier option below.
-
-                    # This is now used to ensure that the process has finished.
-                    line = ''
-                    while line is not None and process.poll() is None:
-                        #print( "final while loop log" )
-                        if True:
-                            try:
-                                line = nbsr.readline(1.0)
-                            except:
-                                print( "Exception in NonBlockingStreamReader readline")
-                                line = 'Exception'
-                                break
-
-                            if not line:
-                                #self.log_line( 'No more data' )
-                                break
-                        else:
-                            try:
-                                line = process.stdout.readline()
-                            except:
-                                break
-                        # 3.1
-                        try:
-                            # TODO: Investigate previous eroneous statement.
-                            # self.log_line(str(line, encoding='utf-8'))
-                            self.log_line(str(line))
-                        # 2.6
-                        except:
-                            self.log_line(line)
-                            #print( "while loop log line" )
-                except:
-                    self.log_line('Logging error - info : %s' % sys.exc_info()[0])
-                    #self.log_line('Logging error - line : %s' % line)
-
-                self.status = process.returncode
-
-                if self.batch_wrapper and tmp_wrapper:
-                    try:
-                        os.remove(tmp_wrapper)
-                    except:
-                        print(
-                            'Couldn\'t remove temp wrapper : %s' % tmp_wrapper)
-                        traceback.print_exc()
+            if process_stdout is not None:
+                if self.use_non_blocking_stream_reader:
+                    self._collectOuputNBSR(nbsr, process_stdout, process)
+                else:
+                    self._collectOuputBlocking(process_stdout, process)
 
         # Using *os.popen4*.
         else:
-            exit_code = -1
-            try:
-                stdout_lines = stdout.readlines()
-                # TODO: Investigate if this is the good behavior, close() does
-                # not return anything / None.
-                exit_code = stdout.close()
-
-                stdout.close()
-                stdin.close()
-
-                if self.env:
-                    os.environ = parentenv
-                if self.cwd:
-                    os.chdir(parentcwd)
-
-                if len(stdout_lines) > 0:
-                    for line in stdout_lines:
-                        self.log_line(line)
-
-                if not exit_code:
-                    exit_code = 0
-            except:
-                self.log_line('Logging error - info : %s' % sys.exc_info()[0])
-                #self.log_line('Logging error - line : %s' % line)
-
-            self.status = exit_code
-
-        self.end = datetime.datetime.now()
-
+            self.__collectOuputPopen4(process_stdout, process_stdin)
 
 class ProcessList(Process):
     """
@@ -764,9 +840,8 @@ class ProcessList(Process):
              Return value description.
         """
 
-        import datetime
-
         self.start = datetime.datetime.now()
+        self.log = []
 
         self.status = 0
         if self.processes:
@@ -803,8 +878,6 @@ def main():
     type
          Return value description.
     """
-
-    import optparse
 
     p = optparse.OptionParser(description='A process logging script',
                               prog='process',
