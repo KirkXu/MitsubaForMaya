@@ -160,7 +160,7 @@ def RotateElement(axis, angle):
     return SceneElement('rotate', { axis:str(1), 'angle':str(angle) } )
 
 def TranslateElement(x, y, z):
-    return SceneElement('translate', { axis:str(1), 'angle':str(angle) } )
+    return SceneElement('translate', { 'x':str(x), 'y':str(y), 'z':str(z) } )
 
 def Scale2Element(x, y):
     return SceneElement('scale', { 'x':x, 'y':y } )
