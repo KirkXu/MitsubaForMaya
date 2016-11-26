@@ -106,8 +106,17 @@ def initializePlugin(mobject):
     try:
         if not cmds.pluginInfo( "objExport", query=True, loaded=True ):
             cmds.loadPlugin( "objExport" )
+        print( "%s - Loaded plugin       : %s" % (kPluginName, 'objExport'))
     except:
             sys.stderr.write( "Failed to load objExport plugin\n" )
+            raise
+
+    try:
+        if not cmds.pluginInfo( "OpenEXRLoader", query=True, loaded=True ):
+            cmds.loadPlugin( "OpenEXRLoader" )
+        print( "%s - Loaded plugin       : %s" % (kPluginName, 'OpenEXRLoader'))
+    except:
+            sys.stderr.write( "Failed to load OpenEXRLoader plugin\n" )
             raise
 
     # Register general nodes
