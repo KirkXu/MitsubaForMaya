@@ -1246,7 +1246,7 @@ def createRenderSettingsUI():
         cmds.optionMenu(sensorOverrideMenu, edit=True, value=existingSensorOverride)
         sensorOverride = existingSensorOverride
     else:
-        cmds.optionMenu(samplerMenu, edit=True, select=1)
+        cmds.optionMenu(sensorOverrideMenu, edit=True, select=1)
         sensorOverride = "None"
 
     changeSensorOverride(sensorOverride)
