@@ -34,7 +34,7 @@
 
 	<emitter type="sunsky">
 		<float name="turbidity" value="3.0"/>
-		<srgb name="albedo" value="0.15000000596 0.15000000596 0.15000000596"/>
+		<rgb name="albedo" value="0.0154 0.0154 0.0154"/>
 		<integer name="year" value="2010"/>
 		<integer name="month" value="7"/>
 		<integer name="day" value="10"/>

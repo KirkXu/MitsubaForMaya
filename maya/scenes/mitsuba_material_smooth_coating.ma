@@ -238,7 +238,7 @@ createNode materialInfo -n "materialInfo25";
 	rename -uid "EC693535-2743-B30C-BC87-098B1B72ABE8";
 createNode MitsubaRoughPlasticShader -n "MitsubaRoughPlasticShader2";
 	rename -uid "8EE20751-0E42-B53A-5EFB-1AAE56D3879C";
-	setAttr ".dr" -type "float3" 0.62937063 0.62937063 0.62937063 ;
+	setAttr ".dr" -type "float3" 0.36060 0.36060 0.36060 ;
 	setAttr ".a" 0.30000001192092896;
 createNode shadingEngine -n "MitsubaRoughPlasticShader2SG";
 	rename -uid "1FC4403B-174B-E004-2A6B-798BF1DBE935";

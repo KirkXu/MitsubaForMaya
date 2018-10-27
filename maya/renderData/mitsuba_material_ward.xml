@@ -15,7 +15,7 @@
 			<lookat origin="0.0 4.25 -45.0" target="-5.158373421e-15 -0.177128654616 -2.87868449425" up="-1.28010447961e-17 0.994521895368 0.104528463268"/>
 		</transform>
 		<sampler type="independent">
-			<integer name="sampleCount" value="4096"/>
+			<integer name="sampleCount" value="1"/>
 		</sampler>
 		<film type="ldrfilm">
 			<string name="fileFormat" value="jpeg"/>
@@ -34,7 +34,7 @@
 
 	<emitter type="sunsky">
 		<float name="turbidity" value="3.0"/>
-		<srgb name="albedo" value="0.15000000596 0.15000000596 0.15000000596"/>
+		<rgb name="albedo" value="0.0154 0.0154 0.0154"/>
 		<integer name="year" value="2010"/>
 		<integer name="month" value="7"/>
 		<integer name="day" value="10"/>
@@ -56,8 +56,8 @@
 			<string name="variant" value="ward-duer"/>
 			<float name="alphaU" value="0.10000000149"/>
 			<float name="alphaV" value="0.300000011921"/>
-			<srgb name="diffuseReflectance" value="0.5 0.5 0.5"/>
-			<srgb name="specularReflectance" value="0.20000000298 0.20000000298 0.20000000298"/>
+			<rgb name="diffuseReflectance" value="0.214036867023 0.214036867023 0.214036867023"/>
+			<rgb name="specularReflectance" value="0.0289910007268 0.0289910007268 0.0289910007268"/>
 		</bsdf>
 	</bsdf>
 
@@ -65,20 +65,20 @@
 		<bsdf type="conductor">
 			<string name="material" value="none"/>
 			<float name="extEta" value="1.0"/>
-			<srgb name="specularReflectance" value="1.0 1.0 1.0"/>
+			<rgb name="specularReflectance" value="1.0 1.0 1.0"/>
 		</bsdf>
 	</bsdf>
 
 	<bsdf type="twosided" id="MitsubaDiffuseShader1">
 		<bsdf type="diffuse">
-			<srgb name="reflectance" value="0.5 0.5 0.5"/>
+			<rgb name="reflectance" value="0.214036867023 0.214036867023 0.214036867023"/>
 		</bsdf>
 	</bsdf>
 
 	<bsdf type="twosided" id="MitsubaRoughPlasticShader1">
 		<bsdf type="roughplastic">
-			<srgb name="specularReflectance" value="1.0 1.0 1.0"/>
-			<srgb name="diffuseReflectance" value="0.5 0.5 0.5"/>
+			<rgb name="specularReflectance" value="1.0 1.0 1.0"/>
+			<rgb name="diffuseReflectance" value="0.214036867023 0.214036867023 0.214036867023"/>
 			<string name="distribution" value="beckmann"/>
 			<float name="alpha" value="0.20000000298"/>
 			<string name="intIOR" value="polypropylene"/>
@@ -92,43 +92,43 @@
 			<string name="variant" value="balanced"/>
 			<float name="alphaU" value="0.20000000298"/>
 			<float name="alphaV" value="0.20000000298"/>
-			<srgb name="diffuseReflectance" value="0.5 0.5 0.5"/>
-			<srgb name="specularReflectance" value="0.20000000298 0.20000000298 0.20000000298"/>
+			<rgb name="diffuseReflectance" value="0.214036867023 0.214036867023 0.214036867023"/>
+			<rgb name="specularReflectance" value="0.0289910007268 0.0289910007268 0.0289910007268"/>
 		</bsdf>
 	</bsdf>
 
 	<shape type="obj">
-		<string name="filename" value="__Geometry__MitsubaSphere__Geometry__Mesh.obj"/>
+		<string name="filename" value="/work/client/hpd/code/MitsubaForMaya/hpd/MitsubaForMaya/maya/renderData/__Geometry__MitsubaSphere__Geometry__Mesh.obj"/>
 		<ref id="MitsubaWardShader1"/>
 	</shape>
 
 	<shape type="obj">
-		<string name="filename" value="__Geometry__MitsubaSphere__Geometry__Mesh1.obj"/>
+		<string name="filename" value="/work/client/hpd/code/MitsubaForMaya/hpd/MitsubaForMaya/maya/renderData/__Geometry__MitsubaSphere__Geometry__Mesh1.obj"/>
 		<ref id="MitsubaWardShader1"/>
 	</shape>
 
 	<shape type="obj">
-		<string name="filename" value="__referenceSpheres__chromeSphere.obj"/>
+		<string name="filename" value="/work/client/hpd/code/MitsubaForMaya/hpd/MitsubaForMaya/maya/renderData/__referenceSpheres__chromeSphere.obj"/>
 		<ref id="MitsubaConductorShader1"/>
 	</shape>
 
 	<shape type="obj">
-		<string name="filename" value="__referenceSpheres__diffuseSphere.obj"/>
+		<string name="filename" value="/work/client/hpd/code/MitsubaForMaya/hpd/MitsubaForMaya/maya/renderData/__referenceSpheres__diffuseSphere.obj"/>
 		<ref id="MitsubaDiffuseShader1"/>
 	</shape>
 
 	<shape type="obj">
-		<string name="filename" value="__referenceSpheres__glossySphere.obj"/>
+		<string name="filename" value="/work/client/hpd/code/MitsubaForMaya/hpd/MitsubaForMaya/maya/renderData/__referenceSpheres__glossySphere.obj"/>
 		<ref id="MitsubaRoughPlasticShader1"/>
 	</shape>
 
 	<shape type="obj">
-		<string name="filename" value="__ground.obj"/>
+		<string name="filename" value="/work/client/hpd/code/MitsubaForMaya/hpd/MitsubaForMaya/maya/renderData/__ground.obj"/>
 		<ref id="MitsubaDiffuseShader1"/>
 	</shape>
 
 	<shape type="obj">
-		<string name="filename" value="__materialSphere.obj"/>
+		<string name="filename" value="/work/client/hpd/code/MitsubaForMaya/hpd/MitsubaForMaya/maya/renderData/__materialSphere.obj"/>
 		<ref id="MitsubaWardShader2"/>
 	</shape>
 

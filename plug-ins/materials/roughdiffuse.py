@@ -45,7 +45,7 @@ def nodeInitializer():
         nAttr.setStorable(1)
         nAttr.setReadable(1)
         nAttr.setWritable(1)
-        nAttr.setDefault(0.5,0.5,0.5)
+        nAttr.setDefault(0.18,0.18,0.18)
 
         roughdiffuse.mAlpha = nAttr.create("alpha","a", OpenMaya.MFnNumericData.kFloat, 0.2)
         nAttr.setKeyable(1) 

@@ -76,14 +76,14 @@ def nodeInitializer():
         nAttr.setStorable(1)
         nAttr.setReadable(1)
         nAttr.setWritable(1)
-        nAttr.setDefault(0.2,0.2,0.2)
+        nAttr.setDefault(0.03,0.03,0.03)
 
         ward.mDiffuse = nAttr.createColor("diffuseReflectance","dr")
         nAttr.setKeyable(1) 
         nAttr.setStorable(1)
         nAttr.setReadable(1)
         nAttr.setWritable(1)
-        nAttr.setDefault(.5,.5,.5)
+        nAttr.setDefault(.18,.18,.18)
 
 
 
