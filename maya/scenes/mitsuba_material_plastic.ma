@@ -221,6 +221,7 @@ createNode nodeGraphEditorInfo -n "hyperShadePrimaryNodeEditorSavedTabsInfo1";
 	setAttr ".tgi[0].ni[0].nvs" 2098;
 createNode MitsubaPlasticShader -n "MitsubaPlasticShader1";
 	rename -uid "C3181AE8-B241-4C6B-09A9-759381BF4AC5";
+	setAttr ".dr" -type "float3" 0.21403687 0.21403687 0.21403687 ;
 createNode shadingEngine -n "MitsubaPlasticShader1SG";
 	rename -uid "394BF96E-8142-AE3E-8C90-5A9523E82C66";
 	setAttr ".ihi" 0;

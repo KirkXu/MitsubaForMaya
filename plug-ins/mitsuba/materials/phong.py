@@ -47,14 +47,14 @@ def nodeInitializer():
         nAttr.setStorable(1)
         nAttr.setReadable(1)
         nAttr.setWritable(1)
-        nAttr.setDefault(0.2,0.2,0.2)
+        nAttr.setDefault(0.03,0.03,0.03)
 
         phong.mDiffuse = nAttr.createColor("diffuseReflectance","dr")
         nAttr.setKeyable(1) 
         nAttr.setStorable(1)
         nAttr.setReadable(1)
         nAttr.setWritable(1)
-        nAttr.setDefault(.5,.5,.5)
+        nAttr.setDefault(.18,.18,.18)
 
         phong.mExponent = nAttr.create("exponent","exp", OpenMaya.MFnNumericData.kFloat, 30.0)
         nAttr.setKeyable(1) 

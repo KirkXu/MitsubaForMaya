@@ -147,6 +147,7 @@ createNode materialInfo -n "materialInfo24";
 	rename -uid "4A889C43-D844-AB65-ED64-E3ACA1AC36D4";
 createNode MitsubaDiffuseShader -n "MitsubaDiffuseShader2";
 	rename -uid "A4E30F1B-7841-9CFD-7FF6-93A15833C02A";
+	setAttr ".r" -type "float3" 0.21403687 0.21403687 0.21403687 ;
 createNode shadingEngine -n "MitsubaDiffuseShader2SG";
 	rename -uid "B2B5E963-D54F-5B4C-F634-ACA200F44F8A";
 	setAttr ".ihi" 0;

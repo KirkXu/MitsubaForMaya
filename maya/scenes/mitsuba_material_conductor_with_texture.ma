@@ -1,6 +1,6 @@
 //Maya ASCII 2016 scene
-//Name: mitsuba_material_rough_plastic.ma
-//Last modified: Sat, Jan 30, 2016 06:29:13 PM
+//Name: mitsuba_material_conductor_with_texture.ma
+//Last modified: Sat, Jan 30, 2016 08:04:36 PM
 //Codeset: UTF-8
 file -rdi 1 -ns ":" -rfn "mitsuba_material_demo_baseRN" -op "v=0;" -typ "mayaAscii"
 		 "mitsuba_material_demo_base.ma";
@@ -8,9 +8,8 @@ file -rdi 2 -ns "Geometry" -rfn "GeometryRN" -op "v=0;" -typ "mayaAscii" "Mitsub
 file -r -ns ":" -dr 1 -rfn "mitsuba_material_demo_baseRN" -op "v=0;" -typ "mayaAscii"
 		 "mitsuba_material_demo_base.ma";
 requires maya "2016";
-requires -nodeType "MitsubaRenderSettings" -nodeType "MitsubaRoughPlasticShader"
-		 "MitsubaForMaya.py" "Unknown";
-requires "stereoCamera" "10.0";
+requires -nodeType "MitsubaRenderSettings" -nodeType "MitsubaConductorShader" -nodeType "MitsubaDiffuseShader"
+		 -nodeType "MitsubaObjectAreaLightShader" "MitsubaForMaya.py" "Unknown";
 requires "stereoCamera" "10.0";
 requires "OpenEXRLoader" "2012";
 currentUnit -l centimeter -a degree -t film;
@@ -18,14 +17,14 @@ fileInfo "application" "maya";
 fileInfo "product" "Maya 2016";
 fileInfo "version" "2016";
 fileInfo "cutIdentifier" "201510022200-973226";
-fileInfo "osv" "Mac OS X 10.9.5";
+fileInfo "osv" "Mac OS X 10.9.6";
 createNode transform -s -n "persp";
-	rename -uid "94ABF0EB-6842-39C2-2D8B-E995ADDB3BB6";
+	rename -uid "CB359780-DA4C-584D-515C-0198249C7281";
 	setAttr ".v" no;
-	setAttr ".t" -type "double3" 28 21 28 ;
-	setAttr ".r" -type "double3" -27.938352729602379 44.999999999999972 -5.172681101354183e-14 ;
+	setAttr ".t" -type "double3" 44.13572191478324 4.9483176223021745 -6.0458418578131656 ;
+	setAttr ".r" -type "double3" -6.3383527296367612 97.799999999993119 0 ;
 createNode camera -s -n "perspShape" -p "persp";
-	rename -uid "9719538A-ED42-079D-AC3D-81AD7905B42F";
+	rename -uid "A8266922-194A-CCE0-9973-B88B871FBBEF";
 	setAttr -k off ".v" no;
 	setAttr ".rnd" no;
 	setAttr ".fl" 34.999999999999986;
@@ -35,12 +34,12 @@ createNode camera -s -n "perspShape" -p "persp";
 	setAttr ".man" -type "string" "persp_mask";
 	setAttr ".hc" -type "string" "viewSet -p %camera";
 createNode transform -s -n "top";
-	rename -uid "46E9850E-F643-E757-AF6C-8E86F1617459";
+	rename -uid "35D0F7CA-214C-2E71-6756-E29A00BA8589";
 	setAttr ".v" no;
 	setAttr ".t" -type "double3" 0 100.1 0 ;
 	setAttr ".r" -type "double3" -89.999999999999986 0 0 ;
 createNode camera -s -n "topShape" -p "top";
-	rename -uid "0FAC884B-9A40-BDE9-04AD-B988CDDDA743";
+	rename -uid "7B00B10C-B647-1893-D50C-F38F51BF5679";
 	setAttr -k off ".v" no;
 	setAttr ".rnd" no;
 	setAttr ".coi" 100.1;
@@ -51,11 +50,11 @@ createNode camera -s -n "topShape" -p "top";
 	setAttr ".hc" -type "string" "viewSet -t %camera";
 	setAttr ".o" yes;
 createNode transform -s -n "front";
-	rename -uid "563169B3-EB46-5834-352F-9BBAB290A1EC";
+	rename -uid "E981DC27-2F49-7383-922F-A68FDFB9F700";
 	setAttr ".v" no;
 	setAttr ".t" -type "double3" 0 0 100.1 ;
 createNode camera -s -n "frontShape" -p "front";
-	rename -uid "95E47AFB-AB45-2944-2E9C-54B86F9260A9";
+	rename -uid "FFAC861B-994D-5CB8-ABC6-5EB1E41E6B58";
 	setAttr -k off ".v" no;
 	setAttr ".rnd" no;
 	setAttr ".coi" 100.1;
@@ -66,12 +65,12 @@ createNode camera -s -n "frontShape" -p "front";
 	setAttr ".hc" -type "string" "viewSet -f %camera";
 	setAttr ".o" yes;
 createNode transform -s -n "side";
-	rename -uid "26A60202-B545-9F51-02CC-17B2566A1BBE";
+	rename -uid "4C7742C9-D74A-5662-7033-439CA9C7989F";
 	setAttr ".v" no;
 	setAttr ".t" -type "double3" 100.1 0 0 ;
 	setAttr ".r" -type "double3" 0 89.999999999999986 0 ;
 createNode camera -s -n "sideShape" -p "side";
-	rename -uid "ACFB2DE5-254F-5BAE-FA53-1D96486B9574";
+	rename -uid "2781057F-2E49-F91C-D3AC-9284A7A8FF5B";
 	setAttr -k off ".v" no;
 	setAttr ".rnd" no;
 	setAttr ".coi" 100.1;
@@ -81,21 +80,87 @@ createNode camera -s -n "sideShape" -p "side";
 	setAttr ".man" -type "string" "side_mask";
 	setAttr ".hc" -type "string" "viewSet -s %camera";
 	setAttr ".o" yes;
+createNode transform -n "pPlane1";
+	rename -uid "48C5E1F6-A54E-7E62-D914-0FA0B25FA176";
+	setAttr ".t" -type "double3" 4 1 -5 ;
+	setAttr ".r" -type "double3" 75 180 0 ;
+	setAttr ".s" -type "double3" 6 6 6 ;
+createNode mesh -n "pPlaneShape1" -p "pPlane1";
+	rename -uid "2F6AC408-6E40-E08C-0A7A-F4B09A0E8662";
+	setAttr -k off ".v";
+	setAttr ".vir" yes;
+	setAttr ".vif" yes;
+	setAttr ".uvst[0].uvsn" -type "string" "map1";
+	setAttr ".cuvs" -type "string" "map1";
+	setAttr ".dcc" -type "string" "Ambient+Diffuse";
+	setAttr ".covm[0]"  0 1 1;
+	setAttr ".cdvm[0]"  0 1 1;
+createNode transform -n "pPlane2";
+	rename -uid "2104FEE6-1D40-E577-6A18-96916264AC70";
+	setAttr ".t" -type "double3" -4 1 -5 ;
+	setAttr ".r" -type "double3" 75 180 0 ;
+	setAttr ".s" -type "double3" 6 6 6 ;
+createNode mesh -n "pPlaneShape2" -p "pPlane2";
+	rename -uid "5ABF5C48-1E42-750A-39B0-C5B745D17B40";
+	setAttr -k off ".v";
+	setAttr ".vir" yes;
+	setAttr ".vif" yes;
+	setAttr ".uvst[0].uvsn" -type "string" "map1";
+	setAttr -s 16 ".uvst[0].uvsp[0:15]" -type "float2" 0 0 0.33333334 0
+		 0.66666669 0 1 0 0 0.33333334 0.33333334 0.33333334 0.66666669 0.33333334 1 0.33333334
+		 0 0.66666669 0.33333334 0.66666669 0.66666669 0.66666669 1 0.66666669 0 1 0.33333334
+		 1 0.66666669 1 1 1;
+	setAttr ".cuvs" -type "string" "map1";
+	setAttr ".dcc" -type "string" "Ambient+Diffuse";
+	setAttr ".covm[0]"  0 1 1;
+	setAttr ".cdvm[0]"  0 1 1;
+	setAttr -s 16 ".vt[0:15]"  -0.5 -1.110223e-16 0.5 -0.16666666 -1.110223e-16 0.5
+		 0.16666669 -1.110223e-16 0.5 0.5 -1.110223e-16 0.5 -0.5 -3.7007432e-17 0.16666666
+		 -0.16666666 -3.7007432e-17 0.16666666 0.16666669 -3.7007432e-17 0.16666666 0.5 -3.7007432e-17 0.16666666
+		 -0.5 3.7007439e-17 -0.16666669 -0.16666666 3.7007439e-17 -0.16666669 0.16666669 3.7007439e-17 -0.16666669
+		 0.5 3.7007439e-17 -0.16666669 -0.5 1.110223e-16 -0.5 -0.16666666 1.110223e-16 -0.5
+		 0.16666669 1.110223e-16 -0.5 0.5 1.110223e-16 -0.5;
+	setAttr -s 24 ".ed[0:23]"  0 1 0 0 4 0 1 2 0 1 5 1 2 3 0 2 6 1 3 7 0
+		 4 5 1 4 8 0 5 6 1 5 9 1 6 7 1 6 10 1 7 11 0 8 9 1 8 12 0 9 10 1 9 13 1 10 11 1 10 14 1
+		 11 15 0 12 13 0 13 14 0 14 15 0;
+	setAttr -s 9 -ch 36 ".fc[0:8]" -type "polyFaces" 
+		f 4 0 3 -8 -2
+		mu 0 4 0 1 5 4
+		f 4 2 5 -10 -4
+		mu 0 4 1 2 6 5
+		f 4 4 6 -12 -6
+		mu 0 4 2 3 7 6
+		f 4 7 10 -15 -9
+		mu 0 4 4 5 9 8
+		f 4 9 12 -17 -11
+		mu 0 4 5 6 10 9
+		f 4 11 13 -19 -13
+		mu 0 4 6 7 11 10
+		f 4 14 17 -22 -16
+		mu 0 4 8 9 13 12
+		f 4 16 19 -23 -18
+		mu 0 4 9 10 14 13
+		f 4 18 20 -24 -20
+		mu 0 4 10 11 15 14;
+	setAttr ".cd" -type "dataPolyComponent" Index_Data Edge 0 ;
+	setAttr ".cvd" -type "dataPolyComponent" Index_Data Vertex 0 ;
+	setAttr ".pd[0]" -type "dataPolyComponent" Index_Data UV 0 ;
+	setAttr ".hfd" -type "dataPolyComponent" Index_Data Face 0 ;
 createNode lightLinker -s -n "lightLinker1";
-	rename -uid "EC7D8D01-144B-EFEB-90DC-38BBA75E73B5";
-	setAttr -s 7 ".lnk";
-	setAttr -s 7 ".slnk";
+	rename -uid "5D421620-3E40-128A-BE94-248CE6BB9574";
+	setAttr -s 10 ".lnk";
+	setAttr -s 10 ".slnk";
 createNode displayLayerManager -n "layerManager";
-	rename -uid "C7C694FA-0640-256C-1807-66BBFAF10549";
+	rename -uid "10DE0E53-D44C-35CD-D100-309A9B408DF5";
 createNode displayLayer -n "defaultLayer";
-	rename -uid "96763AA2-1C48-F5C5-AA0D-6CA9D3EE6BCA";
+	rename -uid "2A74B7C9-F849-EB6F-7FD1-2C88EF3D1386";
 createNode renderLayerManager -n "renderLayerManager";
-	rename -uid "E5B7719C-AC45-2805-7CDC-259522C6E34D";
+	rename -uid "C7738C83-4F45-272F-E3EB-08A44B75658C";
 createNode renderLayer -n "defaultRenderLayer";
-	rename -uid "671B9B72-5449-8D73-5438-5B9ADF20D558";
+	rename -uid "2349433B-074F-E97D-27FD-94B6772757C3";
 	setAttr ".g" yes;
 createNode reference -n "mitsuba_material_demo_baseRN";
-	rename -uid "480199B2-E14B-C16D-D12B-7D9383B0D366";
+	rename -uid "01EFF350-3E4C-C13F-CF1B-4BA3F0BED4B9";
 	setAttr -s 3 ".phl";
 	setAttr ".phl[1]" 0;
 	setAttr ".phl[2]" 0;
@@ -104,12 +169,15 @@ createNode reference -n "mitsuba_material_demo_baseRN";
 		"mitsuba_material_demo_baseRN"
 		"mitsuba_material_demo_baseRN" 0
 		"GeometryRN" 0
-		"mitsuba_material_demo_baseRN" 5
+		"mitsuba_material_demo_baseRN" 7
 		2 "|referenceCamera1|referenceCamera1Shape" "displayGateMask" " 1"
 		2 "|referenceCamera1|referenceCamera1Shape" "displayFilmGate" " 1"
 		2 "|referenceCamera1|referenceCamera1Shape" "displayResolution" " 0"
+		2 "MitsubaSunsky1" "visibility" " 1"
 		3 "|materialSphere|materialSphereShape.instObjGroups" "MitsubaRoughPlasticShader1SG.dagSetMembers" 
 		"-na"
+		3 ":particleCloud1.message" "hyperShadePrimaryNodeEditorSavedTabsInfo.tabGraphInfo[0].nodeInfo[0].dependNode" 
+		""
 		5 3 "mitsuba_material_demo_baseRN" "|materialSphere|materialSphereShape.instObjGroups" 
 		"mitsuba_material_demo_baseRN.placeHolderList[3]" "MitsubaRoughPlasticShader1SG.dsm"
 		
@@ -131,30 +199,27 @@ createNode MitsubaRenderSettings -s -n "defaultMitsubaRenderGlobals";
 	setAttr ".kt" yes;
 	setAttr ".fm" -type "string" "LDR Film";
 	setAttr ".flff" -type "string" "JPEG (.jpg)";
-createNode MitsubaRoughPlasticShader -n "MitsubaRoughPlasticShader2";
-	rename -uid "676E6878-BA46-E563-3426-059ADDB381B9";
-	setAttr ".dr" -type "float3" 0.21403687 0.21403687 0.21403687 ;
-	setAttr ".dist" 1;
-	setAttr ".a" 0.20000000298023224;
-createNode shadingEngine -n "MitsubaRoughPlasticShader2SG";
-	rename -uid "2928B35A-0848-5D21-BEDF-64A7FD7CB285";
+createNode MitsubaConductorShader -n "MitsubaConductorShader2";
+	rename -uid "D3412C0E-FB4D-7412-5028-89836AE00C2B";
+	setAttr ".mat" 10;
+createNode shadingEngine -n "MitsubaConductorShader2SG";
+	rename -uid "659AB645-7D4F-4FE6-644A-E5BB39D1F073";
 	setAttr ".ihi" 0;
 	setAttr -s 2 ".dsm";
 	setAttr ".ro" yes;
 createNode materialInfo -n "materialInfo23";
-	rename -uid "E9560980-DC43-2F04-DB6E-519365654415";
-createNode MitsubaRoughPlasticShader -n "MitsubaRoughPlasticShader3";
-	rename -uid "A35C4CD1-F547-EE49-9DBA-8FB38B4497E9";
-	setAttr ".dr" -type "float3" 0.21403687 0.21403687 0.21403687 ;
-	setAttr ".a" 0.30000001192092896;
-createNode shadingEngine -n "MitsubaRoughPlasticShader3SG";
-	rename -uid "D8157A10-594C-E2DB-7AC1-B6A5637F57B5";
+	rename -uid "73E1B91F-DB46-9A1A-6C14-768F4740B746";
+createNode MitsubaConductorShader -n "MitsubaConductorShader3";
+	rename -uid "2CA4D2EE-184A-F2D0-4A68-AAB4E9F25B08";
+	setAttr ".mat" 6;
+createNode shadingEngine -n "MitsubaConductorShader3SG";
+	rename -uid "16C6D3D5-3A4F-AB43-4A28-B497CE016145";
 	setAttr ".ihi" 0;
 	setAttr ".ro" yes;
 createNode materialInfo -n "materialInfo24";
-	rename -uid "0BC5A627-064D-D95E-F967-4D84DC014099";
+	rename -uid "333DBF9F-254E-F6A7-431E-8B9CDB6D4A07";
 createNode script -n "uiConfigurationScriptNode1";
-	rename -uid "3001F565-2E44-F02F-4645-9D98471A6E72";
+	rename -uid "DD078AF6-4B46-2248-B60B-838B6404A424";
 	setAttr ".b" -type "string" (
 		"// Maya Mel UI Configuration File.\n//\n//  This script is machine generated.  Edit at your own risk.\n//\n//\n\nglobal string $gMainPane;\nif (`paneLayout -exists $gMainPane`) {\n\n\tglobal int $gUseScenePanelConfig;\n\tint    $useSceneConfig = $gUseScenePanelConfig;\n\tint    $menusOkayInPanels = `optionVar -q allowMenusInPanels`;\tint    $nVisPanes = `paneLayout -q -nvp $gMainPane`;\n\tint    $nPanes = 0;\n\tstring $editorName;\n\tstring $panelName;\n\tstring $itemFilterName;\n\tstring $panelConfig;\n\n\t//\n\t//  get current state of the UI\n\t//\n\tsceneUIReplacement -update $gMainPane;\n\n\t$panelName = `sceneUIReplacement -getNextPanel \"modelPanel\" (localizedPanelLabel(\"Top View\")) `;\n\tif (\"\" == $panelName) {\n\t\tif ($useSceneConfig) {\n\t\t\t$panelName = `modelPanel -unParent -l (localizedPanelLabel(\"Top View\")) -mbv $menusOkayInPanels `;\n\t\t\t$editorName = $panelName;\n            modelEditor -e \n                -camera \"top\" \n                -useInteractiveMode 0\n                -displayLights \"default\" \n                -displayAppearance \"smoothShaded\" \n"
 		+ "                -activeOnly 0\n                -ignorePanZoom 0\n                -wireframeOnShaded 0\n                -headsUpDisplay 1\n                -holdOuts 1\n                -selectionHiliteDisplay 1\n                -useDefaultMaterial 0\n                -bufferMode \"double\" \n                -twoSidedLighting 0\n                -backfaceCulling 0\n                -xray 0\n                -jointXray 0\n                -activeComponentsXray 0\n                -displayTextures 0\n                -smoothWireframe 0\n                -lineWidth 1\n                -textureAnisotropic 0\n                -textureHilight 1\n                -textureSampling 2\n                -textureDisplay \"modulate\" \n                -textureMaxSize 16384\n                -fogging 0\n                -fogSource \"fragment\" \n                -fogMode \"linear\" \n                -fogStart 0\n                -fogEnd 100\n                -fogDensity 0.1\n                -fogColor 0.5 0.5 0.5 1 \n                -depthOfFieldPreview 1\n                -maxConstantTransparency 1\n"
@@ -228,9 +293,137 @@ createNode script -n "uiConfigurationScriptNode1";
 		+ "\t\t\t\t$configName;\n\n            setNamedPanelLayout (localizedPanelLabel(\"Current Layout\"));\n        }\n\n        panelHistory -e -clear mainPanelHistory;\n        setFocus `paneLayout -q -p1 $gMainPane`;\n        sceneUIReplacement -deleteRemaining;\n        sceneUIReplacement -clear;\n\t}\n\n\ngrid -spacing 5 -size 12 -divisions 5 -displayAxes yes -displayGridLines yes -displayDivisionLines yes -displayPerspectiveLabels no -displayOrthographicLabels no -displayAxesBold yes -perspectiveLabelPosition axis -orthographicLabelPosition edge;\nviewManip -drawCompass 0 -compassAngle 0 -frontParameters \"\" -homeParameters \"\" -selectionLockParameters \"\";\n}\n");
 	setAttr ".st" 3;
 createNode script -n "sceneConfigurationScriptNode1";
-	rename -uid "E4A027FB-1C4F-9DD3-E2A5-70A041D9977B";
+	rename -uid "BEEAFCDB-4143-92EC-BE32-0BA805BC3ACF";
 	setAttr ".b" -type "string" "playbackOptions -min 1 -max 120 -ast 1 -aet 200 ";
 	setAttr ".st" 6;
+createNode polyPlane -n "polyPlane1";
+	rename -uid "44D1C9ED-B749-419C-C2B9-29BF2EEBCA28";
+	setAttr ".sw" 3;
+	setAttr ".sh" 3;
+	setAttr ".cuv" 2;
+createNode MitsubaDiffuseShader -n "MitsubaDiffuseShader2";
+	rename -uid "1528A774-9C40-F377-BD5E-2794B0328C75";
+createNode shadingEngine -n "MitsubaDiffuseShader2SG";
+	rename -uid "38B7C354-434A-D51F-A9AE-9485BAA45FC8";
+	setAttr ".ihi" 0;
+	setAttr ".ro" yes;
+createNode materialInfo -n "materialInfo25";
+	rename -uid "D6951F86-FC46-CCA0-EB6C-8C8E26257522";
+createNode file -n "file1";
+	rename -uid "9803E527-C44E-B8E7-0125-2397D922C9D9";
+	setAttr ".ftn" -type "string" "sourceimages/projection_pattern.exr";
+	setAttr ".cs" -type "string" "sRGB";
+createNode place2dTexture -n "place2dTexture1";
+	rename -uid "E8FA0C05-734F-D879-EF47-528CD23D8C60";
+createNode shadingEngine -n "MitsubaDiffuseShader3SG";
+	rename -uid "528A256B-DE4C-EB59-5293-719BABFC3FAF";
+	setAttr ".ihi" 0;
+	setAttr ".ro" yes;
+createNode materialInfo -n "materialInfo26";
+	rename -uid "1894D99E-E145-50EA-DE0D-46A189B5E562";
+createNode file -n "file2";
+	rename -uid "D3FC04E6-3240-B53E-681C-C1B7AB7ACFF2";
+	setAttr ".ftn" -type "string" "sourceimages/cie.stdillum.D6500.spd";
+	setAttr ".cs" -type "string" "sRGB";
+createNode place2dTexture -n "place2dTexture2";
+	rename -uid "E1A636C4-EB4E-BACD-9568-70A936E6E935";
+createNode MitsubaObjectAreaLightShader -n "MitsubaObjectAreaLightShader1";
+	rename -uid "DFB8DC21-3846-166B-6583-8D8737977EF9";
+createNode shadingEngine -n "MitsubaObjectAreaLightShader1SG";
+	rename -uid "A7EF4668-854D-28C0-C286-1096CF39CC12";
+	setAttr ".ihi" 0;
+	setAttr ".ro" yes;
+createNode materialInfo -n "materialInfo27";
+	rename -uid "755A124F-9546-2961-E35A-C591325BF752";
+createNode file -n "file3";
+	rename -uid "9742140B-304D-9DC8-A3A8-4781A1D3FA45";
+	setAttr ".ftn" -type "string" "sourceimages/cie.stdillum.D6500.spd";
+	setAttr ".cs" -type "string" "sRGB";
+createNode place2dTexture -n "place2dTexture3";
+	rename -uid "CEF370DC-CE40-98D0-CEC0-9C9C8D77AFF4";
+createNode nodeGraphEditorInfo -n "hyperShadePrimaryNodeEditorSavedTabsInfo1";
+	rename -uid "B1EA0FC5-034F-3EA9-22B7-9CBD52C194E0";
+	setAttr ".tgi[0].tn" -type "string" "Untitled_1";
+	setAttr ".tgi[0].vl" -type "double2" 147.94854304293315 -1336.8323686565977 ;
+	setAttr ".tgi[0].vh" -type "double2" 848.08272350538596 166.95777770633609 ;
+	setAttr -s 5 ".tgi[0].ni";
+	setAttr ".tgi[0].ni[0].x" -28.538261413574219;
+	setAttr ".tgi[0].ni[0].y" -525.21636962890625;
+	setAttr ".tgi[0].ni[0].nvs" 1923;
+	setAttr ".tgi[0].ni[1].x" 837.14288330078125;
+	setAttr ".tgi[0].ni[1].y" -294.28570556640625;
+	setAttr ".tgi[0].ni[1].nvs" 1923;
+	setAttr ".tgi[0].ni[2].x" 232.89030456542969;
+	setAttr ".tgi[0].ni[2].y" -509.50204467773438;
+	setAttr ".tgi[0].ni[2].nvs" 1923;
+	setAttr ".tgi[0].ni[3].x" 514.57177734375;
+	setAttr ".tgi[0].ni[3].y" -488.9271240234375;
+	setAttr ".tgi[0].ni[3].nvs" 2178;
+	setAttr ".tgi[0].ni[4].x" 524.28570556640625;
+	setAttr ".tgi[0].ni[4].y" -284.28570556640625;
+	setAttr ".tgi[0].ni[4].nvs" 2098;
+createNode MitsubaDiffuseShader -n "MitsubaDiffuseShader3";
+	rename -uid "0F876E0C-634A-6214-F5BC-399729D845ED";
+createNode nodeGraphEditorInfo -n "hyperShadePrimaryNodeEditorSavedTabsInfo2";
+	rename -uid "8931D4D0-6A4C-B44C-F03F-BEB0897D1479";
+	setAttr ".tgi[0].tn" -type "string" "Untitled_1";
+	setAttr ".tgi[0].vl" -type "double2" -113.38480887930595 -658.17161367184917 ;
+	setAttr ".tgi[0].vh" -type "double2" 1147.4898696130429 278.62282617186406 ;
+	setAttr -s 8 ".tgi[0].ni";
+	setAttr ".tgi[0].ni[0].x" 524.28570556640625;
+	setAttr ".tgi[0].ni[0].y" -1.4285714626312256;
+	setAttr ".tgi[0].ni[0].nvs" 2098;
+	setAttr ".tgi[0].ni[1].x" -59.336471557617188;
+	setAttr ".tgi[0].ni[1].y" -75.248519897460938;
+	setAttr ".tgi[0].ni[1].nvs" 1923;
+	setAttr ".tgi[0].ni[2].x" 837.14288330078125;
+	setAttr ".tgi[0].ni[2].y" -11.428571701049805;
+	setAttr ".tgi[0].ni[2].nvs" 1923;
+	setAttr ".tgi[0].ni[3].x" 202.09210205078125;
+	setAttr ".tgi[0].ni[3].y" -59.534233093261719;
+	setAttr ".tgi[0].ni[3].nvs" 1923;
+	setAttr ".tgi[0].ni[4].x" 202.09210205078125;
+	setAttr ".tgi[0].ni[4].y" -59.534233093261719;
+	setAttr ".tgi[0].ni[4].nvs" 1923;
+	setAttr ".tgi[0].ni[5].x" 853.16943359375;
+	setAttr ".tgi[0].ni[5].y" -266.37008666992188;
+	setAttr ".tgi[0].ni[5].nvs" 1923;
+	setAttr ".tgi[0].ni[6].x" -59.336471557617188;
+	setAttr ".tgi[0].ni[6].y" -79.534233093261719;
+	setAttr ".tgi[0].ni[6].nvs" 1923;
+	setAttr ".tgi[0].ni[7].x" 538.5218505859375;
+	setAttr ".tgi[0].ni[7].y" -243.38020324707031;
+	setAttr ".tgi[0].ni[7].nvs" 2098;
+createNode nodeGraphEditorInfo -n "hyperShadePrimaryNodeEditorSavedTabsInfo3";
+	rename -uid "158C2B5C-6346-D4E5-ECA3-38B14B9E0057";
+	setAttr ".tgi[0].tn" -type "string" "Untitled_1";
+	setAttr ".tgi[0].vl" -type "double2" -113.38480887930595 -658.17161367184917 ;
+	setAttr ".tgi[0].vh" -type "double2" 1147.4898696130429 278.62282617186406 ;
+	setAttr -s 8 ".tgi[0].ni";
+	setAttr ".tgi[0].ni[0].x" 524.28570556640625;
+	setAttr ".tgi[0].ni[0].y" -1.4285714626312256;
+	setAttr ".tgi[0].ni[0].nvs" 2098;
+	setAttr ".tgi[0].ni[1].x" -59.336471557617188;
+	setAttr ".tgi[0].ni[1].y" -75.248519897460938;
+	setAttr ".tgi[0].ni[1].nvs" 1923;
+	setAttr ".tgi[0].ni[2].x" 837.14288330078125;
+	setAttr ".tgi[0].ni[2].y" -11.428571701049805;
+	setAttr ".tgi[0].ni[2].nvs" 1923;
+	setAttr ".tgi[0].ni[3].x" 202.09210205078125;
+	setAttr ".tgi[0].ni[3].y" -59.534233093261719;
+	setAttr ".tgi[0].ni[3].nvs" 1923;
+	setAttr ".tgi[0].ni[4].x" 202.09210205078125;
+	setAttr ".tgi[0].ni[4].y" -59.534233093261719;
+	setAttr ".tgi[0].ni[4].nvs" 1923;
+	setAttr ".tgi[0].ni[5].x" 853.16943359375;
+	setAttr ".tgi[0].ni[5].y" -266.37008666992188;
+	setAttr ".tgi[0].ni[5].nvs" 1923;
+	setAttr ".tgi[0].ni[6].x" -59.336471557617188;
+	setAttr ".tgi[0].ni[6].y" -79.534233093261719;
+	setAttr ".tgi[0].ni[6].nvs" 1923;
+	setAttr ".tgi[0].ni[7].x" 538.5218505859375;
+	setAttr ".tgi[0].ni[7].y" -243.38020324707031;
+	setAttr ".tgi[0].ni[7].nvs" 2098;
 select -ne :time1;
 	setAttr ".o" 1;
 	setAttr ".unw" 1;
@@ -241,15 +434,19 @@ select -ne :hardwareRenderingGlobals;
 		 0 0 0 0 ;
 	setAttr ".fprt" yes;
 select -ne :renderPartition;
-	setAttr -s 7 ".st";
+	setAttr -s 10 ".st";
 select -ne :renderGlobalsList1;
 select -ne :defaultShaderList1;
-	setAttr -s 9 ".s";
+	setAttr -s 12 ".s";
 select -ne :postProcessList1;
 	setAttr -s 2 ".p";
+select -ne :defaultRenderUtilityList1;
+	setAttr -s 3 ".u";
 select -ne :defaultRenderingList1;
 	setAttr -s 2 ".r";
 select -ne :lightList1;
+select -ne :defaultTextureList1;
+	setAttr -s 3 ".tx";
 select -ne :initialShadingGroup;
 	setAttr ".ro" yes;
 select -ne :initialParticleSE;
@@ -262,33 +459,176 @@ select -ne :defaultLightSet;
 select -ne :hardwareRenderGlobals;
 	setAttr ".ctrs" 256;
 	setAttr ".btrs" 512;
-connectAttr "mitsuba_material_demo_baseRN.phl[3]" "MitsubaRoughPlasticShader3SG.dsm"
+connectAttr "mitsuba_material_demo_baseRN.phl[3]" "MitsubaConductorShader3SG.dsm"
 		 -na;
-connectAttr "mitsuba_material_demo_baseRN.phl[1]" "MitsubaRoughPlasticShader2SG.dsm"
+connectAttr "mitsuba_material_demo_baseRN.phl[1]" "MitsubaConductorShader2SG.dsm"
 		 -na;
-connectAttr "mitsuba_material_demo_baseRN.phl[2]" "MitsubaRoughPlasticShader2SG.dsm"
+connectAttr "mitsuba_material_demo_baseRN.phl[2]" "MitsubaConductorShader2SG.dsm"
 		 -na;
+connectAttr "polyPlane1.out" "pPlaneShape1.i";
 relationship "link" ":lightLinker1" ":initialShadingGroup.message" ":defaultLightSet.message";
 relationship "link" ":lightLinker1" ":initialParticleSE.message" ":defaultLightSet.message";
-relationship "link" ":lightLinker1" "MitsubaRoughPlasticShader2SG.message" ":defaultLightSet.message";
-relationship "link" ":lightLinker1" "MitsubaRoughPlasticShader3SG.message" ":defaultLightSet.message";
+relationship "link" ":lightLinker1" "MitsubaConductorShader2SG.message" ":defaultLightSet.message";
+relationship "link" ":lightLinker1" "MitsubaConductorShader3SG.message" ":defaultLightSet.message";
+relationship "link" ":lightLinker1" "MitsubaDiffuseShader2SG.message" ":defaultLightSet.message";
+relationship "link" ":lightLinker1" "MitsubaDiffuseShader3SG.message" ":defaultLightSet.message";
+relationship "link" ":lightLinker1" "MitsubaObjectAreaLightShader1SG.message" ":defaultLightSet.message";
 relationship "shadowLink" ":lightLinker1" ":initialShadingGroup.message" ":defaultLightSet.message";
 relationship "shadowLink" ":lightLinker1" ":initialParticleSE.message" ":defaultLightSet.message";
-relationship "shadowLink" ":lightLinker1" "MitsubaRoughPlasticShader2SG.message" ":defaultLightSet.message";
-relationship "shadowLink" ":lightLinker1" "MitsubaRoughPlasticShader3SG.message" ":defaultLightSet.message";
+relationship "shadowLink" ":lightLinker1" "MitsubaConductorShader2SG.message" ":defaultLightSet.message";
+relationship "shadowLink" ":lightLinker1" "MitsubaConductorShader3SG.message" ":defaultLightSet.message";
+relationship "shadowLink" ":lightLinker1" "MitsubaDiffuseShader2SG.message" ":defaultLightSet.message";
+relationship "shadowLink" ":lightLinker1" "MitsubaDiffuseShader3SG.message" ":defaultLightSet.message";
+relationship "shadowLink" ":lightLinker1" "MitsubaObjectAreaLightShader1SG.message" ":defaultLightSet.message";
 connectAttr "layerManager.dli[0]" "defaultLayer.id";
 connectAttr "renderLayerManager.rlmi[0]" "defaultRenderLayer.rlid";
-connectAttr "MitsubaRoughPlasticShader2.oc" "MitsubaRoughPlasticShader2SG.ss";
-connectAttr "MitsubaRoughPlasticShader2SG.msg" "materialInfo23.sg";
-connectAttr "MitsubaRoughPlasticShader2.msg" "materialInfo23.m";
-connectAttr "MitsubaRoughPlasticShader2.msg" "materialInfo23.t" -na;
-connectAttr "MitsubaRoughPlasticShader3.oc" "MitsubaRoughPlasticShader3SG.ss";
-connectAttr "MitsubaRoughPlasticShader3SG.msg" "materialInfo24.sg";
-connectAttr "MitsubaRoughPlasticShader3.msg" "materialInfo24.m";
-connectAttr "MitsubaRoughPlasticShader3.msg" "materialInfo24.t" -na;
-connectAttr "MitsubaRoughPlasticShader2SG.pa" ":renderPartition.st" -na;
-connectAttr "MitsubaRoughPlasticShader3SG.pa" ":renderPartition.st" -na;
-connectAttr "MitsubaRoughPlasticShader2.msg" ":defaultShaderList1.s" -na;
-connectAttr "MitsubaRoughPlasticShader3.msg" ":defaultShaderList1.s" -na;
+connectAttr "MitsubaConductorShader2.oc" "MitsubaConductorShader2SG.ss";
+connectAttr "MitsubaConductorShader2SG.msg" "materialInfo23.sg";
+connectAttr "MitsubaConductorShader2.msg" "materialInfo23.m";
+connectAttr "MitsubaConductorShader2.msg" "materialInfo23.t" -na;
+connectAttr "MitsubaConductorShader3.oc" "MitsubaConductorShader3SG.ss";
+connectAttr "MitsubaConductorShader3SG.msg" "materialInfo24.sg";
+connectAttr "MitsubaConductorShader3.msg" "materialInfo24.m";
+connectAttr "MitsubaConductorShader3.msg" "materialInfo24.t" -na;
+connectAttr "file1.oc" "MitsubaDiffuseShader2.r";
+connectAttr "MitsubaDiffuseShader2.oc" "MitsubaDiffuseShader2SG.ss";
+connectAttr "pPlaneShape1.iog" "MitsubaDiffuseShader2SG.dsm" -na;
+connectAttr "MitsubaDiffuseShader2SG.msg" "materialInfo25.sg";
+connectAttr "MitsubaDiffuseShader2.msg" "materialInfo25.m";
+connectAttr "MitsubaDiffuseShader2.msg" "materialInfo25.t" -na;
+connectAttr ":defaultColorMgtGlobals.cme" "file1.cme";
+connectAttr ":defaultColorMgtGlobals.cfe" "file1.cmcf";
+connectAttr ":defaultColorMgtGlobals.cfp" "file1.cmcp";
+connectAttr ":defaultColorMgtGlobals.wsn" "file1.ws";
+connectAttr "place2dTexture1.c" "file1.c";
+connectAttr "place2dTexture1.tf" "file1.tf";
+connectAttr "place2dTexture1.rf" "file1.rf";
+connectAttr "place2dTexture1.mu" "file1.mu";
+connectAttr "place2dTexture1.mv" "file1.mv";
+connectAttr "place2dTexture1.s" "file1.s";
+connectAttr "place2dTexture1.wu" "file1.wu";
+connectAttr "place2dTexture1.wv" "file1.wv";
+connectAttr "place2dTexture1.re" "file1.re";
+connectAttr "place2dTexture1.of" "file1.of";
+connectAttr "place2dTexture1.r" "file1.ro";
+connectAttr "place2dTexture1.n" "file1.n";
+connectAttr "place2dTexture1.vt1" "file1.vt1";
+connectAttr "place2dTexture1.vt2" "file1.vt2";
+connectAttr "place2dTexture1.vt3" "file1.vt3";
+connectAttr "place2dTexture1.vc1" "file1.vc1";
+connectAttr "place2dTexture1.o" "file1.uv";
+connectAttr "place2dTexture1.ofs" "file1.fs";
+connectAttr "MitsubaDiffuseShader3.oc" "MitsubaDiffuseShader3SG.ss";
+connectAttr "pPlaneShape2.iog" "MitsubaDiffuseShader3SG.dsm" -na;
+connectAttr "MitsubaDiffuseShader3SG.msg" "materialInfo26.sg";
+connectAttr "MitsubaDiffuseShader3.msg" "materialInfo26.m";
+connectAttr "MitsubaDiffuseShader3.msg" "materialInfo26.t" -na;
+connectAttr ":defaultColorMgtGlobals.cme" "file2.cme";
+connectAttr ":defaultColorMgtGlobals.cfe" "file2.cmcf";
+connectAttr ":defaultColorMgtGlobals.cfp" "file2.cmcp";
+connectAttr ":defaultColorMgtGlobals.wsn" "file2.ws";
+connectAttr "place2dTexture2.c" "file2.c";
+connectAttr "place2dTexture2.tf" "file2.tf";
+connectAttr "place2dTexture2.rf" "file2.rf";
+connectAttr "place2dTexture2.mu" "file2.mu";
+connectAttr "place2dTexture2.mv" "file2.mv";
+connectAttr "place2dTexture2.s" "file2.s";
+connectAttr "place2dTexture2.wu" "file2.wu";
+connectAttr "place2dTexture2.wv" "file2.wv";
+connectAttr "place2dTexture2.re" "file2.re";
+connectAttr "place2dTexture2.of" "file2.of";
+connectAttr "place2dTexture2.r" "file2.ro";
+connectAttr "place2dTexture2.n" "file2.n";
+connectAttr "place2dTexture2.vt1" "file2.vt1";
+connectAttr "place2dTexture2.vt2" "file2.vt2";
+connectAttr "place2dTexture2.vt3" "file2.vt3";
+connectAttr "place2dTexture2.vc1" "file2.vc1";
+connectAttr "place2dTexture2.o" "file2.uv";
+connectAttr "place2dTexture2.ofs" "file2.fs";
+connectAttr "file3.oc" "MitsubaObjectAreaLightShader1.rd";
+connectAttr "MitsubaObjectAreaLightShader1.oc" "MitsubaObjectAreaLightShader1SG.ss"
+		;
+connectAttr "MitsubaObjectAreaLightShader1SG.msg" "materialInfo27.sg";
+connectAttr "MitsubaObjectAreaLightShader1.msg" "materialInfo27.m";
+connectAttr "MitsubaObjectAreaLightShader1.msg" "materialInfo27.t" -na;
+connectAttr ":defaultColorMgtGlobals.cme" "file3.cme";
+connectAttr ":defaultColorMgtGlobals.cfe" "file3.cmcf";
+connectAttr ":defaultColorMgtGlobals.cfp" "file3.cmcp";
+connectAttr ":defaultColorMgtGlobals.wsn" "file3.ws";
+connectAttr "place2dTexture3.c" "file3.c";
+connectAttr "place2dTexture3.tf" "file3.tf";
+connectAttr "place2dTexture3.rf" "file3.rf";
+connectAttr "place2dTexture3.mu" "file3.mu";
+connectAttr "place2dTexture3.mv" "file3.mv";
+connectAttr "place2dTexture3.s" "file3.s";
+connectAttr "place2dTexture3.wu" "file3.wu";
+connectAttr "place2dTexture3.wv" "file3.wv";
+connectAttr "place2dTexture3.re" "file3.re";
+connectAttr "place2dTexture3.of" "file3.of";
+connectAttr "place2dTexture3.r" "file3.ro";
+connectAttr "place2dTexture3.n" "file3.n";
+connectAttr "place2dTexture3.vt1" "file3.vt1";
+connectAttr "place2dTexture3.vt2" "file3.vt2";
+connectAttr "place2dTexture3.vt3" "file3.vt3";
+connectAttr "place2dTexture3.vc1" "file3.vc1";
+connectAttr "place2dTexture3.o" "file3.uv";
+connectAttr "place2dTexture3.ofs" "file3.fs";
+connectAttr "place2dTexture3.msg" "hyperShadePrimaryNodeEditorSavedTabsInfo1.tgi[0].ni[0].dn"
+		;
+connectAttr "MitsubaObjectAreaLightShader1SG.msg" "hyperShadePrimaryNodeEditorSavedTabsInfo1.tgi[0].ni[1].dn"
+		;
+connectAttr "file3.msg" "hyperShadePrimaryNodeEditorSavedTabsInfo1.tgi[0].ni[2].dn"
+		;
+connectAttr "MitsubaObjectAreaLightShader1.msg" "hyperShadePrimaryNodeEditorSavedTabsInfo1.tgi[0].ni[4].dn"
+		;
+connectAttr "file2.oc" "MitsubaDiffuseShader3.r";
+connectAttr "MitsubaObjectAreaLightShader1.msg" "hyperShadePrimaryNodeEditorSavedTabsInfo2.tgi[0].ni[0].dn"
+		;
+connectAttr "place2dTexture3.msg" "hyperShadePrimaryNodeEditorSavedTabsInfo2.tgi[0].ni[1].dn"
+		;
+connectAttr "MitsubaObjectAreaLightShader1SG.msg" "hyperShadePrimaryNodeEditorSavedTabsInfo2.tgi[0].ni[2].dn"
+		;
+connectAttr "file3.msg" "hyperShadePrimaryNodeEditorSavedTabsInfo2.tgi[0].ni[3].dn"
+		;
+connectAttr "file2.msg" "hyperShadePrimaryNodeEditorSavedTabsInfo2.tgi[0].ni[4].dn"
+		;
+connectAttr "MitsubaDiffuseShader3SG.msg" "hyperShadePrimaryNodeEditorSavedTabsInfo2.tgi[0].ni[5].dn"
+		;
+connectAttr "place2dTexture2.msg" "hyperShadePrimaryNodeEditorSavedTabsInfo2.tgi[0].ni[6].dn"
+		;
+connectAttr "MitsubaDiffuseShader3.msg" "hyperShadePrimaryNodeEditorSavedTabsInfo2.tgi[0].ni[7].dn"
+		;
+connectAttr "MitsubaObjectAreaLightShader1.msg" "hyperShadePrimaryNodeEditorSavedTabsInfo3.tgi[0].ni[0].dn"
+		;
+connectAttr "place2dTexture3.msg" "hyperShadePrimaryNodeEditorSavedTabsInfo3.tgi[0].ni[1].dn"
+		;
+connectAttr "MitsubaObjectAreaLightShader1SG.msg" "hyperShadePrimaryNodeEditorSavedTabsInfo3.tgi[0].ni[2].dn"
+		;
+connectAttr "file3.msg" "hyperShadePrimaryNodeEditorSavedTabsInfo3.tgi[0].ni[3].dn"
+		;
+connectAttr "file2.msg" "hyperShadePrimaryNodeEditorSavedTabsInfo3.tgi[0].ni[4].dn"
+		;
+connectAttr "MitsubaDiffuseShader3SG.msg" "hyperShadePrimaryNodeEditorSavedTabsInfo3.tgi[0].ni[5].dn"
+		;
+connectAttr "place2dTexture2.msg" "hyperShadePrimaryNodeEditorSavedTabsInfo3.tgi[0].ni[6].dn"
+		;
+connectAttr "MitsubaDiffuseShader3.msg" "hyperShadePrimaryNodeEditorSavedTabsInfo3.tgi[0].ni[7].dn"
+		;
+connectAttr "MitsubaConductorShader2SG.pa" ":renderPartition.st" -na;
+connectAttr "MitsubaConductorShader3SG.pa" ":renderPartition.st" -na;
+connectAttr "MitsubaDiffuseShader2SG.pa" ":renderPartition.st" -na;
+connectAttr "MitsubaDiffuseShader3SG.pa" ":renderPartition.st" -na;
+connectAttr "MitsubaObjectAreaLightShader1SG.pa" ":renderPartition.st" -na;
+connectAttr "MitsubaConductorShader2.msg" ":defaultShaderList1.s" -na;
+connectAttr "MitsubaConductorShader3.msg" ":defaultShaderList1.s" -na;
+connectAttr "MitsubaDiffuseShader2.msg" ":defaultShaderList1.s" -na;
+connectAttr "MitsubaDiffuseShader3.msg" ":defaultShaderList1.s" -na;
+connectAttr "MitsubaObjectAreaLightShader1.msg" ":defaultShaderList1.s" -na;
+connectAttr "place2dTexture1.msg" ":defaultRenderUtilityList1.u" -na;
+connectAttr "place2dTexture2.msg" ":defaultRenderUtilityList1.u" -na;
+connectAttr "place2dTexture3.msg" ":defaultRenderUtilityList1.u" -na;
 connectAttr "defaultRenderLayer.msg" ":defaultRenderingList1.r" -na;
-// End of mitsuba_material_rough_plastic.ma
+connectAttr "file1.msg" ":defaultTextureList1.tx" -na;
+connectAttr "file2.msg" ":defaultTextureList1.tx" -na;
+connectAttr "file3.msg" ":defaultTextureList1.tx" -na;
+// End of mitsuba_material_conductor_with_texture.ma

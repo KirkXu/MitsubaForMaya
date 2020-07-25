@@ -51,13 +51,11 @@
 		<float name="sunRadiusScale" value="1.0"/>
 	</emitter>
 
-	<bsdf type="twosided" id="MitsubaPlasticShader1">
-		<bsdf type="plastic">
-			<string name="intIOR" value="polypropylene"/>
-			<string name="extIOR" value="air"/>
-			<rgb name="diffuseReflectance" value="0.214036867023 0.214036867023 0.214036867023"/>
+	<bsdf type="twosided" id="MitsubaConductorShader2">
+		<bsdf type="conductor">
+			<string name="material" value="Cu"/>
+			<float name="extEta" value="1.0"/>
 			<rgb name="specularReflectance" value="1.0 1.0 1.0"/>
-			<boolean name="nonlinear" value="false"/>
 		</bsdf>
 	</bsdf>
 
@@ -87,14 +85,36 @@
 		</bsdf>
 	</bsdf>
 
+	<bsdf type="twosided" id="MitsubaConductorShader3">
+		<bsdf type="conductor">
+			<string name="material" value="Au"/>
+			<float name="extEta" value="1.0"/>
+			<rgb name="specularReflectance" value="1.0 1.0 1.0"/>
+		</bsdf>
+	</bsdf>
+
+	<bsdf type="twosided" id="MitsubaDiffuseShader2">
+		<bsdf type="diffuse">
+			<texture type="bitmap" name="reflectance">
+				<string name="filename" value="../sourceimages/projection_pattern.exr"/>
+			</texture>
+		</bsdf>
+	</bsdf>
+
+	<bsdf type="twosided" id="MitsubaDiffuseShader3">
+		<bsdf type="diffuse">
+			<spectrum name="reflectance" filename="../sourceimages/cie.stdillum.D6500.spd"/>
+		</bsdf>
+	</bsdf>
+
 	<shape type="obj">
 		<string name="filename" value="__Geometry__MitsubaSphere__Geometry__Mesh.obj"/>
-		<ref id="MitsubaPlasticShader1"/>
+		<ref id="MitsubaConductorShader2"/>
 	</shape>
 
 	<shape type="obj">
 		<string name="filename" value="__Geometry__MitsubaSphere__Geometry__Mesh1.obj"/>
-		<ref id="MitsubaPlasticShader1"/>
+		<ref id="MitsubaConductorShader2"/>
 	</shape>
 
 	<shape type="obj">
@@ -119,7 +139,17 @@
 
 	<shape type="obj">
 		<string name="filename" value="__materialSphere.obj"/>
-		<ref id="MitsubaPlasticShader1"/>
+		<ref id="MitsubaConductorShader3"/>
+	</shape>
+
+	<shape type="obj">
+		<string name="filename" value="__pPlane1.obj"/>
+		<ref id="MitsubaDiffuseShader2"/>
+	</shape>
+
+	<shape type="obj">
+		<string name="filename" value="__pPlane2.obj"/>
+		<ref id="MitsubaDiffuseShader3"/>
 	</shape>
 
 </scene>

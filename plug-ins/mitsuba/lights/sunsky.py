@@ -72,7 +72,7 @@ def nodeInitializer():
         nAttr.setStorable(1)
         nAttr.setReadable(1)
         nAttr.setWritable(1)
-        nAttr.setDefault(.15,.15,.15)
+        nAttr.setDefault(.0154,.0154,.0154)
 
         sunsky.mDate = nAttr.create("date","d", OpenMaya.MFnNumericData.k3Int)
         nAttr.setKeyable(1) 

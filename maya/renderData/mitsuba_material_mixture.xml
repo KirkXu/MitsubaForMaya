@@ -34,7 +34,7 @@
 
 	<emitter type="sunsky">
 		<float name="turbidity" value="3.0"/>
-		<srgb name="albedo" value="0.15000000596 0.15000000596 0.15000000596"/>
+		<rgb name="albedo" value="0.0154 0.0154 0.0154"/>
 		<integer name="year" value="2010"/>
 		<integer name="month" value="7"/>
 		<integer name="day" value="10"/>
@@ -54,8 +54,8 @@
 	<bsdf type="mixturebsdf" id="MitsubaMixtureShader1">
 		<bsdf type="twosided">
 			<bsdf type="roughplastic">
-				<srgb name="specularReflectance" value="1.0 1.0 1.0"/>
-				<srgb name="diffuseReflectance" value="0.5 0.5 0.5"/>
+				<rgb name="specularReflectance" value="1.0 1.0 1.0"/>
+				<rgb name="diffuseReflectance" value="0.5 0.5 0.5"/>
 				<string name="distribution" value="beckmann"/>
 				<float name="alpha" value="0.10000000149"/>
 				<string name="intIOR" value="polypropylene"/>
@@ -66,8 +66,8 @@
 		<bsdf type="dielectric">
 			<string name="intIOR" value="acrylic glass"/>
 			<float name="extIOR" value="1.0"/>
-			<srgb name="specularReflectance" value="1.0 1.0 1.0"/>
-			<srgb name="specularTransmittance" value="1.0 1.0 1.0"/>
+			<rgb name="specularReflectance" value="1.0 1.0 1.0"/>
+			<rgb name="specularTransmittance" value="1.0 1.0 1.0"/>
 		</bsdf>
 		<string name="weights" value="0.25, 0.75"/>
 	</bsdf>
@@ -76,20 +76,20 @@
 		<bsdf type="conductor">
 			<string name="material" value="none"/>
 			<float name="extEta" value="1.0"/>
-			<srgb name="specularReflectance" value="1.0 1.0 1.0"/>
+			<rgb name="specularReflectance" value="1.0 1.0 1.0"/>
 		</bsdf>
 	</bsdf>
 
 	<bsdf type="twosided" id="MitsubaDiffuseShader1">
 		<bsdf type="diffuse">
-			<srgb name="reflectance" value="0.5 0.5 0.5"/>
+			<rgb name="reflectance" value="0.214036867023 0.214036867023 0.214036867023"/>
 		</bsdf>
 	</bsdf>
 
 	<bsdf type="twosided" id="MitsubaRoughPlasticShader1">
 		<bsdf type="roughplastic">
-			<srgb name="specularReflectance" value="1.0 1.0 1.0"/>
-			<srgb name="diffuseReflectance" value="0.5 0.5 0.5"/>
+			<rgb name="specularReflectance" value="1.0 1.0 1.0"/>
+			<rgb name="diffuseReflectance" value="0.214036867023 0.214036867023 0.214036867023"/>
 			<string name="distribution" value="beckmann"/>
 			<float name="alpha" value="0.20000000298"/>
 			<string name="intIOR" value="polypropylene"/>
@@ -101,15 +101,15 @@
 	<bsdf type="mixturebsdf" id="MitsubaMixtureShader2">
 		<bsdf type="twosided">
 			<bsdf type="diffuse">
-				<srgb name="reflectance" value="0.5 0.5 0.5"/>
+				<rgb name="reflectance" value="0.214036867023 0.214036867023 0.214036867023"/>
 			</bsdf>
 		</bsdf>
 		<bsdf type="twosided">
 			<bsdf type="plastic">
 				<string name="intIOR" value="polypropylene"/>
 				<string name="extIOR" value="air"/>
-				<srgb name="diffuseReflectance" value="0.5 0.5 0.5"/>
-				<srgb name="specularReflectance" value="1.0 1.0 1.0"/>
+				<rgb name="diffuseReflectance" value="0.214036867023 0.214036867023 0.214036867023"/>
+				<rgb name="specularReflectance" value="1.0 1.0 1.0"/>
 				<boolean name="nonlinear" value="false"/>
 			</bsdf>
 		</bsdf>

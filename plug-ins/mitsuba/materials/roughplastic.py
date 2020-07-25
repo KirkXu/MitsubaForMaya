@@ -78,7 +78,7 @@ def nodeInitializer():
         nAttr.setStorable(1)
         nAttr.setReadable(1)
         nAttr.setWritable(1)
-        nAttr.setDefault(.5,.5,.5)
+        nAttr.setDefault(.18,.18,.18)
 
         roughplastic.mInteriorMaterial = eAttr.create("interiorMaterial", "intmat")
         eAttr.setKeyable(1) 

@@ -140,7 +140,7 @@ def nodeInitializer():
         nAttr.setStorable(1)
         nAttr.setReadable(1)
         nAttr.setWritable(1)
-        nAttr.setDefault(.5,.5,.5)
+        nAttr.setDefault(.18,.18,.18)
 
         plastic.mNonLinear = nAttr.create("nonlinear", "nl", OpenMaya.MFnNumericData.kBoolean, False)
         nAttr.setKeyable(1) 

@@ -150,11 +150,15 @@ def PointParameter(name, x, y, z):
 def StringParameter(name, value):
     return SceneElement('string', {'name':name, 'value':str(value)} )
 
-def ColorParameter(name, value, colorspace='srgb'):
+def ColorParameter(name, value, colorspace='rgb'):
     return SceneElement(colorspace, {'name':name, 'value':listToMitsubaText(value)} )
 
 def SpectrumParameter(name, value):
-    return SceneElement('spectrum', {'name':name, 'value':str(value)} )
+    if isinstance(value, basestring):
+        element = SceneElement('spectrum', {'name':name, 'filename':str(value)} )
+    else:
+        element = SceneElement('spectrum', {'name':name, 'value':str(value)} )
+    return element
 
 def RotateElement(axis, angle):
     return SceneElement('rotate', { axis:str(1), 'angle':str(angle) } )
@@ -231,7 +235,7 @@ def NestedBSDFElement(material, connectedAttribute="bsdf", useDefault=True):
             connection = connections[i]
             connectionType = cmds.nodeType(connection)
 
-            if connectionType in materialNodeTypes and connections[i-1]==(material + "." + connectedAttribute):
+            if connectionType in materialNodeTypes and connections[i-1]==(material.split('|')[-1] + "." + connectedAttribute):
                 #We've found the nested bsdf, so build a structure for it
                 shaderElement = writeShader(connection, connection)
 
@@ -245,7 +249,7 @@ def NestedBSDFElement(material, connectedAttribute="bsdf", useDefault=True):
         bsdf = cmds.getAttr(material + "." + connectedAttribute)
 
         shaderElement = BSDFElement('diffuse')
-        shaderElement.addChild( ColorParameter('reflectance', bsdf[0], colorspace='srgb') )
+        shaderElement.addChild( ColorParameter('reflectance', bsdf[0], colorspace='rgb') )
 
     return shaderElement
 
@@ -256,9 +260,8 @@ def getTextureFile(material, connectionAttr):
         if i%2==1:
             connection = connections[i]
             connectionType = cmds.nodeType(connection)
-            if connectionType == "file" and connections[i-1]==(material+"."+connectionAttr):
+            if connectionType == "file" and connections[i-1]==(material.split('|')[-1]+"."+connectionAttr):
                 fileTexture = cmds.getAttr(connection+".fileTextureName")
-                hasFile=True
                 #print( "Found texture : %s" % fileTexture )
                 animatedTexture = cmds.getAttr("%s.%s" % (connection, "useFrameExtension"))
                 if animatedTexture:
@@ -286,12 +289,16 @@ def TextureElement(name, texturePath, scale=None):
     textureElementDict.addAttribute('name', name)
     return textureElementDict
 
-def TexturedColorAttributeElement(material, attribute, mitsubaParameter=None, colorspace='srgb', scale=None):
+def TexturedColorAttributeElement(material, attribute, mitsubaParameter=None, colorspace='rgb', scale=None):
     if not mitsubaParameter:
         mitsubaParameter = attribute
     fileTexture = getTextureFile(material, attribute)
     if fileTexture:
-        element = TextureElement(mitsubaParameter, fileTexture, scale)
+        extension = os.path.splitext(fileTexture)[-1]
+        if extension.lower() == ".spd":
+            element = SpectrumParameter(mitsubaParameter, fileTexture )
+        else:
+            element = TextureElement(mitsubaParameter, fileTexture, scale)
     else:
         value = cmds.getAttr(material + "." + attribute)
         element = ColorParameter(mitsubaParameter, value[0], colorspace )
@@ -1073,10 +1080,9 @@ def writeShaderHK(material, materialName):
 def writeShaderObjectAreaLight(material, materialName):
     elementDict = EmitterElement('area', materialName)
 
-    color = cmds.getAttr(material+".radiance")
     samplingWeight = cmds.getAttr(material+".samplingWeight")
 
-    elementDict.addChild( ColorParameter('radiance', color[0], colorspace='rgb') )
+    elementDict.addChild( TexturedColorAttributeElement(material, "radiance") )
     elementDict.addChild( FloatParameter('samplingWeight', samplingWeight) )
 
     return elementDict
@@ -1089,14 +1095,14 @@ def writeShaderDipoleSSS(material, materialName):
     if useSigmaSA:
         sigmaS = cmds.getAttr(material+".sigmaS")
         sigmaA = cmds.getAttr(material+".sigmaA")
-        sssElement.addChild( ColorParameter("sigmaS", sigmaS[0]) )
-        sssElement.addChild( ColorParameter("sigmaA", sigmaA[0]) )
+        sssElement.addChild( ColorParameter("sigmaS", sigmaS[0], colorspace='rgb') )
+        sssElement.addChild( ColorParameter("sigmaA", sigmaA[0], colorspace='rgb') )
 
     elif useSigmaTAlbedo:
         sigmaT = cmds.getAttr(material+".sigmaT")
         albedo = cmds.getAttr(material+".albedo")
-        sssElement.addChild( ColorParameter("sigmaT", sigmaT[0]) )
-        sssElement.addChild( ColorParameter("albedo", albedo[0]) )
+        sssElement.addChild( ColorParameter("sigmaT", sigmaT[0], colorspace='rgb') )
+        sssElement.addChild( ColorParameter("albedo", albedo[0], colorspace='rgb') )
 
     else:
         materialString = cmds.getAttr(material+".material", asString=True)
@@ -2162,29 +2168,39 @@ def writeSensor(frameNumber, renderSettings):
     return elementDict
 
 def writeLightDirectional(light):
-    intensity = cmds.getAttr(light+".intensity")
-    color = cmds.getAttr(light+".color")[0]
-    irradiance = [0,0,0]
-    for i in range(3):
-        irradiance[i] = intensity*color[i]
+    fileTexture = getTextureFile(light, "color")
+    print( "light, file texture : %s, %s" % (light, fileTexture) )
+    if fileTexture:
+        colorElement = TexturedColorAttributeElement(light, "color", "irradiance")
+    else:
+        intensity = cmds.getAttr(light+".intensity")
+        color = cmds.getAttr(light+".color")[0]
+        irradiance = [0,0,0]
+        for i in range(3):
+            irradiance[i] = intensity*color[i]
+        colorElement = ColorParameter('irradiance', irradiance, colorspace='rgb')
 
     matrix = cmds.getAttr(light+".worldMatrix")
     lightDir = [-matrix[8],-matrix[9],-matrix[10]]
 
     # Create a structure to be written
     elementDict = EmitterElement('directional')
-
-    elementDict.addChild( ColorParameter('irradiance', irradiance, colorspace='rgb') )
+    elementDict.addChild( colorElement )
     elementDict.addChild( VectorParameter('direction', lightDir[0], lightDir[1], lightDir[2]) )
 
     return elementDict
 
 def writeLightPoint(light):
-    intensity = cmds.getAttr(light+".intensity")
-    color = cmds.getAttr(light+".color")[0]
-    irradiance = [0,0,0]
-    for i in range(3):
-        irradiance[i] = intensity*color[i]
+    fileTexture = getTextureFile(light, "color")
+    if fileTexture:
+        colorElement = TexturedColorAttributeElement(light, "color", "intensity")
+    else:
+        intensity = cmds.getAttr(light+".intensity")
+        color = cmds.getAttr(light+".color")[0]
+        irradiance = [0,0,0]
+        for i in range(3):
+            irradiance[i] = intensity*color[i]
+        colorElement = ColorParameter('intensity', irradiance, colorspace='rgb')
 
     matrix = cmds.getAttr(light+".worldMatrix")
     position = [matrix[12],matrix[13],matrix[14]]
@@ -2192,17 +2208,22 @@ def writeLightPoint(light):
     # Create a structure to be written
     elementDict = EmitterElement('point')
 
-    elementDict.addChild( ColorParameter('intensity', irradiance, colorspace='rgb') )
+    elementDict.addChild( colorElement )
     elementDict.addChild( PointParameter('position', position[0], position[1], position[2]) )
 
     return elementDict
 
 def writeLightSpot(light):
-    intensity = cmds.getAttr(light+".intensity")
-    color = cmds.getAttr(light+".color")[0]
-    irradiance = [0,0,0]
-    for i in range(3):
-        irradiance[i] = intensity*color[i]
+    fileTexture = getTextureFile(light, "color")
+    if fileTexture:
+        colorElement = TexturedColorAttributeElement(light, "color", "intensity")
+    else:
+        intensity = cmds.getAttr(light+".intensity")
+        color = cmds.getAttr(light+".color")[0]
+        irradiance = [0,0,0]
+        for i in range(3):
+            irradiance[i] = intensity*color[i]
+        colorElement = ColorParameter('intensity', irradiance, colorspace='rgb')
 
     coneAngle = float(cmds.getAttr(light+".coneAngle"))/2.0
     penumbraAngle = float(cmds.getAttr(light+".penumbraAngle"))
@@ -2216,7 +2237,7 @@ def writeLightSpot(light):
     # Create a structure to be written
     elementDict = EmitterElement('spot')
 
-    elementDict.addChild( ColorParameter('intensity', irradiance, colorspace='rgb') )
+    elementDict.addChild( colorElement )
     elementDict.addChild( FloatParameter('cutoffAngle', (coneAngle + penumbraAngle) ) )
     elementDict.addChild( FloatParameter('beamWidth', coneAngle) )
 
@@ -2267,7 +2288,7 @@ def writeLightSunSky(sunsky):
     elementDict = EmitterElement( emitterType )
 
     elementDict.addChild( FloatParameter('turbidity', turbidity) )
-    elementDict.addChild( ColorParameter('albedo', albedo[0]) )
+    elementDict.addChild( ColorParameter('albedo', albedo[0], colorspace='rgb') )
 
     elementDict.addChild( IntegerParameter('year', date[0][0]) )
     elementDict.addChild( IntegerParameter('month', date[0][1]) )
