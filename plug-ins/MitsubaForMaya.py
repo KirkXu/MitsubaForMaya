@@ -12,14 +12,14 @@ kPluginName = "MitsubaForMaya"
 
 pluginDir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
 sys.path.append(pluginDir)
-sys.path.append(os.path.join(pluginDir, "renderer"))
+sys.path.append(os.path.join(pluginDir, "mitsuba", "renderer"))
 
 # Import modules for renderer, settings, material, lights and volumes
-from renderer import (
+from mitsuba.renderer import (
     MitsubaRenderSettings,
     MitsubaRenderer)
 
-from materials import (
+from mitsuba.materials import (
     bump,
     blendbsdf,
     coating,
@@ -43,12 +43,12 @@ from materials import (
     hk,
     dipole)
 
-from lights import (
+from mitsuba.lights import (
     envmap,
     sunsky,
     arealight)
 
-from volumes import (
+from mitsuba.volumes import (
     homogeneous,
     heterogeneous)
 
